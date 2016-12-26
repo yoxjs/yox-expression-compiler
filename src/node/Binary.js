@@ -20,7 +20,7 @@ export default class Binary extends Node {
 
   stringify() {
     let { right, operator, left } = this
-    return `(${left.stringify()}) ${operator} (${right.stringify()})`
+    return `${left.stringify()} ${operator} ${right.stringify()}`
   }
 
   execute(context) {

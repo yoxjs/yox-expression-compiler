@@ -20,7 +20,7 @@ export default class Conditional extends Node {
 
   stringify() {
     let { test, consequent, alternate } = this
-    return `(${test.stringify()}) ? (${consequent.stringify()}) : (${alternate.stringify()})`
+    return `${test.stringify()} ? ${consequent.stringify()} : ${alternate.stringify()}`
   }
 
   execute(context) {

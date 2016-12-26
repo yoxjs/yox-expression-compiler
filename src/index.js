@@ -38,7 +38,7 @@ const keyword = {
   'undefined': env.UNDEFINED,
 }
 
-// 缓存
+// 编译结果缓存
 let cache = { }
 
 /**
@@ -209,7 +209,9 @@ export function compile(content) {
           index++
           value = new Member({
             object: value,
-            property: new Literal(parseIdentifier().name),
+            property: new Literal({
+              value: parseIdentifier().name,
+            }),
           })
         }
         // a[x]
@@ -374,12 +376,6 @@ export function compile(content) {
 
   }
 
-  if (!cache[content]) {
-    let ast = parseExpression()
-    cache[content] =
-    cache[ast.stringify()] = ast
-  }
-
-  return cache[content]
+  return cache[content] || (cache[content] = parseExpression())
 
 }
