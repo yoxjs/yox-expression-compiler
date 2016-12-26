@@ -47,7 +47,7 @@ let cache = { }
  * @param {string} content 表达式字符串
  * @return {Object}
  */
-export function parse(content) {
+export function compile(content) {
 
   let { length } = content
   let index = 0, charCode, value
