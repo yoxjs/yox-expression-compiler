@@ -32,21 +32,18 @@ export default class Call extends Node {
   execute(context) {
     let { callee, args } = this
     let { value, deps } = callee.execute(context)
-
-    value = execute(
-      value,
-      env.NULL,
-      args.map(
-        function (arg) {
-          let result = arg.execute(context)
-          object.extend(deps, result.deps)
-          return result.value
-        }
-      )
-    )
-
     return {
-      value,
+      value: execute(
+        value,
+        env.NULL,
+        args.map(
+          function (arg) {
+            let result = arg.execute(context)
+            object.extend(deps, result.deps)
+            return result.value
+          }
+        )
+      ),
       deps,
     }
   }

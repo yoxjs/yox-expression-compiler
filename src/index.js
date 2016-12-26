@@ -2,6 +2,7 @@
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
+import * as string from 'yox-common/util/string'
 
 import * as util from './util'
 import * as nodeType from './nodeType'
@@ -42,7 +43,7 @@ const keyword = {
 let cache = { }
 
 /**
- * 表达式解析成抽象语法树
+ * 把表达式编译成抽象语法树
  *
  * @param {string} content 表达式字符串
  * @return {Object}
@@ -53,10 +54,10 @@ export function compile(content) {
   let index = 0, charCode, value
 
   function getChar() {
-    return content.charAt(index)
+    return string.charAt(content, index)
   }
   function getCharCode(i) {
-    return content.charCodeAt(i != env.NULL ? i : index)
+    return string.charCodeAt(content, i != env.NULL ? i : index)
   }
 
   function skipWhitespace() {
@@ -137,9 +138,7 @@ export function compile(content) {
       })
     }
 
-    // 如果函数是 function () { return this }
-    // 如果用 fn.call('')，返回的会是个 new String('')，不是字符串字面量
-    // 所以我们把 this 全都改成 IDENTIFIER 了
+    // this 也视为 IDENTIFIER
     if (value) {
       return new Identifier({
         name: value,

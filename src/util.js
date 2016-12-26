@@ -11,7 +11,8 @@ import * as logger from 'yox-common/util/logger'
  * @return {boolean}
  */
 export function isNumber(charCode) {
-  return charCode >= 48 && charCode <= 57 // 0...9
+  return charCode >= 48
+    && charCode <= 57 // 0...9
 }
 
 /**

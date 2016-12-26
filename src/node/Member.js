@@ -1,6 +1,5 @@
 
 import Node from './Node'
-import Literal from './Literal'
 import * as nodeType from '../nodeType'
 
 import * as is from 'yox-common/util/is'
@@ -67,13 +66,14 @@ export default class Member extends Node {
     array.each(
       this.flatten(),
       function (node, index) {
-        if (node.type !== nodeType.LITERAL) {
+        let { type } = node
+        if (type !== nodeType.LITERAL) {
           if (index > 0) {
             let result = node.execute(context)
             object.extend(deps, result.deps)
             keys.push(result.value)
           }
-          else if (node.type === nodeType.IDENTIFIER) {
+          else if (type === nodeType.IDENTIFIER) {
             keys.push(node.name)
           }
         }
@@ -83,15 +83,14 @@ export default class Member extends Node {
       }
     )
 
-    let key = keypathUtil.stringify(keys)
-    let { value, keypath } = context.get(key)
+    let { value, keypath } =
+    context.get(
+      keypathUtil.stringify(keys)
+    )
 
     deps[ keypath ] = value
 
-    return {
-      value,
-      deps,
-    }
+    return { value, deps }
   }
 
 }

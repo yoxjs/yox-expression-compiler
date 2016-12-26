@@ -37,10 +37,7 @@ export default class Array extends Node {
         object.extend(deps, result.deps)
       }
     )
-    return {
-      value,
-      deps,
-    }
+    return { value, deps }
   }
 
 }

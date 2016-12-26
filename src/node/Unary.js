@@ -25,29 +25,24 @@ export default class Unary extends Node {
   execute(context) {
     let { operator, arg } = this
     let { value, deps } = arg.execute(context)
-    switch (operator) {
-      case Unary.PLUS:
-        value = +value
-        break
-      case Unary.MINUS:
-        value = -value
-        break
-      case Unary.BANG:
-        value = !value
-        break
-      case Unary.WAVE:
-        value = ~value
-        break
-    }
     return {
-      value,
+      value: OPERATOR[operator](value),
       deps,
     }
   }
 
 }
 
-Unary.PLUS = '+'
-Unary.MINUS = '-'
-Unary.BANG = '!'
-Unary.WAVE = '~'
+let OPERATOR = { }
+OPERATOR[ Unary.PLUS = '+' ] = function (value) {
+  return +value
+}
+OPERATOR[ Unary.MINUS = '-' ] = function (value) {
+  return -value
+}
+OPERATOR[ Unary.BANG = '!' ] = function (value) {
+  return !value
+}
+OPERATOR[ Unary.WAVE = '~' ] = function (value) {
+  return ~value
+}
