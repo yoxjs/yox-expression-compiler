@@ -2,6 +2,7 @@
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
+import * as object from 'yox-common/util/object'
 import * as string from 'yox-common/util/string'
 
 import * as util from './util'
@@ -50,29 +51,33 @@ let cache = { }
  */
 export function compile(content) {
 
+  if (object.has(cache, content)) {
+    return cache[content]
+  }
+
   let { length } = content
   let index = 0, charCode, value
 
-  function getChar() {
+  const getChar = function () {
     return string.charAt(content, index)
   }
-  function getCharCode(i) {
+  const getCharCode = function (i) {
     return string.charCodeAt(content, i != env.NULL ? i : index)
   }
 
-  function skipWhitespace() {
+  const skipWhitespace = function () {
     while (util.isWhitespace(getCharCode())) {
       index++
     }
   }
 
-  function skipNumber() {
+  const skipNumber = function () {
     while (util.isNumber(getCharCode())) {
       index++
     }
   }
 
-  function skipString() {
+  const skipString = function () {
     let closed, quote = getCharCode()
     index++
     while (index < length) {
@@ -87,7 +92,7 @@ export function compile(content) {
     }
   }
 
-  function skipIdentifier() {
+  const skipIdentifier = function () {
     // 第一个字符一定是经过 isIdentifierStart 判断的
     // 因此循环至少要执行一次
     do {
@@ -96,7 +101,7 @@ export function compile(content) {
     while (util.isIdentifierPart(getCharCode()))
   }
 
-  function parseNumber() {
+  const parseNumber = function () {
 
     let start = index
 
@@ -114,7 +119,7 @@ export function compile(content) {
 
   }
 
-  function parseString() {
+  const parseString = function () {
 
     let start = index
 
@@ -126,7 +131,7 @@ export function compile(content) {
 
   }
 
-  function parseIdentifier() {
+  const parseIdentifier = function () {
 
     let start = index
     skipIdentifier()
@@ -149,7 +154,7 @@ export function compile(content) {
 
   }
 
-  function parseTuple(delimiter) {
+  const parseTuple = function (delimiter) {
 
     let args = [ ], closed
 
@@ -178,7 +183,7 @@ export function compile(content) {
 
   }
 
-  function parseOperator(sortedOperatorList) {
+  const parseOperator = function (sortedOperatorList) {
     skipWhitespace()
     value = util.matchBestToken(content.slice(index), sortedOperatorList)
     if (value) {
@@ -187,7 +192,7 @@ export function compile(content) {
     }
   }
 
-  function parseVariable() {
+  const parseVariable = function () {
 
     value = parseIdentifier()
 
@@ -231,7 +236,7 @@ export function compile(content) {
 
   }
 
-  function parseToken() {
+  const parseToken = function () {
     skipWhitespace()
 
     charCode = getCharCode()
@@ -265,7 +270,7 @@ export function compile(content) {
     util.parseError(content)
   }
 
-  function parseUnary(op) {
+  const parseUnary = function (op) {
     value = parseToken()
     if (value) {
       return new Unary({
@@ -276,7 +281,7 @@ export function compile(content) {
     util.parseError(content)
   }
 
-  function parseBinary() {
+  const parseBinary = function () {
 
     let left = parseToken()
     let op = parseOperator(operator.binaryList)
@@ -329,7 +334,7 @@ export function compile(content) {
   }
 
   // (xx) 和 [xx] 都可能是子表达式，因此
-  function parseSubexpression(delimiter) {
+  const parseSubexpression = function (delimiter) {
     value = parseExpression()
     if (getCharCode() === delimiter) {
       index++
@@ -338,7 +343,7 @@ export function compile(content) {
     util.parseError(content)
   }
 
-  function parseExpression() {
+  const parseExpression = function () {
 
     // 主要是区分三元和二元表达式
     // 三元表达式可以认为是 3 个二元表达式组成的
@@ -375,6 +380,6 @@ export function compile(content) {
 
   }
 
-  return cache[content] || (cache[content] = parseExpression())
+  return cache[content] = parseExpression()
 
 }
