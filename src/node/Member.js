@@ -2,11 +2,6 @@
 import Node from './Node'
 import * as nodeType from '../nodeType'
 
-import * as is from 'yox-common/util/is'
-import * as array from 'yox-common/util/array'
-import * as object from 'yox-common/util/object'
-import * as keypathUtil from 'yox-common/util/keypath'
-
 /**
  * Member 节点
  *
@@ -15,82 +10,30 @@ import * as keypathUtil from 'yox-common/util/keypath'
  */
 export default class Member extends Node {
 
-  constructor(options) {
+  constructor(object, property) {
     super(nodeType.MEMBER)
-    object.extend(this, options)
+    this.object = object
+    this.property = property
   }
 
-  flatten() {
-    let result = [ ]
+}
 
-    let current = this, next
-    do {
-      next = current.object
-      if (current.type === nodeType.MEMBER) {
-        result.unshift(current.property)
-      }
-      else {
-        result.unshift(current)
-      }
+Member.flatten = function (node) {
+
+  let result = [ ]
+
+  let next
+  do {
+    next = node.object
+    if (node.type === nodeType.MEMBER) {
+      result.unshift(node.property)
     }
-    while (current = next)
-
-    return result
+    else {
+      result.unshift(node)
+    }
   }
+  while (node = next)
 
-  stringify(list) {
-    return this.flatten()
-    .map(
-      function (node, index) {
-        if (node.type === nodeType.LITERAL) {
-          let { value } = node
-          return is.numeric(value)
-            ? `[${value}]`
-            : `.${value}`
-        }
-        else {
-          node = node.stringify()
-          return index > 0
-            ? `[${node}]`
-            : node
-        }
-      }
-    )
-    .join('')
-  }
-
-  execute(context) {
-
-    let deps = { }, keys = [ ]
-
-    array.each(
-      this.flatten(),
-      function (node, index) {
-        let { type } = node
-        if (type !== nodeType.LITERAL) {
-          if (index > 0) {
-            let result = node.execute(context)
-            object.extend(deps, result.deps)
-            keys.push(result.value)
-          }
-          else if (type === nodeType.IDENTIFIER) {
-            keys.push(node.name)
-          }
-        }
-        else {
-          keys.push(node.value)
-        }
-      }
-    )
-
-    let { value, keypath } =
-    context.get(
-      keypathUtil.stringify(keys)
-    )
-
-    deps[ keypath ] = value
-
-    return { value, deps }
-  }
+  return result
 
 }

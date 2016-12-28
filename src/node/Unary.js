@@ -2,8 +2,6 @@
 import Node from './Node'
 import * as nodeType from '../nodeType'
 
-import * as object from 'yox-common/util/object'
-
 /**
  * Unary 节点
  *
@@ -12,37 +10,23 @@ import * as object from 'yox-common/util/object'
  */
 export default class Unary extends Node {
 
-  constructor(options) {
+  constructor(operator, arg) {
     super(nodeType.UNARY)
-    object.extend(this, options)
-  }
-
-  stringify() {
-    let { operator, arg } = this
-    return `${operator}${arg.stringify()}`
-  }
-
-  execute(context) {
-    let { operator, arg } = this
-    let { value, deps } = arg.execute(context)
-    return {
-      value: OPERATOR[operator](value),
-      deps,
-    }
+    this.operator = operator
+    this.arg = arg
   }
 
 }
 
-let OPERATOR = { }
-OPERATOR[ Unary.PLUS = '+' ] = function (value) {
+Unary[ Unary.PLUS = '+' ] = function (value) {
   return +value
 }
-OPERATOR[ Unary.MINUS = '-' ] = function (value) {
+Unary[ Unary.MINUS = '-' ] = function (value) {
   return -value
 }
-OPERATOR[ Unary.BANG = '!' ] = function (value) {
+Unary[ Unary.BANG = '!' ] = function (value) {
   return !value
 }
-OPERATOR[ Unary.WAVE = '~' ] = function (value) {
+Unary[ Unary.WAVE = '~' ] = function (value) {
   return ~value
 }

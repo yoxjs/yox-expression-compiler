@@ -2,82 +2,66 @@
 import Node from './Node'
 import * as nodeType from '../nodeType'
 
-import * as object from 'yox-common/util/object'
-
 /**
  * Binary 节点
  *
- * @param {Node} left
- * @param {string} operator
  * @param {Node} right
+ * @param {string} operator
+ * @param {Node} left
  */
 export default class Binary extends Node {
 
-  constructor(options) {
+  constructor(right, operator, left) {
     super(nodeType.BINARY)
-    object.extend(this, options)
-  }
-
-  stringify() {
-    let { left, operator, right } = this
-    return `${left.stringify()} ${operator} ${right.stringify()}`
-  }
-
-  execute(context) {
-    let { left, operator, right } = this
-    left = left.execute(context)
-    right = right.execute(context)
-    return {
-      value: OPERATOR[operator](left.value, right.value),
-      deps: object.extend(left.deps, right.deps),
-    }
+    this.left = left
+    this.operator = operator
+    this.right = right
   }
 
 }
 
-let OPERATOR = { }
-OPERATOR[ Binary.OR = '||' ] = function (a, b) {
+Binary[ Binary.OR = '||' ] = function (a, b) {
   return a || b
 }
-OPERATOR[Binary.AND = '&&' ] = function (a, b) {
+Binary[Binary.AND = '&&' ] = function (a, b) {
   return a && b
 }
-OPERATOR[ Binary.SE = '===' ] = function (a, b) {
+Binary[ Binary.SE = '===' ] = function (a, b) {
   return a === b
 }
-OPERATOR[ Binary.SNE = '!==' ] = function (a, b) {
+Binary[ Binary.SNE = '!==' ] = function (a, b) {
   return a !== b
 }
-OPERATOR[ Binary.LE = '==' ] = function (a, b) {
+Binary[ Binary.LE = '==' ] = function (a, b) {
   return a == b
 }
-OPERATOR[ Binary.LNE = '!=' ] = function (a, b) {
+Binary[ Binary.LNE = '!=' ] = function (a, b) {
   return a != b
 }
-OPERATOR[ Binary.LT = '<' ] = function (a, b) {
+Binary[ Binary.LT = '<' ] = function (a, b) {
   return a < b
 }
-OPERATOR[ Binary.LTE = '<=' ] = function (a, b) {
+Binary[ Binary.LTE = '<=' ] = function (a, b) {
   return a <= b
 }
-OPERATOR[ Binary.GT = '>' ] = function (a, b) {
+Binary[ Binary.GT = '>' ] = function (a, b) {
   return a > b
 }
-OPERATOR[ Binary.GTE = '>=' ] = function (a, b) {
+Binary[ Binary.GTE = '>=' ] = function (a, b) {
   return a >= b
 }
-OPERATOR[ Binary.PLUS = '+' ] = function (a, b) {
+Binary[ Binary.PLUS = '+' ] = function (a, b) {
   return a + b
 }
-OPERATOR[ Binary.MINUS = '-' ] = function (a, b) {
+Binary[ Binary.MINUS = '-' ] = function (a, b) {
   return a - b
 }
-OPERATOR[ Binary.MULTIPLY = '*' ] = function (a, b) {
+Binary[ Binary.MULTIPLY = '*' ] = function (a, b) {
   return a * b
 }
-OPERATOR[ Binary.DIVIDE = '/' ] = function (a, b) {
+Binary[ Binary.DIVIDE = '/' ] = function (a, b) {
   return a / b
 }
-OPERATOR[ Binary.MODULO = '%' ] = function (a, b) {
+Binary[ Binary.MODULO = '%' ] = function (a, b) {
   return a % b
 }

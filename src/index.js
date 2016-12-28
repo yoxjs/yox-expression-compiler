@@ -4,6 +4,9 @@ import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
 import * as string from 'yox-common/util/string'
+import * as keypathUtil from 'yox-common/util/keypath'
+
+import callFunction from 'yox-common/function/execute'
 
 import * as util from './util'
 import * as nodeType from './nodeType'
@@ -42,6 +45,184 @@ const keyword = {
 
 // 编译结果缓存
 let cache = { }
+
+function stringifyRecursion(node) {
+  return stringify(node)
+}
+
+/**
+ * 序列化表达式
+ *
+ * @param {Node} node
+ * @return {string}
+ */
+export function stringify(node) {
+
+  switch (node.type) {
+    case nodeType.ARRAY:
+      return `[${node.elements.map(stringifyRecursion).join(', ')}]`
+
+    case nodeType.BINARY:
+      return `${stringify(node.left)} ${node.operator} ${stringify(node.right)}`
+
+    case nodeType.CALL:
+      return `${stringify(node.callee)}(${node.args.map(stringifyRecursion).join(', ')})`
+
+    case nodeType.CONDITIONAL:
+      return `${stringify(node.test)} ? ${stringify(node.consequent)} : ${stringify(node.alternate)}`
+
+    case nodeType.IDENTIFIER:
+      return node.name
+
+    case nodeType.LITERAL:
+      let { value } = node
+      if (is.string(value)) {
+        return value.indexOf('"') >= 0
+          ? `'${value}'`
+          : `"${value}"`
+      }
+      return value
+
+    case nodeType.MEMBER:
+      return Member.flatten(node)
+        .map(
+          function (node, index) {
+            if (node.type === nodeType.LITERAL) {
+              let { value } = node
+              return is.numeric(value)
+                ? `[${value}]`
+                : `.${value}`
+            }
+            else {
+              node = stringify(node)
+              return index > 0
+                ? `[${node}]`
+                : node
+            }
+          }
+        )
+        .join('')
+
+    case nodeType.UNARY:
+      return `${node.operator}${stringify(node.arg)}`
+  }
+
+}
+
+/**
+ * 表达式求值
+ *
+ * @param {Node} node
+ * @param {Context} context
+ * @return {*}
+ */
+export function execute(node, context) {
+
+  let deps = { }, value, result
+
+  switch (node.type) {
+    case nodeType.ARRAY:
+      value = [ ]
+      array.each(
+        node.elements,
+        function (node) {
+          result = execute(node, context)
+          array.push(value, result.value)
+          object.extend(deps, result.deps)
+        }
+      )
+      break
+
+    case nodeType.BINARY:
+      let { left, right } = node
+      left = execute(left, context)
+      right = execute(right, context)
+      value = Binary[node.operator](left.value, right.value)
+      deps = object.extend(left.deps, right.deps)
+      break
+
+    case nodeType.CALL:
+      result = execute(node.callee, context)
+      deps = result.deps
+      value = callFunction(
+        result.value,
+        env.NULL,
+        node.args.map(
+          function (node) {
+            let result = execute(node, context)
+            object.extend(deps, result.deps)
+            return result.value
+          }
+        )
+      )
+      break
+
+    case nodeType.CONDITIONAL:
+      let { test, consequent, alternate } = node
+      test = execute(test, context)
+      if (test.value) {
+        consequent = execute(consequent, context)
+        value = consequent.value
+        deps = object.extend(test.deps, consequent.deps)
+      }
+      else {
+        alternate = execute(alternate, context)
+        value = alternate.value
+        deps = object.extend(test.deps, alternate.deps)
+      }
+      break
+
+    case nodeType.IDENTIFIER:
+      result = context.get(node.name)
+      value = result.value
+      deps[ result.keypath ] = value
+      break
+
+    case nodeType.LITERAL:
+      value = node.value
+      break
+
+    case nodeType.MEMBER:
+      let keys = [ ]
+
+      array.each(
+        Member.flatten(node),
+        function (node, index) {
+          let { type } = node
+          if (type !== nodeType.LITERAL) {
+            if (index > 0) {
+              let result = execute(node, context)
+              array.push(keys, result.value)
+              object.extend(deps, result.deps)
+            }
+            else if (type === nodeType.IDENTIFIER) {
+              array.push(keys, node.name)
+            }
+          }
+          else {
+            array.push(keys, node.value)
+          }
+        }
+      )
+
+      result = context.get(
+        keypathUtil.stringify(keys)
+      )
+
+      value = result.value
+      deps[ result.keypath ] = value
+      break
+
+    case nodeType.UNARY:
+      result = execute(node.arg, context)
+      value = Unary[node.operator](result.value)
+      deps = result.deps
+      break
+  }
+
+  return { value, deps }
+
+}
 
 /**
  * 把表达式编译成抽象语法树
@@ -111,11 +292,11 @@ export function compile(content) {
       skipNumber()
     }
 
-    return new Literal({
-      value: parseFloat(
+    return new Literal(
+      parseFloat(
         content.substring(start, index)
       )
-    })
+    )
 
   }
 
@@ -125,9 +306,9 @@ export function compile(content) {
 
     skipString()
 
-    return new Literal({
-      value: content.substring(start + 1, index - 1)
-    })
+    return new Literal(
+      content.substring(start + 1, index - 1)
+    )
 
   }
 
@@ -138,16 +319,14 @@ export function compile(content) {
 
     value = content.substring(start, index)
     if (keyword[value]) {
-      return new Literal({
-        value: keyword[value]
-      })
+      return new Literal(
+        keyword[value]
+      )
     }
 
     // this 也视为 IDENTIFIER
     if (value) {
-      return new Identifier({
-        name: value,
-      })
+      return new Identifier(value)
     }
 
     util.parseError(content)
@@ -201,30 +380,27 @@ export function compile(content) {
       charCode = getCharCode()
       if (charCode === OPAREN) {
         index++
-        value = new Call({
-          callee: value,
-          args: parseTuple(CPAREN),
-        })
+        value = new Call(value, parseTuple(CPAREN))
         break
       }
       else {
         // a.x
         if (charCode === PERIOD) {
           index++
-          value = new Member({
-            object: value,
-            property: new Literal({
-              value: parseIdentifier().name,
-            }),
-          })
+          value = new Member(
+            value,
+            new Literal(
+              parseIdentifier().name
+            )
+          )
         }
         // a[x]
         else if (charCode === OBRACK) {
           index++
-          value = new Member({
-            object: value,
-            property: parseSubexpression(CBRACK),
-          })
+          value = new Member(
+            value,
+            parseSubexpression(CBRACK)
+          )
         }
         else {
           break
@@ -251,9 +427,9 @@ export function compile(content) {
     // [xx, xx]
     else if (charCode === OBRACK) {
       index++
-      return new Array({
-        elements: parseTuple(CBRACK),
-      })
+      return new Array(
+        parseTuple(CBRACK)
+      )
     }
     // (xx, xx)
     else if (charCode === OPAREN) {
@@ -273,10 +449,7 @@ export function compile(content) {
   const parseUnary = function (op) {
     value = parseToken()
     if (value) {
-      return new Unary({
-        operator: op,
-        arg: value,
-      })
+      return new Unary(op, value)
     }
     util.parseError(content)
   }
@@ -297,11 +470,11 @@ export function compile(content) {
       // 处理左边
       if (stack.length > 3 && operator.binaryMap[op] < stack[stack.length - 2]) {
         stack.push(
-          new Binary({
-            right: stack.pop(),
-            operator: (stack.pop(), stack.pop()),
-            left: stack.pop(),
-          })
+          new Binary(
+            stack.pop(),
+            (stack.pop(), stack.pop()),
+            stack.pop()
+          )
         )
       }
 
@@ -322,11 +495,11 @@ export function compile(content) {
 
     right = stack.pop()
     while (stack.length > 1) {
-      right = new Binary({
-        right: right,
-        operator: (stack.pop(), stack.pop()),
-        left: stack.pop(),
-      })
+      right = new Binary(
+        right,
+        (stack.pop(), stack.pop()),
+        stack.pop()
+      )
     }
 
     return right
@@ -365,11 +538,11 @@ export function compile(content) {
 
         // 保证调用 parseExpression() 之后无需再次调用 skipWhitespace()
         skipWhitespace()
-        return new Conditional({
+        return new Conditional(
           test,
           consequent,
           alternate,
-        })
+        )
       }
       else {
         util.parseError(content)
