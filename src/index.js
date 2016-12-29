@@ -43,9 +43,10 @@ const keyword = {
   'undefined': env.UNDEFINED,
 }
 
-// 编译结果缓存
+// 缓存编译结果
 let cache = { }
 
+// 下面用了几次，提一个函数比较方便
 function stringifyRecursion(node) {
   return stringify(node)
 }
@@ -184,7 +185,6 @@ export function execute(node, context) {
 
     case nodeType.MEMBER:
       let keys = [ ]
-
       array.each(
         Member.flatten(node),
         function (node, index) {
@@ -204,11 +204,9 @@ export function execute(node, context) {
           }
         }
       )
-
       result = context.get(
         keypathUtil.stringify(keys)
       )
-
       value = result.value
       deps[ result.keypath ] = value
       break
@@ -242,8 +240,11 @@ export function compile(content) {
   const getChar = function () {
     return string.charAt(content, index)
   }
-  const getCharCode = function (i) {
-    return string.charCodeAt(content, i != env.NULL ? i : index)
+  const getCharCode = function () {
+    return string.charCodeAt(content, index)
+  }
+  const parseError = function () {
+    logger.error(`Failed to compile expression: \n${expression}`)
   }
 
   const skipWhitespace = function () {
@@ -263,13 +264,13 @@ export function compile(content) {
     index++
     while (index < length) {
       index++
-      if (getCharCode(index - 1) === quote) {
+      if (string.charCodeAt(content, index - 1) === quote) {
         closed = env.TRUE
         break
       }
     }
     if (!closed) {
-      return util.parseError(content)
+      return parseError()
     }
   }
 
@@ -329,7 +330,7 @@ export function compile(content) {
       return new Identifier(value)
     }
 
-    util.parseError(content)
+    parseError()
 
   }
 
@@ -358,7 +359,7 @@ export function compile(content) {
       return args
     }
 
-    util.parseError(content)
+    parseError()
 
   }
 
@@ -443,7 +444,7 @@ export function compile(content) {
     if (value) {
       return parseUnary(value)
     }
-    util.parseError(content)
+    parseError()
   }
 
   const parseUnary = function (op) {
@@ -451,7 +452,7 @@ export function compile(content) {
     if (value) {
       return new Unary(op, value)
     }
-    util.parseError(content)
+    parseError()
   }
 
   const parseBinary = function () {
@@ -483,7 +484,7 @@ export function compile(content) {
         stack.push(op, operator.binaryMap[op], right)
       }
       else {
-        util.parseError(content)
+        parseError()
       }
 
     }
@@ -513,7 +514,7 @@ export function compile(content) {
       index++
       return value
     }
-    util.parseError(content)
+    parseError()
   }
 
   const parseExpression = function () {
@@ -545,7 +546,7 @@ export function compile(content) {
         )
       }
       else {
-        util.parseError(content)
+        parseError()
       }
     }
 
