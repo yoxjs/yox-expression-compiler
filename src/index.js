@@ -245,7 +245,7 @@ export function compile(content) {
     return string.charCodeAt(content, index)
   }
   const parseError = function () {
-    logger.error(`Failed to compile expression: \n${expression}`)
+    logger.error(`Failed to compile expression: \n${content}`)
   }
 
   const skipWhitespace = function () {
