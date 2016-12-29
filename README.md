@@ -1,6 +1,6 @@
 # yox-expression-compiler
 
-Expression compiler for yox.js
+Expression compiler for Yox.js
 
 ```js
 import * as expressionCompiler from 'yox-expression-compiler'
@@ -12,6 +12,14 @@ let node = expressionCompiler.compile('a + b')
 expressionCompiler.stringify(node) // a + b
 
 // 求值
+// 必须提供 get 函数取值，取值结果格式如下
+// {
+//     value: '求值结果',
+//     deps: {
+//         dep1: dep1Value,
+//         dep2: dep2Value,
+//     }
+// }
 expressionCompiler.execute(
   node,
   {
