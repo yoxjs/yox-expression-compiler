@@ -350,7 +350,8 @@ export function compile(content) {
         index++
       }
       else {
-        args.push(
+        array.push(
+          args,
           parseExpression()
         )
       }
@@ -471,7 +472,8 @@ export function compile(content) {
 
       // 处理左边
       if (stack.length > 3 && operator.binaryMap[op] < stack[stack.length - 2]) {
-        stack.push(
+        array.push(
+          stack,
           new Binary(
             stack.pop(),
             (stack.pop(), stack.pop()),

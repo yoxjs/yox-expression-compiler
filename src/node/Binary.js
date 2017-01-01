@@ -13,9 +13,9 @@ export default class Binary extends Node {
 
   constructor(right, operator, left) {
     super(nodeType.BINARY)
-    this.left = left
-    this.operator = operator
     this.right = right
+    this.operator = operator
+    this.left = left
   }
 
 }
