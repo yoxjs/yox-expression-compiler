@@ -37,7 +37,7 @@ const COLON  = 58 // :
 // 区分关键字和普通变量
 // 举个例子：a === true
 // 从解析器的角度来说，a 和 true 是一样的 token
-const keyword = {
+const keywords = {
   'true': env.TRUE,
   'false': env.FALSE,
   'null': env.NULL,
@@ -47,11 +47,6 @@ const keyword = {
 // 缓存编译结果
 let cache = { }
 
-// 下面用了几次，提一个函数比较方便
-function stringifyRecursion(node) {
-  return stringify(node)
-}
-
 /**
  * 序列化表达式
  *
@@ -60,15 +55,19 @@ function stringifyRecursion(node) {
  */
 export function stringify(node) {
 
+  let recursion = function (node) {
+    return stringify(node)
+  }
+
   switch (node.type) {
     case nodeType.ARRAY:
-      return `[${node.elements.map(stringifyRecursion).join(', ')}]`
+      return `[${node.elements.map(recursion).join(', ')}]`
 
     case nodeType.BINARY:
       return `${stringify(node.left)} ${node.operator} ${stringify(node.right)}`
 
     case nodeType.CALL:
-      return `${stringify(node.callee)}(${node.args.map(stringifyRecursion).join(', ')})`
+      return `${stringify(node.callee)}(${node.args.map(recursion).join(', ')})`
 
     case nodeType.CONDITIONAL:
       return `${stringify(node.test)} ? ${stringify(node.consequent)} : ${stringify(node.alternate)}`
@@ -238,29 +237,29 @@ export function compile(content) {
   let { length } = content
   let index = 0, charCode, value
 
-  const getChar = function () {
+  let getChar = function () {
     return string.charAt(content, index)
   }
-  const getCharCode = function () {
+  let getCharCode = function () {
     return string.charCodeAt(content, index)
   }
-  const parseError = function () {
-    logger.error(`Failed to compile expression: \n${content}`)
+  let throwError = function () {
+    logger.error(`Failed to compile expression: ${env.BREAKLINE}${content}`)
   }
 
-  const skipWhitespace = function () {
+  let skipWhitespace = function () {
     while (util.isWhitespace(getCharCode())) {
       index++
     }
   }
 
-  const skipNumber = function () {
+  let skipNumber = function () {
     while (util.isNumber(getCharCode())) {
       index++
     }
   }
 
-  const skipString = function () {
+  let skipString = function () {
     let closed, quote = getCharCode()
     index++
     while (index < length) {
@@ -271,11 +270,11 @@ export function compile(content) {
       }
     }
     if (!closed) {
-      return parseError()
+      return throwError()
     }
   }
 
-  const skipIdentifier = function () {
+  let skipIdentifier = function () {
     // 第一个字符一定是经过 isIdentifierStart 判断的
     // 因此循环至少要执行一次
     do {
@@ -284,7 +283,7 @@ export function compile(content) {
     while (util.isIdentifierPart(getCharCode()))
   }
 
-  const parseNumber = function () {
+  let parseNumber = function () {
 
     let start = index
 
@@ -302,7 +301,7 @@ export function compile(content) {
 
   }
 
-  const parseString = function () {
+  let parseString = function () {
 
     let start = index
 
@@ -314,15 +313,15 @@ export function compile(content) {
 
   }
 
-  const parseIdentifier = function () {
+  let parseIdentifier = function () {
 
     let start = index
     skipIdentifier()
 
     value = content.substring(start, index)
-    if (keyword[value]) {
+    if (keywords[value]) {
       return new Literal(
-        keyword[value]
+        keywords[value]
       )
     }
 
@@ -331,11 +330,11 @@ export function compile(content) {
       return new Identifier(value)
     }
 
-    parseError()
+    throwError()
 
   }
 
-  const parseTuple = function (delimiter) {
+  let parseTuple = function (delimiter) {
 
     let args = [ ], closed
 
@@ -361,11 +360,11 @@ export function compile(content) {
       return args
     }
 
-    parseError()
+    throwError()
 
   }
 
-  const parseOperator = function (sortedOperatorList) {
+  let parseOperator = function (sortedOperatorList) {
     skipWhitespace()
     value = util.matchBestToken(content.slice(index), sortedOperatorList)
     if (value) {
@@ -374,7 +373,7 @@ export function compile(content) {
     }
   }
 
-  const parseVariable = function () {
+  let parseVariable = function () {
 
     value = parseIdentifier()
 
@@ -415,7 +414,7 @@ export function compile(content) {
 
   }
 
-  const parseToken = function () {
+  let parseToken = function () {
     skipWhitespace()
 
     charCode = getCharCode()
@@ -446,18 +445,18 @@ export function compile(content) {
     if (value) {
       return parseUnary(value)
     }
-    parseError()
+    throwError()
   }
 
-  const parseUnary = function (op) {
+  let parseUnary = function (op) {
     value = parseToken()
     if (value) {
       return new Unary(op, value)
     }
-    parseError()
+    throwError()
   }
 
-  const parseBinary = function () {
+  let parseBinary = function () {
 
     let left = parseToken()
     let op = parseOperator(operator.binaryList)
@@ -484,10 +483,15 @@ export function compile(content) {
 
       right = parseToken()
       if (right) {
-        stack.push(op, operator.binaryMap[op], right)
+        array.push(
+          stack,
+          op,
+          operator.binaryMap[op],
+          right
+        )
       }
       else {
-        parseError()
+        throwError()
       }
 
     }
@@ -511,16 +515,16 @@ export function compile(content) {
   }
 
   // (xx) 和 [xx] 都可能是子表达式，因此
-  const parseSubexpression = function (delimiter) {
+  let parseSubexpression = function (delimiter) {
     value = parseExpression()
     if (getCharCode() === delimiter) {
       index++
       return value
     }
-    parseError()
+    throwError()
   }
 
-  const parseExpression = function () {
+  let parseExpression = function () {
 
     // 主要是区分三元和二元表达式
     // 三元表达式可以认为是 3 个二元表达式组成的
@@ -549,7 +553,7 @@ export function compile(content) {
         )
       }
       else {
-        parseError()
+        throwError()
       }
     }
 
