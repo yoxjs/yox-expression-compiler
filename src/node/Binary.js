@@ -1,6 +1,7 @@
 
 import Node from './Node'
 import * as nodeType from '../nodeType'
+import * as operator from '../operator'
 
 /**
  * Binary 节点
@@ -20,48 +21,48 @@ export default class Binary extends Node {
 
 }
 
-Binary[ Binary.OR = '||' ] = function (a, b) {
+Binary[ operator.OR ] = function (a, b) {
   return a || b
 }
-Binary[Binary.AND = '&&' ] = function (a, b) {
+Binary[ operator.AND ] = function (a, b) {
   return a && b
 }
-Binary[ Binary.SE = '===' ] = function (a, b) {
+Binary[ operator.SE ] = function (a, b) {
   return a === b
 }
-Binary[ Binary.SNE = '!==' ] = function (a, b) {
+Binary[ operator.SNE ] = function (a, b) {
   return a !== b
 }
-Binary[ Binary.LE = '==' ] = function (a, b) {
+Binary[ operator.LE ] = function (a, b) {
   return a == b
 }
-Binary[ Binary.LNE = '!=' ] = function (a, b) {
+Binary[ operator.LNE ] = function (a, b) {
   return a != b
 }
-Binary[ Binary.LT = '<' ] = function (a, b) {
+Binary[ operator.LT ] = function (a, b) {
   return a < b
 }
-Binary[ Binary.LTE = '<=' ] = function (a, b) {
+Binary[ operator.LTE ] = function (a, b) {
   return a <= b
 }
-Binary[ Binary.GT = '>' ] = function (a, b) {
+Binary[ operator.GT ] = function (a, b) {
   return a > b
 }
-Binary[ Binary.GTE = '>=' ] = function (a, b) {
+Binary[ operator.GTE ] = function (a, b) {
   return a >= b
 }
-Binary[ Binary.PLUS = '+' ] = function (a, b) {
+Binary[ operator.PLUS ] = function (a, b) {
   return a + b
 }
-Binary[ Binary.MINUS = '-' ] = function (a, b) {
+Binary[ operator.MINUS ] = function (a, b) {
   return a - b
 }
-Binary[ Binary.MULTIPLY = '*' ] = function (a, b) {
+Binary[ operator.MULTIPLY ] = function (a, b) {
   return a * b
 }
-Binary[ Binary.DIVIDE = '/' ] = function (a, b) {
+Binary[ operator.DIVIDE ] = function (a, b) {
   return a / b
 }
-Binary[ Binary.MODULO = '%' ] = function (a, b) {
+Binary[ operator.MODULO ] = function (a, b) {
   return a % b
 }

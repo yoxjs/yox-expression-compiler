@@ -1,6 +1,7 @@
 
 import Node from './Node'
 import * as nodeType from '../nodeType'
+import * as operator from '../operator'
 
 /**
  * Unary 节点
@@ -18,18 +19,18 @@ export default class Unary extends Node {
 
 }
 
-Unary[ Unary.PLUS = '+' ] = function (value) {
+Unary[ operator.PLUS ] = function (value) {
   return +value
 }
-Unary[ Unary.MINUS = '-' ] = function (value) {
+Unary[ operator.MINUS ] = function (value) {
   return -value
 }
-Unary[ Unary.BANG = '!' ] = function (value) {
+Unary[ operator.NOT ] = function (value) {
   return !value
 }
-Unary[ Unary.WAVE = '~' ] = function (value) {
+Unary[ operator.WAVE ] = function (value) {
   return ~value
 }
-Unary[ Unary.DOUBLE_BANG = '!!' ] = function (value) {
+Unary[ operator.BOOLEAN ] = function (value) {
   return !!value
 }
