@@ -30,3 +30,6 @@ Unary[ Unary.BANG = '!' ] = function (value) {
 Unary[ Unary.WAVE = '~' ] = function (value) {
   return ~value
 }
+Unary[ Unary.DOUBLE_BANG = '!!' ] = function (value) {
+  return !!value
+}

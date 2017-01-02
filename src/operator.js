@@ -12,7 +12,8 @@ export const unaryMap = { }
 unaryMap[ Unary.PLUS ] =
 unaryMap[ Unary.MINUS ] =
 unaryMap[ Unary.BANG ] =
-unaryMap[ Unary.WAVE ] = env.TRUE
+unaryMap[ Unary.WAVE ] =
+unaryMap[ Unary.DOUBLE_BANG ] = env.TRUE
 
 export const unaryList = util.sortKeys(unaryMap)
 
