@@ -2,6 +2,7 @@
 import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
+import * as string from 'yox-common/util/string'
 
 /**
  * 是否是数字
@@ -75,7 +76,7 @@ export function matchBestToken(content, sortedTokens) {
   array.each(
     sortedTokens,
     function (token) {
-      if (content.startsWith(token)) {
+      if (string.startsWith(content, token)) {
         result = token
         return env.FALSE
       }
