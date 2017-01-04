@@ -102,7 +102,7 @@ export function stringify(node) {
             }
           }
         )
-        .join('')
+        .join(env.EMPTY)
 
     case nodeType.UNARY:
       return `${node.operator}${stringify(node.arg)}`
