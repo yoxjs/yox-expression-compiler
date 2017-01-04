@@ -319,7 +319,7 @@ export function compile(content) {
     skipIdentifier()
 
     value = content.substring(start, index)
-    if (keywords[value]) {
+    if (object.has(keywords, value)) {
       return new Literal(
         keywords[value]
       )
