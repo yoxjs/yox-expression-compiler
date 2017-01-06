@@ -5,12 +5,13 @@ import * as nodeType from '../nodeType'
 /**
  * Literal 节点
  *
- * @param {string} value
+ * @param {string} raw
  */
 export default class Literal extends Node {
 
-  constructor(value) {
+  constructor(raw, value = raw) {
     super(nodeType.LITERAL)
+    this.raw = raw
     this.value = value
   }
 

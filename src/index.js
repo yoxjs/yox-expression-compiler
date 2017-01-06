@@ -1,6 +1,8 @@
 
 import executeFunction from 'yox-common/function/execute'
 
+import char from 'yox-common/util/char'
+
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
@@ -61,13 +63,13 @@ export function stringify(node) {
 
   switch (node.type) {
     case nodeType.ARRAY:
-      return `[${node.elements.map(recursion).join(string.CHAR_COMMA)}]`
+      return `[${node.elements.map(recursion).join(char.CHAR_COMMA)}]`
 
     case nodeType.BINARY:
       return `${stringify(node.left)} ${node.operator} ${stringify(node.right)}`
 
     case nodeType.CALL:
-      return `${stringify(node.callee)}(${node.args.map(recursion).join(string.CHAR_COMMA)})`
+      return `${stringify(node.callee)}(${node.args.map(recursion).join(char.CHAR_COMMA)})`
 
     case nodeType.CONDITIONAL:
       return `${stringify(node.test)} ? ${stringify(node.consequent)} : ${stringify(node.alternate)}`
@@ -76,7 +78,7 @@ export function stringify(node) {
       return node.name
 
     case nodeType.LITERAL:
-      return node.value
+      return node.raw
 
     case nodeType.MEMBER:
       return flattenMember(node)
@@ -84,30 +86,25 @@ export function stringify(node) {
           function (node, index) {
             if (node.type === nodeType.LITERAL) {
               let { value } = node
-              let firstChar = string.charAt(value)
-              if (is.numeric(value)
-                || firstChar === string.CHAR_SQUOTE
-                || firstChar === string.CHAR_DQUOTE
-              ) {
-                return `${string.CHAR_OBRACK}${value}${string.CHAR_CBRACK}`
-              }
-              return `${string.CHAR_DOT}${value}`
+              return is.numeric(value)
+                ? `${char.CHAR_OBRACK}${value}${char.CHAR_CBRACK}`
+                : `${char.CHAR_DOT}${value}`
             }
             else {
               node = stringify(node)
               return index > 0
-                ? `${string.CHAR_OBRACK}${node}${string.CHAR_CBRACK}`
+                ? `${char.CHAR_OBRACK}${node}${char.CHAR_CBRACK}`
                 : node
             }
           }
         )
-        .join(string.CHAR_BLANK)
+        .join(char.CHAR_BLANK)
 
     case nodeType.UNARY:
       return `${node.operator}${stringify(node.arg)}`
 
     default:
-      return string.CHAR_BLANK
+      return char.CHAR_BLANK
   }
 
 }
@@ -311,24 +308,24 @@ export function compile(content) {
     return string.charCodeAt(content, index)
   }
   let throwError = function () {
-    logger.error(`Failed to compile expression: ${string.CHAR_BREAKLINE}${content}`)
+    logger.error(`Failed to compile expression: ${char.CHAR_BREAKLINE}${content}`)
   }
 
   let skipWhitespace = function () {
     while ((charCode = getCharCode())
-      && (charCode === string.CODE_WHITESPACE || charCode === string.CODE_TAB)
+      && (charCode === char.CODE_WHITESPACE || charCode === char.CODE_TAB)
     ) {
       index++
     }
   }
 
   let skipNumber = function () {
-    if (getCharCode() === string.CODE_DOT) {
+    if (getCharCode() === char.CODE_DOT) {
       skipDecimal()
     }
     else {
       skipDigit()
-      if (getCharCode() === string.CODE_DOT) {
+      if (getCharCode() === char.CODE_DOT) {
         skipDecimal()
       }
     }
@@ -407,7 +404,7 @@ export function compile(content) {
         closed = env.TRUE
         break
       }
-      else if (charCode === string.CODE_COMMA) {
+      else if (charCode === char.CODE_COMMA) {
         index++
       }
       else {
@@ -440,15 +437,15 @@ export function compile(content) {
     while (index < length) {
       // a(x)
       charCode = getCharCode()
-      if (charCode === string.CODE_OPAREN) {
+      if (charCode === char.CODE_OPAREN) {
         return new CallNode(
           node,
-          parseTuple(string.CODE_CPAREN)
+          parseTuple(char.CODE_CPAREN)
         )
       }
       else {
         // a.x
-        if (charCode === string.CODE_DOT) {
+        if (charCode === char.CODE_DOT) {
           index++
           node = new MemberNode(
             node,
@@ -458,10 +455,10 @@ export function compile(content) {
           )
         }
         // a[x]
-        else if (charCode === string.CODE_OBRACK) {
+        else if (charCode === char.CODE_OBRACK) {
           node = new MemberNode(
             node,
-            parseExpression(string.CODE_CBRACK)
+            parseExpression(char.CODE_CBRACK)
           )
         }
         else {
@@ -480,14 +477,16 @@ export function compile(content) {
 
     charCode = getCharCode()
     // 'xx' 或 "xx"
-    if (charCode === string.CODE_SQUOTE || charCode === string.CODE_DQUOTE) {
+    if (charCode === char.CODE_SQUOTE || charCode === char.CODE_DQUOTE) {
       // 截出的字符串包含引号
+      let value = content.substring(index, (skipString(), index))
       return new LiteralNode(
-        content.substring(index, (skipString(), index))
+        value,
+        value.slice(1, -1)
       )
     }
     // 1.1 或 .1
-    else if (isDigit(charCode) || charCode === string.CODE_DOT) {
+    else if (isDigit(charCode) || charCode === char.CODE_DOT) {
       return new LiteralNode(
         // 写的是什么进制就解析成什么进制
         parseFloat(
@@ -496,14 +495,14 @@ export function compile(content) {
       )
     }
     // [xx, xx]
-    else if (charCode === string.CODE_OBRACK) {
+    else if (charCode === char.CODE_OBRACK) {
       return new ArrayNode(
-        parseTuple(string.CODE_CBRACK)
+        parseTuple(char.CODE_CBRACK)
       )
     }
     // (xx)
-    else if (charCode === string.CODE_OPAREN) {
-      return parseExpression(string.CODE_CPAREN)
+    else if (charCode === char.CODE_OPAREN) {
+      return parseExpression(char.CODE_CPAREN)
     }
     // 变量
     else if (isIdentifierStart(charCode)) {
@@ -583,13 +582,13 @@ export function compile(content) {
     let test = parseBinary()
     skipWhitespace()
 
-    if (getCharCode() === string.CODE_QUMARK) {
+    if (getCharCode() === char.CODE_QUMARK) {
       index++
 
       let consequent = parseBinary()
       skipWhitespace()
 
-      if (getCharCode() === string.CODE_COLON) {
+      if (getCharCode() === char.CODE_COLON) {
         index++
 
         let alternate = parseBinary()
