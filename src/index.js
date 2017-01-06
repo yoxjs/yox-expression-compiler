@@ -140,7 +140,7 @@ export function execute(node, context) {
       let { left, right } = node
       left = execute(left, context)
       right = execute(right, context)
-      value = Binary[node.operator](left.value, right.value)
+      value = BinaryNode[node.operator](left.value, right.value)
       object.extend(deps, left.deps, right.deps)
       break
 
@@ -215,7 +215,7 @@ export function execute(node, context) {
 
     case nodeType.UNARY:
       result = execute(node.arg, context)
-      value = Unary[node.operator](result.value)
+      value = UnaryNode[node.operator](result.value)
       deps = result.deps
       break
   }
