@@ -1,7 +1,6 @@
 
 import * as env from 'yox-common/util/env'
-
-import * as util from './util'
+import * as object from 'yox-common/util/object'
 
 export const PLUS = '+'
 export const MINUS = '-'
@@ -24,6 +23,20 @@ export const LTE = '<='
 export const GT = '>'
 export const GTE = '>='
 
+/**
+ * 倒排对象的 key
+ *
+ * @param {Object} obj
+ * @return {Array.<string>}
+ */
+function sortKeys(obj) {
+  return object.keys(obj).sort(
+    function (a, b) {
+      return b.length - a.length
+    }
+  )
+}
+
 // 一元操作符
 export const unaryMap = { }
 
@@ -33,7 +46,7 @@ unaryMap[ NOT ] =
 unaryMap[ WAVE ] =
 unaryMap[ BOOLEAN ] = env.TRUE
 
-export const unaryList = util.sortKeys(unaryMap)
+export const unaryList = sortKeys(unaryMap)
 
 
 // 二元操作符
@@ -61,4 +74,4 @@ binaryMap[ MULTIPLY ] =
 binaryMap[ DIVIDE ] =
 binaryMap[ MODULO ] = 6
 
-export const binaryList = util.sortKeys(binaryMap)
+export const binaryList = sortKeys(binaryMap)

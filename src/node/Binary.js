@@ -6,17 +6,17 @@ import * as operator from '../operator'
 /**
  * Binary 节点
  *
- * @param {Node} right
- * @param {string} operator
  * @param {Node} left
+ * @param {string} operator
+ * @param {Node} right
  */
 export default class Binary extends Node {
 
-  constructor(right, operator, left) {
+  constructor(left, operator, right) {
     super(nodeType.BINARY)
-    this.right = right
-    this.operator = operator
     this.left = left
+    this.operator = operator
+    this.right = right
   }
 
 }

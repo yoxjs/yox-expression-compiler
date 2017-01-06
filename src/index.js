@@ -1,4 +1,6 @@
 
+import executeFunction from 'yox-common/function/execute'
+
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
@@ -7,45 +9,43 @@ import * as string from 'yox-common/util/string'
 import * as logger from 'yox-common/util/logger'
 import * as keypathUtil from 'yox-common/util/keypath'
 
-import callFunction from 'yox-common/function/execute'
-
-import * as util from './util'
 import * as nodeType from './nodeType'
 import * as operator from './operator'
 
-import Array from './node/Array'
-import Binary from './node/Binary'
-import Call from './node/Call'
-import Conditional from './node/Conditional'
-import Identifier from './node/Identifier'
-import Literal from './node/Literal'
-import Member from './node/Member'
-import Unary from './node/Unary'
+import ArrayNode from './node/Array'
+import BinaryNode from './node/Binary'
+import CallNode from './node/Call'
+import ConditionalNode from './node/Conditional'
+import IdentifierNode from './node/Identifier'
+import LiteralNode from './node/Literal'
+import MemberNode from './node/Member'
+import UnaryNode from './node/Unary'
 
-// 分隔符
-const COMMA  = 44 // ,
-const PERIOD = 46 // .
-const SQUOTE = 39 // '
-const DQUOTE = 34 // "
-const OPAREN = 40 // (
-const CPAREN = 41 // )
-const OBRACK = 91 // [
-const CBRACK = 93 // ]
-const QUMARK = 63 // ?
-const COLON  = 58 // :
+/**
+ * 把树形的 Member 节点转换成一维数组的形式
+ *
+ * @param {Member} node
+ * @return {Array.<Node>}
+ */
+function flattenMember(node) {
 
-// 区分关键字和普通变量
-// 举个例子：a === true
-// 从解析器的角度来说，a 和 true 是一样的 token
-const keywords = {
-  'true': env.TRUE,
-  'false': env.FALSE,
-  'null': env.NULL,
-  'undefined': env.UNDEFINED,
+  let result = [ ]
+
+  let next
+  do {
+    next = node.object
+    if (node.type === nodeType.MEMBER) {
+      result.unshift(node.prop)
+    }
+    else {
+      result.unshift(node)
+    }
+  }
+  while (node = next)
+
+  return result
+
 }
-
-// 缓存编译结果
-let cache = { }
 
 /**
  * 序列化表达式
@@ -61,13 +61,13 @@ export function stringify(node) {
 
   switch (node.type) {
     case nodeType.ARRAY:
-      return `[${node.elements.map(recursion).join(', ')}]`
+      return `[${node.elements.map(recursion).join(string.CHAR_COMMA)}]`
 
     case nodeType.BINARY:
       return `${stringify(node.left)} ${node.operator} ${stringify(node.right)}`
 
     case nodeType.CALL:
-      return `${stringify(node.callee)}(${node.args.map(recursion).join(', ')})`
+      return `${stringify(node.callee)}(${node.args.map(recursion).join(string.CHAR_COMMA)})`
 
     case nodeType.CONDITIONAL:
       return `${stringify(node.test)} ? ${stringify(node.consequent)} : ${stringify(node.alternate)}`
@@ -76,36 +76,38 @@ export function stringify(node) {
       return node.name
 
     case nodeType.LITERAL:
-      let { value } = node
-      if (is.string(value)) {
-        return value.indexOf('"') >= 0
-          ? `'${value}'`
-          : `"${value}"`
-      }
-      return value
+      return node.value
 
     case nodeType.MEMBER:
-      return Member.flatten(node)
+      return flattenMember(node)
         .map(
           function (node, index) {
             if (node.type === nodeType.LITERAL) {
               let { value } = node
-              return is.numeric(value)
-                ? `[${value}]`
-                : `.${value}`
+              let firstChar = string.charAt(value)
+              if (is.numeric(value)
+                || firstChar === string.CHAR_SQUOTE
+                || firstChar === string.CHAR_DQUOTE
+              ) {
+                return `${string.CHAR_OBRACK}${value}${string.CHAR_CBRACK}`
+              }
+              return `${string.CHAR_DOT}${value}`
             }
             else {
               node = stringify(node)
               return index > 0
-                ? `[${node}]`
+                ? `${string.CHAR_OBRACK}${node}${string.CHAR_CBRACK}`
                 : node
             }
           }
         )
-        .join(env.EMPTY)
+        .join(string.CHAR_BLANK)
 
     case nodeType.UNARY:
       return `${node.operator}${stringify(node.arg)}`
+
+    default:
+      return string.CHAR_BLANK
   }
 
 }
@@ -139,13 +141,13 @@ export function execute(node, context) {
       left = execute(left, context)
       right = execute(right, context)
       value = Binary[node.operator](left.value, right.value)
-      deps = object.extend(left.deps, right.deps)
+      object.extend(deps, left.deps, right.deps)
       break
 
     case nodeType.CALL:
       result = execute(node.callee, context)
       deps = result.deps
-      value = callFunction(
+      value = executeFunction(
         result.value,
         env.NULL,
         node.args.map(
@@ -164,12 +166,12 @@ export function execute(node, context) {
       if (test.value) {
         consequent = execute(consequent, context)
         value = consequent.value
-        deps = object.extend(test.deps, consequent.deps)
+        object.extend(deps, test.deps, consequent.deps)
       }
       else {
         alternate = execute(alternate, context)
         value = alternate.value
-        deps = object.extend(test.deps, alternate.deps)
+        object.extend(deps, test.deps, alternate.deps)
       }
       break
 
@@ -186,7 +188,7 @@ export function execute(node, context) {
     case nodeType.MEMBER:
       let keys = [ ]
       array.each(
-        Member.flatten(node),
+        flattenMember(node),
         function (node, index) {
           let { type } = node
           if (type !== nodeType.LITERAL) {
@@ -222,6 +224,74 @@ export function execute(node, context) {
 
 }
 
+// 区分关键字和普通变量
+// 举个例子：a === true
+// 从解析器的角度来说，a 和 true 是一样的 token
+const keywords = {
+  'true': env.TRUE,
+  'false': env.FALSE,
+  'null': env.NULL,
+  'undefined': env.UNDEFINED,
+}
+
+// 缓存编译结果
+let compileCache = { }
+
+/**
+ * 是否是数字
+ *
+ * @param {number} charCode
+ * @return {boolean}
+ */
+function isDigit(charCode) {
+  return charCode >= 48
+    && charCode <= 57 // 0...9
+}
+
+/**
+ * 变量开始字符必须是 字母、下划线、$
+ *
+ * @param {number} charCode
+ * @return {boolean}
+ */
+function isIdentifierStart(charCode) {
+  return charCode === 36 // $
+    || charCode === 95   // _
+    || (charCode >= 97 && charCode <= 122) // a...z
+    || (charCode >= 65 && charCode <= 90)  // A...Z
+}
+
+/**
+ * 变量剩余的字符必须是 字母、下划线、$、数字
+ *
+ * @param {number} charCode
+ * @return {boolean}
+ */
+function isIdentifierPart(charCode) {
+  return isIdentifierStart(charCode) || isDigit(charCode)
+}
+
+/**
+ * 用倒排 token 去匹配 content 的开始内容
+ *
+ * @param {string} content
+ * @param {Array.<string>} sortedTokens 数组长度从大到小排序
+ * @return {?string}
+ */
+function matchBestToken(content, sortedTokens) {
+  let result
+  array.each(
+    sortedTokens,
+    function (token) {
+      if (string.startsWith(content, token)) {
+        result = token
+        return env.FALSE
+      }
+    }
+  )
+  return result
+}
+
 /**
  * 把表达式编译成抽象语法树
  *
@@ -230,48 +300,74 @@ export function execute(node, context) {
  */
 export function compile(content) {
 
-  if (object.has(cache, content)) {
-    return cache[content]
+  if (object.has(compileCache, content)) {
+    return compileCache[content]
   }
 
   let { length } = content
-  let index = 0, charCode, value
+  let index = 0, charCode
 
-  let getChar = function () {
-    return string.charAt(content, index)
-  }
   let getCharCode = function () {
     return string.charCodeAt(content, index)
   }
   let throwError = function () {
-    logger.error(`Failed to compile expression: ${env.BREAKLINE}${content}`)
+    logger.error(`Failed to compile expression: ${string.CHAR_BREAKLINE}${content}`)
   }
 
   let skipWhitespace = function () {
-    while (util.isWhitespace(getCharCode())) {
+    while ((charCode = getCharCode())
+      && (charCode === string.CODE_WHITESPACE || charCode === string.CODE_TAB)
+    ) {
       index++
     }
   }
 
   let skipNumber = function () {
-    while (util.isNumber(getCharCode())) {
+    if (getCharCode() === string.CODE_DOT) {
+      skipDecimal()
+    }
+    else {
+      skipDigit()
+      if (getCharCode() === string.CODE_DOT) {
+        skipDecimal()
+      }
+    }
+  }
+
+  let skipDigit = function () {
+    do {
       index++
+    }
+    while (isDigit(getCharCode()))
+  }
+
+  let skipDecimal = function () {
+    // 跳过 PERIOD
+    index++
+    // 后面必须紧跟数字
+    if (isDigit(getCharCode())) {
+      skipDigit()
+    }
+    else {
+      throwError()
     }
   }
 
   let skipString = function () {
-    let closed, quote = getCharCode()
+
+    let quote = getCharCode()
+
+    // 跳过引号
     index++
     while (index < length) {
       index++
       if (string.charCodeAt(content, index - 1) === quote) {
-        closed = env.TRUE
-        break
+        return
       }
     }
-    if (!closed) {
-      return throwError()
-    }
+
+    throwError()
+
   }
 
   let skipIdentifier = function () {
@@ -280,54 +376,17 @@ export function compile(content) {
     do {
       index++
     }
-    while (util.isIdentifierPart(getCharCode()))
+    while (isIdentifierPart(getCharCode()))
   }
 
-  let parseNumber = function () {
+  let parseIdentifier = function (careKeyword) {
 
-    let start = index
-
-    skipNumber()
-    if (getCharCode() === PERIOD) {
-      index++
-      skipNumber()
-    }
-
-    return new Literal(
-      parseFloat(
-        content.substring(start, index)
-      )
-    )
-
-  }
-
-  let parseString = function () {
-
-    let start = index
-
-    skipString()
-
-    return new Literal(
-      content.substring(start + 1, index - 1)
-    )
-
-  }
-
-  let parseIdentifier = function () {
-
-    let start = index
-    skipIdentifier()
-
-    value = content.substring(start, index)
-    if (object.has(keywords, value)) {
-      return new Literal(
-        keywords[value]
-      )
-    }
-
-    // this 也视为 IDENTIFIER
-    if (value) {
-      return new Identifier(value)
+    let literal = content.substring(index, (skipIdentifier(), index))
+    if (literal) {
+      return careKeyword && object.has(keywords, literal)
+        ? new LiteralNode(keywords[literal])
+        // this 也视为 IDENTIFIER
+        : new IdentifierNode(literal)
     }
 
     throwError()
@@ -336,7 +395,10 @@ export function compile(content) {
 
   let parseTuple = function (delimiter) {
 
-    let args = [ ], closed
+    let list = [ ], closed
+
+    // 跳过开始字符，如 [、(
+    index++
 
     while (index < length) {
       charCode = getCharCode()
@@ -345,63 +407,61 @@ export function compile(content) {
         closed = env.TRUE
         break
       }
-      else if (charCode === COMMA) {
+      else if (charCode === string.CODE_COMMA) {
         index++
       }
       else {
         array.push(
-          args,
+          list,
           parseExpression()
         )
       }
     }
 
-    if (closed) {
-      return args
-    }
-
-    throwError()
+    return closed
+      ? list
+      : throwError()
 
   }
 
   let parseOperator = function (sortedOperatorList) {
     skipWhitespace()
-    value = util.matchBestToken(content.slice(index), sortedOperatorList)
-    if (value) {
-      index += value.length
-      return value
+    let literal = matchBestToken(content.slice(index), sortedOperatorList)
+    if (literal) {
+      index += literal.length
+      return literal
     }
   }
 
   let parseVariable = function () {
 
-    value = parseIdentifier()
+    let node = parseIdentifier(env.TRUE)
 
     while (index < length) {
       // a(x)
       charCode = getCharCode()
-      if (charCode === OPAREN) {
-        index++
-        value = new Call(value, parseTuple(CPAREN))
-        break
+      if (charCode === string.CODE_OPAREN) {
+        return new CallNode(
+          node,
+          parseTuple(string.CODE_CPAREN)
+        )
       }
       else {
         // a.x
-        if (charCode === PERIOD) {
+        if (charCode === string.CODE_DOT) {
           index++
-          value = new Member(
-            value,
-            new Literal(
+          node = new MemberNode(
+            node,
+            new LiteralNode(
               parseIdentifier().name
             )
           )
         }
         // a[x]
-        else if (charCode === OBRACK) {
-          index++
-          value = new Member(
-            value,
-            parseSubexpression(CBRACK)
+        else if (charCode === string.CODE_OBRACK) {
+          node = new MemberNode(
+            node,
+            parseExpression(string.CODE_CBRACK)
           )
         }
         else {
@@ -410,48 +470,49 @@ export function compile(content) {
       }
     }
 
-    return value
+    return node
 
   }
 
   let parseToken = function () {
+
     skipWhitespace()
 
     charCode = getCharCode()
     // 'xx' 或 "xx"
-    if (charCode === SQUOTE || charCode === DQUOTE) {
-      return parseString()
-    }
-    // 1.1 或 .1
-    else if (util.isNumber(charCode) || charCode === PERIOD) {
-      return parseNumber()
-    }
-    // [xx, xx]
-    else if (charCode === OBRACK) {
-      index++
-      return new Array(
-        parseTuple(CBRACK)
+    if (charCode === string.CODE_SQUOTE || charCode === string.CODE_DQUOTE) {
+      // 截出的字符串包含引号
+      return new LiteralNode(
+        content.substring(index, (skipString(), index))
       )
     }
-    // (xx, xx)
-    else if (charCode === OPAREN) {
-      index++
-      return parseSubexpression(CPAREN)
+    // 1.1 或 .1
+    else if (isDigit(charCode) || charCode === string.CODE_DOT) {
+      return new LiteralNode(
+        // 写的是什么进制就解析成什么进制
+        parseFloat(
+          content.substring(index, (skipNumber(), index))
+        )
+      )
     }
-    else if (util.isIdentifierStart(charCode)) {
+    // [xx, xx]
+    else if (charCode === string.CODE_OBRACK) {
+      return new ArrayNode(
+        parseTuple(string.CODE_CBRACK)
+      )
+    }
+    // (xx)
+    else if (charCode === string.CODE_OPAREN) {
+      return parseExpression(string.CODE_CPAREN)
+    }
+    // 变量
+    else if (isIdentifierStart(charCode)) {
       return parseVariable()
     }
-    value = parseOperator(operator.unaryList)
-    if (value) {
-      return parseUnary(value)
-    }
-    throwError()
-  }
-
-  let parseUnary = function (op) {
-    value = parseToken()
-    if (value) {
-      return new Unary(op, value)
+    // 一元操作
+    let action = parseOperator(operator.unaryList)
+    if (action) {
+      return new UnaryNode(action, parseToken())
     }
     throwError()
   }
@@ -459,40 +520,34 @@ export function compile(content) {
   let parseBinary = function () {
 
     let left = parseToken()
-    let op = parseOperator(operator.binaryList)
-    if (!op) {
+    let action = parseOperator(operator.binaryList)
+    if (!action) {
       return left
     }
 
-    let right = parseToken()
-    let stack = [ left, op, operator.binaryMap[op], right ]
+    let stack = [ left, action, operator.binaryMap[action], parseToken() ]
+    let right, next
 
-    while (op = parseOperator(operator.binaryList)) {
+    while (next = parseOperator(operator.binaryList)) {
 
       // 处理左边
-      if (stack.length > 3 && operator.binaryMap[op] < stack[stack.length - 2]) {
+      if (stack.length > 3 && operator.binaryMap[next] < stack[stack.length - 2]) {
+        right = stack.pop()
+        stack.pop()
+        action = stack.pop()
+        left = stack.pop()
         array.push(
           stack,
-          new Binary(
-            stack.pop(),
-            (stack.pop(), stack.pop()),
-            stack.pop()
-          )
+          new BinaryNode(left, action, right)
         )
       }
 
-      right = parseToken()
-      if (right) {
-        array.push(
-          stack,
-          op,
-          operator.binaryMap[op],
-          right
-        )
-      }
-      else {
-        throwError()
-      }
+      array.push(
+        stack,
+        next,
+        operator.binaryMap[next],
+        parseToken()
+      )
 
     }
 
@@ -503,54 +558,53 @@ export function compile(content) {
 
     right = stack.pop()
     while (stack.length > 1) {
-      right = new Binary(
-        right,
-        (stack.pop(), stack.pop()),
-        stack.pop()
-      )
+      stack.pop()
+      action = stack.pop()
+      left = stack.pop()
+      right = new BinaryNode(left, action, right)
     }
 
     return right
 
   }
 
-  // (xx) 和 [xx] 都可能是子表达式，因此
-  let parseSubexpression = function (delimiter) {
-    value = parseExpression()
-    if (getCharCode() === delimiter) {
-      index++
-      return value
-    }
-    throwError()
-  }
-
-  let parseExpression = function () {
+  let parseExpression = function (delimiter) {
 
     // 主要是区分三元和二元表达式
     // 三元表达式可以认为是 3 个二元表达式组成的
     // test ? consequent : alternate
 
-    let test = parseBinary()
+    // 跳过开始字符
+    if (delimiter) {
+      index++
+    }
 
+    // 保证调用 parseExpression() 之后无需再次调用 skipWhitespace()
+    let test = parseBinary()
     skipWhitespace()
-    if (getCharCode() === QUMARK) {
+
+    if (getCharCode() === string.CODE_QUMARK) {
       index++
 
       let consequent = parseBinary()
-
       skipWhitespace()
-      if (getCharCode() === COLON) {
+
+      if (getCharCode() === string.CODE_COLON) {
         index++
 
         let alternate = parseBinary()
-
-        // 保证调用 parseExpression() 之后无需再次调用 skipWhitespace()
         skipWhitespace()
-        return new Conditional(
-          test,
-          consequent,
-          alternate,
-        )
+
+        return new ConditionalNode(test, consequent, alternate)
+      }
+      else {
+        throwError()
+      }
+    }
+
+    if (delimiter) {
+      if (getCharCode() === delimiter) {
+        index++
       }
       else {
         throwError()
@@ -561,6 +615,6 @@ export function compile(content) {
 
   }
 
-  return cache[content] = parseExpression()
+  return compileCache[content] = parseExpression()
 
 }

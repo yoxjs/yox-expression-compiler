@@ -17,23 +17,3 @@ export default class Member extends Node {
   }
 
 }
-
-Member.flatten = function (node) {
-
-  let result = [ ]
-
-  let next
-  do {
-    next = node.object
-    if (node.type === nodeType.MEMBER) {
-      result.unshift(node.prop)
-    }
-    else {
-      result.unshift(node)
-    }
-  }
-  while (node = next)
-
-  return result
-
-}
