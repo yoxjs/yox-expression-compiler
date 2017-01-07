@@ -1,10 +1,9 @@
 
 import executeFunction from 'yox-common/function/execute'
 
-import char from 'yox-common/util/char'
-
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
+import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
 import * as string from 'yox-common/util/string'
@@ -37,10 +36,10 @@ function flattenMember(node) {
   do {
     next = node.object
     if (node.type === nodeType.MEMBER) {
-      result.unshift(node.prop)
+      array.unshift(result, node.prop)
     }
     else {
-      result.unshift(node)
+      array.unshift(result, node)
     }
   }
   while (node = next)
@@ -78,7 +77,9 @@ export function stringify(node) {
       return node.name
 
     case nodeType.LITERAL:
-      return node.raw
+      return object.has(node, 'raw')
+        ? node.raw
+        : node.value
 
     case nodeType.MEMBER:
       return flattenMember(node)
@@ -305,7 +306,7 @@ export function compile(content) {
   let index = 0, charCode
 
   let getCharCode = function () {
-    return string.charCodeAt(content, index)
+    return char.codeAt(content, index)
   }
   let throwError = function () {
     logger.error(`Failed to compile expression: ${char.CHAR_BREAKLINE}${content}`)
@@ -339,7 +340,7 @@ export function compile(content) {
   }
 
   let skipDecimal = function () {
-    // 跳过 PERIOD
+    // 跳过点号
     index++
     // 后面必须紧跟数字
     if (isDigit(getCharCode())) {
@@ -358,7 +359,7 @@ export function compile(content) {
     index++
     while (index < length) {
       index++
-      if (string.charCodeAt(content, index - 1) === quote) {
+      if (char.codeAt(content, index - 1) === quote) {
         return
       }
     }
@@ -392,7 +393,7 @@ export function compile(content) {
 
   let parseTuple = function (delimiter) {
 
-    let list = [ ], closed
+    let list = [ ]
 
     // 跳过开始字符，如 [、(
     index++
@@ -401,8 +402,7 @@ export function compile(content) {
       charCode = getCharCode()
       if (charCode === delimiter) {
         index++
-        closed = env.TRUE
-        break
+        return list
       }
       else if (charCode === char.CODE_COMMA) {
         index++
@@ -415,9 +415,7 @@ export function compile(content) {
       }
     }
 
-    return closed
-      ? list
-      : throwError()
+    throwError()
 
   }
 
@@ -481,8 +479,8 @@ export function compile(content) {
       // 截出的字符串包含引号
       let value = content.substring(index, (skipString(), index))
       return new LiteralNode(
-        value,
-        value.slice(1, -1)
+        value.slice(1, -1),
+        value
       )
     }
     // 1.1 或 .1

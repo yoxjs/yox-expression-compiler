@@ -9,10 +9,12 @@ import * as nodeType from '../nodeType'
  */
 export default class Literal extends Node {
 
-  constructor(raw, value = raw) {
+  constructor(value, raw) {
     super(nodeType.LITERAL)
-    this.raw = raw
     this.value = value
+    if (raw) {
+      this.raw = raw
+    }
   }
 
 }
