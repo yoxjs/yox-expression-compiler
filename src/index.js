@@ -138,7 +138,7 @@ export function execute(node, context) {
       let { left, right } = node
       left = execute(left, context)
       right = execute(right, context)
-      value = BinaryNode[node.operator](left.value, right.value)
+      value = BinaryNode[ node.operator ](left.value, right.value)
       object.extend(deps, left.deps, right.deps)
       break
 
@@ -213,7 +213,7 @@ export function execute(node, context) {
 
     case nodeType.UNARY:
       result = execute(node.arg, context)
-      value = UnaryNode[node.operator](result.value)
+      value = UnaryNode[ node.operator ](result.value)
       deps = result.deps
       break
   }
@@ -299,7 +299,7 @@ function matchBestToken(content, sortedTokens) {
 export function compile(content) {
 
   if (object.has(compileCache, content)) {
-    return compileCache[content]
+    return compileCache[ content ]
   }
 
   let { length } = content
@@ -382,7 +382,7 @@ export function compile(content) {
     let literal = content.substring(index, (skipIdentifier(), index))
     if (literal) {
       return careKeyword && object.has(keywords, literal)
-        ? new LiteralNode(keywords[literal])
+        ? new LiteralNode(keywords[ literal ])
         // this 也视为 IDENTIFIER
         : new IdentifierNode(literal)
     }
@@ -522,13 +522,13 @@ export function compile(content) {
       return left
     }
 
-    let stack = [ left, action, operator.binaryMap[action], parseToken() ]
+    let stack = [ left, action, operator.binaryMap[ action ], parseToken() ]
     let right, next
 
     while (next = parseOperator(operator.binaryList)) {
 
       // 处理左边
-      if (stack.length > 3 && operator.binaryMap[next] < stack[stack.length - 2]) {
+      if (stack.length > 3 && operator.binaryMap[ next ] < stack[ stack.length - 2 ]) {
         right = stack.pop()
         stack.pop()
         action = stack.pop()
@@ -542,7 +542,7 @@ export function compile(content) {
       array.push(
         stack,
         next,
-        operator.binaryMap[next],
+        operator.binaryMap[ next ],
         parseToken()
       )
 
@@ -612,6 +612,6 @@ export function compile(content) {
 
   }
 
-  return compileCache[content] = parseExpression()
+  return compileCache[ content ] = parseExpression()
 
 }
