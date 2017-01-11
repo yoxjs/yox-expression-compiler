@@ -421,7 +421,7 @@ export function compile(content) {
 
   let parseOperator = function (sortedOperatorList) {
     skipWhitespace()
-    let literal = matchBestToken(content.slice(index), sortedOperatorList)
+    let literal = matchBestToken(string.slice(content, index), sortedOperatorList)
     if (literal) {
       index += literal.length
       return literal
@@ -479,7 +479,7 @@ export function compile(content) {
       // 截出的字符串包含引号
       let value = content.substring(index, (skipString(), index))
       return new LiteralNode(
-        value.slice(1, -1),
+        string.slice(value, 1, -1),
         value
       )
     }
