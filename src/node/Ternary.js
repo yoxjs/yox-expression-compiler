@@ -3,16 +3,16 @@ import Node from './Node'
 import * as nodeType from '../nodeType'
 
 /**
- * Conditional 节点
+ * Ternary 节点
  *
  * @param {Node} test
  * @param {Node} consequent
  * @param {Node} alternate
  */
-export default class Conditional extends Node {
+export default class Ternary extends Node {
 
   constructor(test, consequent, alternate) {
-    super(nodeType.CONDITIONAL)
+    super(nodeType.TERNARY)
     this.test = test
     this.consequent = consequent
     this.alternate = alternate

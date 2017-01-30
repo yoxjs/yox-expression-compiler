@@ -16,7 +16,7 @@ import * as operator from './operator'
 import ArrayNode from './node/Array'
 import BinaryNode from './node/Binary'
 import CallNode from './node/Call'
-import ConditionalNode from './node/Conditional'
+import TernaryNode from './node/Ternary'
 import IdentifierNode from './node/Identifier'
 import LiteralNode from './node/Literal'
 import MemberNode from './node/Member'
@@ -70,7 +70,7 @@ export function stringify(node) {
     case nodeType.CALL:
       return `${stringify(node.callee)}(${node.args.map(recursion).join(char.CHAR_COMMA)})`
 
-    case nodeType.CONDITIONAL:
+    case nodeType.TERNARY:
       return `${stringify(node.test)} ? ${stringify(node.consequent)} : ${stringify(node.alternate)}`
 
     case nodeType.IDENTIFIER:
@@ -158,7 +158,7 @@ export function execute(node, context) {
       )
       break
 
-    case nodeType.CONDITIONAL:
+    case nodeType.TERNARY:
       let { test, consequent, alternate } = node
       test = execute(test, context)
       if (test.value) {
@@ -592,7 +592,7 @@ export function compile(content) {
         let alternate = parseBinary()
         skipWhitespace()
 
-        return new ConditionalNode(test, consequent, alternate)
+        return new TernaryNode(test, consequent, alternate)
       }
       else {
         throwError()

@@ -25,7 +25,7 @@ export const CALL = 3
  *
  * @type {number}
  */
-export const CONDITIONAL = 4
+export const TERNARY = 4
 
 /**
  * 标识符
