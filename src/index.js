@@ -225,12 +225,12 @@ export function execute(node, context) {
 // 区分关键字和普通变量
 // 举个例子：a === true
 // 从解析器的角度来说，a 和 true 是一样的 token
-const keywords = {
-  'true': env.TRUE,
-  'false': env.FALSE,
-  'null': env.NULL,
-  'undefined': env.UNDEFINED,
-}
+const keywords = { }
+// 兼容 IE8
+keywords[ 'true' ] = env.TRUE
+keywords[ 'false' ] = env.FALSE
+keywords[ 'null' ] = env.NULL
+keywords[ 'undefined' ] = env.UNDEFINED
 
 // 缓存编译结果
 let compileCache = { }
