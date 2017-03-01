@@ -5,29 +5,31 @@ Expression compiler for Yox.js
 ```js
 import * as expressionCompiler from 'yox-expression-compiler'
 
-// 编译成表达式节点
+// Compile to AST
 let node = expressionCompiler.compile('a + b')
 
-// 序列化
+// Stringify from AST
 expressionCompiler.stringify(node) // a + b
 
-// 求值
-// 必须提供 get 函数取值，取值结果格式如下
+// Get value of the expression
 // {
-//     value: '求值结果',
+//     value: 'value',
 //     deps: {
-//         dep1: dep1Value,
-//         dep2: dep2Value,
+//         dep1Key: dep1Value,
+//         dep2Key: dep2Value,
+//         ...
 //     }
 // }
+// So that we can get all dependences of the expression
 expressionCompiler.execute(
   node,
   {
+    // get value of the key parsed from expression
     get: function (key) {
       return {
         value: 'value',
         deps: {
-          keypath: 'keypath value'
+          'keypath': 'keypath value'
         }
       }
     }
