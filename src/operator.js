@@ -60,4 +60,4 @@ binaryMap[ MULTIPLY ] =
 binaryMap[ DIVIDE ] =
 binaryMap[ MODULO ] = 6
 
-export const binaryList = object.sort(binaryMa, env.TRUE)
+export const binaryList = object.sort(binaryMap, env.TRUE)
