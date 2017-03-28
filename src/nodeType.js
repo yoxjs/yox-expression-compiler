@@ -1,4 +1,3 @@
-
 /**
  * 数组表达式，如 [ 1, 2, 3 ]
  *
@@ -21,32 +20,32 @@ export const BINARY = 2
 export const CALL = 3
 
 /**
- * 三元表达式，如 a ? b : c
- *
- * @type {number}
- */
-export const TERNARY = 4
-
-/**
  * 标识符
  *
  * @type {number}
  */
-export const IDENTIFIER = 5
+export const IDENTIFIER = 4
 
 /**
  * 字面量
  *
  * @type {number}
  */
-export const LITERAL = 6
+export const LITERAL = 5
 
 /**
  * 对象属性或数组下标
  *
  * @type {number}
  */
-export const MEMBER = 7
+export const MEMBER = 6
+
+/**
+ * 三元表达式，如 a ? b : c
+ *
+ * @type {number}
+ */
+export const TERNARY = 7
 
 /**
  * 一元表达式，如 - a

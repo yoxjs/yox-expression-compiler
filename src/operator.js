@@ -23,7 +23,6 @@ export const LTE = '<='
 export const GT = '>'
 export const GTE = '>='
 
-// 一元操作符
 export const unaryMap = { }
 
 unaryMap[ PLUS ] =
@@ -35,7 +34,6 @@ unaryMap[ BOOLEAN ] = env.TRUE
 export const unaryList = object.sort(unaryMap, env.TRUE)
 
 
-// 二元操作符
 // 操作符和对应的优先级，数字越大优先级越高
 export const binaryMap = { }
 
