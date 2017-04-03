@@ -14,13 +14,8 @@ expressionCompiler.stringify(node) // a + b
 // Get value of the expression
 // {
 //     value: 'value',
-//     deps: {
-//         dep1Key: dep1Value,
-//         dep2Key: dep2Value,
-//         ...
-//     }
+//     keypath: ''
 // }
-// So that we can get all dependences of the expression
 expressionCompiler.execute(
   node,
   {
@@ -28,9 +23,7 @@ expressionCompiler.execute(
     get: function (key) {
       return {
         value: 'value',
-        deps: {
-          'keypath': 'keypath value'
-        }
+        keypath: ''
       }
     }
   }

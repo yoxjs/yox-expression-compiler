@@ -1,14 +1,21 @@
 {
   "name": "yox-expression-compiler",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Expression compiler for Yox.js",
   "main": "src/index.js",
   "directories": {
     "example": "example",
     "test": "test"
   },
+  "scripts": {
+    "test": "jasmine JASMINE_CONFIG_PATH=test/jasmine.json"
+  },
   "devDependencies": {
-    "yox-common": "^0.7.0"
+    "babel-core": "^6.24.0",
+    "babel-polyfill": "^6.23.0",
+    "babel-preset-es2015": "^6.24.0",
+    "babel-register": "^6.24.0",
+    "yox-common": "^0.7.2"
   },
   "repository": {
     "type": "git",
