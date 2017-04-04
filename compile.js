@@ -1,225 +1,21 @@
 
-import executeFunction from 'yox-common/function/execute'
-
-import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
 import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
 import * as string from 'yox-common/util/string'
-import * as keypathUtil from 'yox-common/util/keypath'
 
-import * as nodeType from './nodeType'
-import * as operator from './operator'
+import * as operator from './src/operator'
 
-import ArrayNode from './node/Array'
-import BinaryNode from './node/Binary'
-import CallNode from './node/Call'
-import TernaryNode from './node/Ternary'
-import IdentifierNode from './node/Identifier'
-import LiteralNode from './node/Literal'
-import MemberNode from './node/Member'
-import UnaryNode from './node/Unary'
+import ArrayNode from './src/node/Array'
+import BinaryNode from './src/node/Binary'
+import CallNode from './src/node/Call'
+import TernaryNode from './src/node/Ternary'
+import IdentifierNode from './src/node/Identifier'
+import LiteralNode from './src/node/Literal'
+import MemberNode from './src/node/Member'
+import UnaryNode from './src/node/Unary'
 
-/**
- * 把树形的 Member 节点转换成一维数组的形式
- *
- * @param {Member} node
- * @return {Array.<Node>}
- */
-function flattenMember(node) {
-
-  let result = [ ]
-
-  let next
-  do {
-    next = node.object
-    if (node.type === nodeType.MEMBER) {
-      array.unshift(result, node.prop)
-    }
-    else {
-      array.unshift(result, node)
-    }
-  }
-  while (node = next)
-
-  return result
-
-}
-
-/**
- * 序列化表达式
- *
- * @param {Node} node
- * @return {string}
- */
-export function stringify(node) {
-
-  let recursion = function (node) {
-    return stringify(node)
-  }
-
-  switch (node.type) {
-    case nodeType.ARRAY:
-      return `[${node.elements.map(recursion).join(char.CHAR_COMMA)}]`
-
-    case nodeType.BINARY:
-      return `${stringify(node.left)} ${node.operator} ${stringify(node.right)}`
-
-    case nodeType.CALL:
-      return `${stringify(node.callee)}(${node.args.map(recursion).join(char.CHAR_COMMA)})`
-
-    case nodeType.TERNARY:
-      return `${stringify(node.test)} ? ${stringify(node.consequent)} : ${stringify(node.alternate)}`
-
-    case nodeType.IDENTIFIER:
-      return node.name
-
-    case nodeType.LITERAL:
-      return object.has(node, 'raw')
-        ? node.raw
-        : node.value
-
-    case nodeType.MEMBER:
-      return flattenMember(node)
-        .map(
-          function (node, index) {
-            if (node.type === nodeType.LITERAL) {
-              let { value } = node
-              return is.numeric(value)
-                ? `${char.CHAR_OBRACK}${value}${char.CHAR_CBRACK}`
-                : `${char.CHAR_DOT}${value}`
-            }
-            else {
-              node = stringify(node)
-              return index > 0
-                ? `${char.CHAR_OBRACK}${node}${char.CHAR_CBRACK}`
-                : node
-            }
-          }
-        )
-        .join(char.CHAR_BLANK)
-
-    case nodeType.UNARY:
-      return `${node.operator}${stringify(node.arg)}`
-
-    default:
-      return char.CHAR_BLANK
-  }
-
-}
-
-/**
- * 表达式求值
- *
- * @param {Node} node
- * @param {Context} context
- * @return {*}
- */
-export function execute(node, context) {
-
-  let deps = { }, value, result
-
-  switch (node.type) {
-    case nodeType.ARRAY:
-      value = [ ]
-      array.each(
-        node.elements,
-        function (node) {
-          result = execute(node, context)
-          array.push(value, result.value)
-          object.extend(deps, result.deps)
-        }
-      )
-      break
-
-    case nodeType.BINARY:
-      let { left, right } = node
-      left = execute(left, context)
-      right = execute(right, context)
-      value = BinaryNode[ node.operator ](left.value, right.value)
-      object.extend(deps, left.deps, right.deps)
-      break
-
-    case nodeType.CALL:
-      result = execute(node.callee, context)
-      deps = result.deps
-      value = executeFunction(
-        result.value,
-        env.NULL,
-        node.args.map(
-          function (node) {
-            let result = execute(node, context)
-            object.extend(deps, result.deps)
-            return result.value
-          }
-        )
-      )
-      break
-
-    case nodeType.TERNARY:
-      let { test, consequent, alternate } = node
-      test = execute(test, context)
-      if (test.value) {
-        consequent = execute(consequent, context)
-        value = consequent.value
-        object.extend(deps, test.deps, consequent.deps)
-      }
-      else {
-        alternate = execute(alternate, context)
-        value = alternate.value
-        object.extend(deps, test.deps, alternate.deps)
-      }
-      break
-
-    case nodeType.IDENTIFIER:
-      result = context.get(node.name)
-      value = result.value
-      deps[ result.keypath ] = value
-      break
-
-    case nodeType.LITERAL:
-      value = node.value
-      break
-
-    case nodeType.MEMBER:
-      let keys = [ ]
-      array.each(
-        flattenMember(node),
-        function (node, index) {
-          let { type } = node
-          if (type !== nodeType.LITERAL) {
-            if (index > 0) {
-              let result = execute(node, context)
-              array.push(keys, result.value)
-              object.extend(deps, result.deps)
-            }
-            else if (type === nodeType.IDENTIFIER) {
-              array.push(keys, node.name)
-            }
-          }
-          else {
-            array.push(keys, node.value)
-          }
-        }
-      )
-      result = context.get(
-        keypathUtil.stringify(keys)
-      )
-      value = result.value
-      deps[ result.keypath ] = value
-      break
-
-    case nodeType.UNARY:
-      result = execute(node.arg, context)
-      value = UnaryNode[ node.operator ](result.value)
-      deps = result.deps
-      break
-  }
-
-  return { value, deps }
-
-}
 
 // 区分关键字和普通变量
 // 举个例子：a === true
@@ -295,7 +91,7 @@ function matchBestToken(content, sortedTokens) {
  * @param {string} content 表达式字符串
  * @return {Object}
  */
-export function compile(content) {
+export default function compile (content) {
 
   if (object.has(compileCache, content)) {
     return compileCache[ content ]

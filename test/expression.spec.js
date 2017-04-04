@@ -1,18 +1,20 @@
 
-import * as expression from '../src/index'
+import compile from '../compile'
+import execute from '../execute'
+import stringify from '../stringify'
 
 describe('expression', () => {
   it('demo1', () => {
 
-    let ast = expression.compile('a + b')
-    expect(expression.stringify(ast)).toBe('a + b')
+    let ast = compile('a + b')
+    expect(stringify(ast)).toBe('a + b')
 
     let data = {
       a: 1,
       b: 1,
     }
 
-    let result = expression.execute(
+    let result = execute(
       ast,
       {
         get: function (keypath) {

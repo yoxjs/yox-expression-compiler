@@ -5,6 +5,7 @@ import * as nodeType from '../nodeType'
 /**
  * Literal 节点
  *
+ * @param {*} value
  * @param {string} raw
  */
 export default class Literal extends Node {
