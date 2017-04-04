@@ -91,7 +91,7 @@ function matchBestToken(content, sortedTokens) {
  * @param {string} content 表达式字符串
  * @return {Object}
  */
-export default function compile (content) {
+export default function compile(content) {
 
   if (object.has(compileCache, content)) {
     return compileCache[ content ]

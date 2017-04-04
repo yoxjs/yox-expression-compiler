@@ -16,14 +16,14 @@ expressionCompiler.stringify(node) // a + b
 //     value: 'value',
 //     keypath: ''
 // }
-expressionCompiler.execute(
+let { value, deps } = expressionCompiler.execute(
   node,
   {
     // get value of the key parsed from expression
     get: function (key) {
       return {
         value: 'value',
-        keypath: ''
+        keypath: 'value\'s keypath'
       }
     }
   }

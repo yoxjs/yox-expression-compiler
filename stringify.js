@@ -13,7 +13,7 @@ import MemberNode from './src/node/Member'
  * @param {Node} node
  * @return {string}
  */
-export default function stringify (node) {
+export default function stringify(node) {
 
   let recursion = function (node) {
     return stringify(node)

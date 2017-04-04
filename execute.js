@@ -19,7 +19,7 @@ import UnaryNode from './src/node/Unary'
  * @param {Context} context
  * @return {*}
  */
-export default function execute (node, context) {
+export default function execute(node, context) {
 
   let deps = { }, value, result
 
