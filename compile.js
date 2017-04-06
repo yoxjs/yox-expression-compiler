@@ -325,10 +325,10 @@ export default function compile(content) {
 
       // 处理左边
       if (stack.length > 3 && operator.binaryMap[ next ] < stack[ stack.length - 2 ]) {
-        right = stack.pop()
-        stack.pop()
-        action = stack.pop()
-        left = stack.pop()
+        right = array.pop(stack)
+        array.pop(stack)
+        action = array.pop(stack)
+        left = array.pop(stack)
         array.push(
           stack,
           new BinaryNode(left, action, right)
@@ -349,11 +349,11 @@ export default function compile(content) {
     // 比如 a + b * c / d
     // 此时右边的优先级 >= 左边的优先级，因此可以脑残的直接逆序遍历
 
-    right = stack.pop()
+    right = array.pop(stack)
     while (stack.length > 1) {
-      stack.pop()
-      action = stack.pop()
-      left = stack.pop()
+      array.pop(stack)
+      action = array.pop(stack)
+      left = array.pop(stack)
       right = new BinaryNode(left, action, right)
     }
 
