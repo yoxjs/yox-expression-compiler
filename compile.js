@@ -4,6 +4,7 @@ import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
 import * as string from 'yox-common/util/string'
+import * as logger from 'yox-common/util/logger'
 
 import * as operator from './src/operator'
 
@@ -104,7 +105,7 @@ export default function compile(content) {
     return char.codeAt(content, index)
   }
   let throwError = function () {
-    throw new Error(`Failed to compile expression: ${char.CHAR_BREAKLINE}${content}`)
+    logger.fatal(`Failed to compile expression: ${char.CHAR_BREAKLINE}${content}`)
   }
 
   let skipWhitespace = function () {
