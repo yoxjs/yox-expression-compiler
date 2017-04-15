@@ -21,7 +21,7 @@ import UnaryNode from './src/node/Unary'
  */
 export default function execute(node, context) {
 
-  let deps = { }, value, result
+  let deps = { }, value, keypath, result
 
   switch (node.type) {
     case nodeType.ARRAY:
@@ -76,7 +76,8 @@ export default function execute(node, context) {
       break
 
     case nodeType.IDENTIFIER:
-      result = context.get(node.name)
+      keypath = node.name
+      result = context.get(keypath)
       value = result.value
       deps[ result.keypath ] = value
       break
@@ -106,9 +107,8 @@ export default function execute(node, context) {
           }
         }
       )
-      result = context.get(
-        keypathUtil.stringify(keys)
-      )
+      keypath = keypathUtil.stringify(keys)
+      result = context.get(keypath)
       value = result.value
       deps[ result.keypath ] = value
       break
@@ -120,6 +120,6 @@ export default function execute(node, context) {
       break
   }
 
-  return { value, deps }
+  return { value, deps, keypath }
 
 }
