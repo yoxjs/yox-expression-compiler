@@ -1,4 +1,6 @@
 
+import matchFirst from 'yox-common/function/matchFirst'
+
 import * as env from 'yox-common/util/env'
 import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
@@ -63,27 +65,6 @@ function isIdentifierStart(charCode) {
  */
 function isIdentifierPart(charCode) {
   return isIdentifierStart(charCode) || isDigit(charCode)
-}
-
-/**
- * 用倒排 token 去匹配 content 的开始内容
- *
- * @param {string} content
- * @param {Array.<string>} sortedTokens 数组长度从大到小排序
- * @return {?string}
- */
-function matchBestToken(content, sortedTokens) {
-  let result
-  array.each(
-    sortedTokens,
-    function (token) {
-      if (string.startsWith(content, token)) {
-        result = token
-        return env.FALSE
-      }
-    }
-  )
-  return result
 }
 
 /**
@@ -217,7 +198,7 @@ export default function compile(content) {
 
   let parseOperator = function (sortedOperatorList) {
     skipWhitespace()
-    let literal = matchBestToken(string.slice(content, index), sortedOperatorList)
+    let literal = matchFirst(sortedOperatorList, string.slice(content, index))[ 0 ]
     if (literal) {
       index += literal.length
       return literal
