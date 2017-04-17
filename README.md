@@ -23,7 +23,10 @@ let { value, deps } = expressionCompiler.execute(
     get: function (key) {
       return {
         value: 'value',
-        keypath: 'value\'s keypath'
+        keypath: 'value\'s keypath',
+        deps: {
+          depKey1: depValue1,
+        }
       }
     }
   }

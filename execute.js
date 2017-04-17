@@ -79,7 +79,7 @@ export default function execute(node, context) {
       keypath = node.name
       result = context.get(keypath)
       value = result.value
-      deps[ result.keypath ] = value
+      object.extend(deps, result.deps)
       break
 
     case nodeType.LITERAL:
@@ -110,7 +110,7 @@ export default function execute(node, context) {
       keypath = keypathUtil.stringify(keys)
       result = context.get(keypath)
       value = result.value
-      deps[ result.keypath ] = value
+      object.extend(deps, result.deps)
       break
 
     case nodeType.UNARY:
