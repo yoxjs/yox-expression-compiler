@@ -90,30 +90,34 @@ export default function execute(node, context) {
   }
 
   executor[ nodeType.MEMBER ] = function (node) {
-    let keys = [ ]
+    let keypaths = [ ]
     array.each(
       MemberNode.flatten(node),
       function (node, index) {
         let { type } = node
         if (type !== nodeType.LITERAL) {
           if (index > 0) {
-            array.push(keys, executor[ type ](node))
+            array.push(keypaths, executor[ type ](node))
           }
           else if (type === nodeType.IDENTIFIER) {
-            array.push(keys, node.name)
+            array.push(keypaths, node.name)
           }
         }
         else {
-          array.push(keys, node.value)
+          array.push(keypaths, node.value)
         }
       }
     )
-    keypath = keypathUtil.stringify(keys)
+    keypath = keypathUtil.stringify(keypaths)
     let result = context.get(keypath)
-    deps[ result.keypath ] = value
+    deps[ result.keypath ] = result.value
     return result.value
   }
 
-  return { value, deps, keypath }
+  return {
+    value: executor[ node.type ](node),
+    deps,
+    keypath,
+  }
 
 }
