@@ -27,7 +27,7 @@ export default function execute(node, context, setKeypath, addDep) {
 
   executor[ nodeType.ARRAY ] = function (node) {
     setKeypath(env.UNDEFINED)
-    value = [ ]
+    let value = [ ]
     array.each(
       node.elements,
       function (node) {
@@ -83,7 +83,8 @@ export default function execute(node, context, setKeypath, addDep) {
   }
 
   executor[ nodeType.IDENTIFIER ] = function (node) {
-    keypath = node.name
+    let keypath = node.name
+    setKeypath(keypath)
     let result = context.get(keypath)
     addDep(result.keypath, result.value)
     return result.value
@@ -108,7 +109,8 @@ export default function execute(node, context, setKeypath, addDep) {
         }
       }
     )
-    keypath = keypathUtil.stringify(keypaths)
+    let keypath = keypathUtil.stringify(keypaths)
+    setKeypath(keypath)
     let result = context.get(keypath)
     addDep(result.keypath, result.value)
     return result.value
