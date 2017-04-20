@@ -21,103 +21,97 @@ import UnaryNode from './src/node/Unary'
  */
 export default function execute(node, context) {
 
-  let deps = { }, value, keypath, result
+  let deps = { }, value, keypath
 
-  switch (node.type) {
-    case nodeType.ARRAY:
-      value = [ ]
-      array.each(
-        node.elements,
+  let executor = { }
+
+  executor[ nodeType.ARRAY ] = function (node) {
+    keypath = env.UNDEFINED
+    value = [ ]
+    array.each(
+      node.elements,
+      function (node) {
+        array.push(value, executor[ node.type ](node))
+      }
+    )
+    return value
+  }
+
+  executor[ nodeType.UNARY ] = function (node) {
+    keypath = env.UNDEFINED
+    return UnaryNode[ node.operator ](
+      executor[ node.arg.type ](node.arg)
+    )
+  }
+
+  executor[ nodeType.BINARY ] = function (node) {
+    keypath = env.UNDEFINED
+    let { left, right } = node
+    return BinaryNode[ node.operator ](
+      executor[ left.type ](left),
+      executor[ right.type ](right)
+    )
+  }
+
+  executor[ nodeType.TERNARY ] = function (node) {
+    keypath = env.UNDEFINED
+    let { test, consequent, alternate } = node
+    if (executor[ test.type ](test)) {
+      return executor[ consequent.type ](consequent)
+    }
+    else {
+      return executor[ alternate.type ](alternate)
+    }
+  }
+
+  executor[ nodeType.CALL ] = function (node) {
+    keypath = env.UNDEFINED
+    return executeFunction(
+      executor[ node.callee.type ](node.callee),
+      env.NULL,
+      node.args.map(
         function (node) {
-          result = execute(node, context)
-          array.push(value, result.value)
-          object.extend(deps, result.deps)
+          return executor[ node.type ](node)
         }
       )
-      break
+    )
+  }
 
-    case nodeType.BINARY:
-      let { left, right } = node
-      left = execute(left, context)
-      right = execute(right, context)
-      value = BinaryNode[ node.operator ](left.value, right.value)
-      object.extend(deps, left.deps, right.deps)
-      break
+  executor[ nodeType.LITERAL ] = function (node) {
+    keypath = env.UNDEFINED
+    return node.value
+  }
 
-    case nodeType.CALL:
-      result = execute(node.callee, context)
-      deps = result.deps
-      value = executeFunction(
-        result.value,
-        env.NULL,
-        node.args.map(
-          function (node) {
-            let result = execute(node, context)
-            object.extend(deps, result.deps)
-            return result.value
+  executor[ nodeType.IDENTIFIER ] = function (node) {
+    keypath = node.name
+    let result = context.get(keypath)
+    deps[ result.keypath ] = result.value
+    return result.value
+  }
+
+  executor[ nodeType.MEMBER ] = function (node) {
+    let keys = [ ]
+    array.each(
+      MemberNode.flatten(node),
+      function (node, index) {
+        let { type } = node
+        if (type !== nodeType.LITERAL) {
+          if (index > 0) {
+            array.push(keys, executor[ type ](node))
           }
-        )
-      )
-      break
-
-    case nodeType.TERNARY:
-      let { test, consequent, alternate } = node
-      test = execute(test, context)
-      if (test.value) {
-        consequent = execute(consequent, context)
-        value = consequent.value
-        object.extend(deps, test.deps, consequent.deps)
-      }
-      else {
-        alternate = execute(alternate, context)
-        value = alternate.value
-        object.extend(deps, test.deps, alternate.deps)
-      }
-      break
-
-    case nodeType.IDENTIFIER:
-      keypath = node.name
-      result = context.get(keypath)
-      value = result.value
-      deps[ result.keypath ] = value
-      break
-
-    case nodeType.LITERAL:
-      value = node.value
-      break
-
-    case nodeType.MEMBER:
-      let keys = [ ]
-      array.each(
-        MemberNode.flatten(node),
-        function (node, index) {
-          let { type } = node
-          if (type !== nodeType.LITERAL) {
-            if (index > 0) {
-              let result = execute(node, context)
-              array.push(keys, result.value)
-              object.extend(deps, result.deps)
-            }
-            else if (type === nodeType.IDENTIFIER) {
-              array.push(keys, node.name)
-            }
-          }
-          else {
-            array.push(keys, node.value)
+          else if (type === nodeType.IDENTIFIER) {
+            array.push(keys, node.name)
           }
         }
-      )
-      keypath = keypathUtil.stringify(keys)
-      result = context.get(keypath)
-      value = result.value
-      deps[ result.keypath ] = value
-      break
-
-    case nodeType.UNARY:
-      result = execute(node.arg, context)
-      value = UnaryNode[ node.operator ](result.value)
-      deps = result.deps
-      break
+        else {
+          array.push(keys, node.value)
+        }
+      }
+    )
+    keypath = keypathUtil.stringify(keys)
+    let result = context.get(keypath)
+    deps[ result.keypath ] = value
+    return result.value
   }
 
   return { value, deps, keypath }
