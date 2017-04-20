@@ -26,6 +26,12 @@ let { value, deps } = expressionCompiler.execute(
         keypath: 'value\'s keypath'
       }
     }
+  },
+  function (keypath) {
+    // setKeypath
+  },
+  function (key, value) {
+    // addDep
   }
 )
 ``
