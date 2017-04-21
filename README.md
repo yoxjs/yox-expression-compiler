@@ -12,11 +12,7 @@ let node = expressionCompiler.compile('a + b')
 expressionCompiler.stringify(node) // a + b
 
 // Get value of the expression
-// {
-//     value: 'value',
-//     keypath: ''
-// }
-let { value, deps } = expressionCompiler.execute(
+let value = expressionCompiler.execute(
   node,
   {
     // get value of the key parsed from expression

@@ -316,12 +316,9 @@ export default function compile(content) {
         )
       }
 
-      array.push(
-        stack,
-        next,
-        operator.binaryMap[ next ],
-        parseToken()
-      )
+      array.push(stack, next)
+      array.push(stack, operator.binaryMap[ next ])
+      array.push(stack, parseToken())
 
     }
 

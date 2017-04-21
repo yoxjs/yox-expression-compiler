@@ -23,10 +23,16 @@ describe('expression', () => {
             keypath: keypath,
           }
         }
+      },
+      function (keypath) {
+
+      },
+      function (key, value) {
+
       }
     )
 
-    expect(result.value).toBe(2)
+    expect(result).toBe(2)
 
   })
 
