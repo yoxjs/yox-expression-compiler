@@ -27,21 +27,19 @@ executor[ nodeType.IDENTIFIER ] = function (node, context, setKeypath, addDep) {
 }
 
 executor[ nodeType.MEMBER ] = function (node, context, setKeypath, addDep) {
-  let keypaths = [ ]
-  array.each(
-    MemberNode.flatten(node),
+  let keypaths = MemberNode.flatten(node).map(
     function (node, index) {
       let { type } = node
       if (type !== nodeType.LITERAL) {
         if (index > 0) {
-          array.push(keypaths, execute(node, context, setKeypath, addDep))
+          return execute(node, context, setKeypath, addDep)
         }
         else if (type === nodeType.IDENTIFIER) {
-          array.push(keypaths, node.name)
+          return node.name
         }
       }
       else {
-        array.push(keypaths, node.value)
+        return node.value
       }
     }
   )
@@ -71,24 +69,18 @@ executor[ nodeType.BINARY ] = function (node, context, setKeypath, addDep) {
 executor[ nodeType.TERNARY ] = function (node, context, setKeypath, addDep) {
   setKeypath(env.UNDEFINED)
   let { test, consequent, alternate } = node
-  if (execute(test, context, setKeypath, addDep)) {
-    return execute(consequent, context, setKeypath, addDep)
-  }
-  else {
-    return execute(alternate, context, setKeypath, addDep)
-  }
+  return execute(test, context, setKeypath, addDep)
+    ? execute(consequent, context, setKeypath, addDep)
+    : execute(alternate, context, setKeypath, addDep)
 }
 
 executor[ nodeType.ARRAY ] = function (node, context, setKeypath, addDep) {
   setKeypath(env.UNDEFINED)
-  let value = [ ]
-  array.each(
-    node.elements,
+  return node.elements.map(
     function (node) {
-      array.push(value, execute(node, context, setKeypath, addDep))
+      return execute(node, context, setKeypath, addDep)
     }
   )
-  return value
 }
 
 executor[ nodeType.CALL ] = function (node, context, setKeypath, addDep) {
