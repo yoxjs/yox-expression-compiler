@@ -11,8 +11,8 @@ import * as operator from '../operator'
  */
 export default class Unary extends Node {
 
-  constructor(operator, arg) {
-    super(nodeType.UNARY)
+  constructor(source, operator, arg) {
+    super(nodeType.UNARY, source)
     this.operator = operator
     this.arg = arg
   }

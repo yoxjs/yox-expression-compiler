@@ -11,8 +11,8 @@ import * as nodeType from '../nodeType'
  */
 export default class Ternary extends Node {
 
-  constructor(test, consequent, alternate) {
-    super(nodeType.TERNARY)
+  constructor(source, test, consequent, alternate) {
+    super(nodeType.TERNARY, source)
     this.test = test
     this.consequent = consequent
     this.alternate = alternate

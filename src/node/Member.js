@@ -12,8 +12,8 @@ import * as array from 'yox-common/util/array'
  */
 export default class Member extends Node {
 
-  constructor(object, prop) {
-    super(nodeType.MEMBER)
+  constructor(source, object, prop) {
+    super(nodeType.MEMBER, source)
     this.object = object
     this.prop = prop
   }

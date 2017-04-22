@@ -12,8 +12,8 @@ import * as operator from '../operator'
  */
 export default class Binary extends Node {
 
-  constructor(left, operator, right) {
-    super(nodeType.BINARY)
+  constructor(source, left, operator, right) {
+    super(nodeType.BINARY, source)
     this.left = left
     this.operator = operator
     this.right = right

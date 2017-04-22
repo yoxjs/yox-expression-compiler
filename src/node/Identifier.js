@@ -9,8 +9,8 @@ import * as nodeType from '../nodeType'
  */
 export default class Identifier extends Node {
 
-  constructor(name) {
-    super(nodeType.IDENTIFIER)
+  constructor(source, name) {
+    super(nodeType.IDENTIFIER, source)
     this.name = name
   }
 

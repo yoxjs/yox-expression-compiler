@@ -75,18 +75,23 @@ function isIdentifierPart(charCode) {
  */
 export default function compile(content) {
 
-  if (object.has(compileCache, content)) {
+  if (compileCache[ content ]) {
     return compileCache[ content ]
   }
 
   let { length } = content
   let index = 0, charCode
 
+  let throwError = function () {
+    logger.fatal(`Failed to compile expression: ${char.CHAR_BREAKLINE}${content}`)
+  }
+
   let getCharCode = function () {
     return char.codeAt(content, index)
   }
-  let throwError = function () {
-    logger.fatal(`Failed to compile expression: ${char.CHAR_BREAKLINE}${content}`)
+
+  let cutString = function (start) {
+    return content.substring(start, index)
   }
 
   let skipWhitespace = function () {
@@ -156,12 +161,15 @@ export default function compile(content) {
 
   let parseIdentifier = function (careKeyword) {
 
-    let literal = content.substring(index, (skipIdentifier(), index))
+    let start = index
+    skipIdentifier()
+
+    let literal = cutString(start)
     if (literal) {
       return careKeyword && object.has(keywords, literal)
-        ? new LiteralNode(keywords[ literal ])
+        ? new LiteralNode(literal, keywords[ literal ])
         // this 也视为 IDENTIFIER
-        : new IdentifierNode(literal)
+        : new IdentifierNode(literal, literal)
     }
 
     throwError()
@@ -207,38 +215,42 @@ export default function compile(content) {
 
   let parseVariable = function () {
 
-    let node = parseIdentifier(env.TRUE)
+    let start = index, node = parseIdentifier(env.TRUE), temp
 
     while (index < length) {
       // a(x)
       charCode = getCharCode()
       if (charCode === char.CODE_OPAREN) {
         return new CallNode(
+          cutString(start),
           node,
           parseTuple(char.CODE_CPAREN)
         )
       }
+      // a.x
+      else if (charCode === char.CODE_DOT) {
+        index++
+        temp = parseIdentifier()
+        node = new MemberNode(
+          cutString(start),
+          node,
+          new LiteralNode(
+            temp.source,
+            temp.name
+          )
+        )
+      }
+      // a[x]
+      else if (charCode === char.CODE_OBRACK) {
+        temp = parseExpression(char.CODE_CBRACK)
+        node = new MemberNode(
+          cutString(start),
+          node,
+          temp
+        )
+      }
       else {
-        // a.x
-        if (charCode === char.CODE_DOT) {
-          index++
-          node = new MemberNode(
-            node,
-            new LiteralNode(
-              parseIdentifier().name
-            )
-          )
-        }
-        // a[x]
-        else if (charCode === char.CODE_OBRACK) {
-          node = new MemberNode(
-            node,
-            parseExpression(char.CODE_CBRACK)
-          )
-        }
-        else {
-          break
-        }
+        break
       }
     }
 
@@ -251,28 +263,34 @@ export default function compile(content) {
     skipWhitespace()
 
     charCode = getCharCode()
+
+    let start = index, temp
+
     // 'xx' 或 "xx"
     if (charCode === char.CODE_SQUOTE || charCode === char.CODE_DQUOTE) {
       // 截出的字符串包含引号
-      let value = content.substring(index, (skipString(), index))
+      skipString()
+      temp = cutString(start)
       return new LiteralNode(
-        string.slice(value, 1, -1),
-        value
+        temp,
+        string.slice(temp, 1, -1)
       )
     }
     // 1.1 或 .1
     else if (isDigit(charCode) || charCode === char.CODE_DOT) {
+      skipNumber()
+      temp = cutString(start)
       return new LiteralNode(
-        // 写的是什么进制就解析成什么进制
-        parseFloat(
-          content.substring(index, (skipNumber(), index))
-        )
+        temp,
+        parseFloat(temp)
       )
     }
     // [xx, xx]
     else if (charCode === char.CODE_OBRACK) {
+      temp = parseTuple(char.CODE_CBRACK)
       return new ArrayNode(
-        parseTuple(char.CODE_CBRACK)
+        cutString(start),
+        temp
       )
     }
     // (xx)
@@ -286,38 +304,47 @@ export default function compile(content) {
     // 一元操作
     let action = parseOperator(operator.unaryList)
     if (action) {
-      return new UnaryNode(action, parseToken())
+      temp = parseToken()
+      return new UnaryNode(
+        cutString(start),
+        action,
+        temp
+      )
     }
     throwError()
   }
 
   let parseBinary = function () {
 
-    let left = parseToken()
-    let action = parseOperator(operator.binaryList)
-    if (!action) {
-      return left
-    }
+    let stack = [ index, parseToken() ], right, next
 
-    let stack = [ left, action, operator.binaryMap[ action ], parseToken() ]
-    let right, next
+    let createBinaryNode = function () {
+      array.pop(stack)
+      array.pop(stack)
+      let action = array.pop(stack)
+      let left = array.pop(stack)
+      return new BinaryNode(
+        cutString(array.last(stack)),
+        left,
+        action,
+        right
+      )
+    }
 
     while (next = parseOperator(operator.binaryList)) {
 
       // 处理左边
-      if (stack.length > 3 && operator.binaryMap[ next ] < stack[ stack.length - 2 ]) {
+      if (stack.length > 5 && operator.binaryMap[ next ] < stack[ stack.length - 3 ]) {
         right = array.pop(stack)
-        array.pop(stack)
-        action = array.pop(stack)
-        left = array.pop(stack)
         array.push(
           stack,
-          new BinaryNode(left, action, right)
+          createBinaryNode()
         )
       }
 
       array.push(stack, next)
       array.push(stack, operator.binaryMap[ next ])
+      array.push(stack, index)
       array.push(stack, parseToken())
 
     }
@@ -328,11 +355,8 @@ export default function compile(content) {
     // 此时右边的优先级 >= 左边的优先级，因此可以脑残的直接逆序遍历
 
     right = array.pop(stack)
-    while (stack.length > 1) {
-      array.pop(stack)
-      action = array.pop(stack)
-      left = array.pop(stack)
-      right = new BinaryNode(left, action, right)
+    while (stack.length > 4) {
+      right = createBinaryNode()
     }
 
     return right
@@ -351,7 +375,7 @@ export default function compile(content) {
     }
 
     // 保证调用 parseExpression() 之后无需再次调用 skipWhitespace()
-    let test = parseBinary()
+    let start = index, test = parseBinary()
     skipWhitespace()
 
     if (getCharCode() === char.CODE_QUMARK) {
@@ -366,7 +390,12 @@ export default function compile(content) {
         let alternate = parseBinary()
         skipWhitespace()
 
-        return new TernaryNode(test, consequent, alternate)
+        return new TernaryNode(
+          cutString(start),
+          test,
+          consequent,
+          alternate
+        )
       }
       else {
         throwError()

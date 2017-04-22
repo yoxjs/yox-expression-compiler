@@ -10,8 +10,8 @@ import * as nodeType from '../nodeType'
  */
 export default class Call extends Node {
 
-  constructor(callee, args) {
-    super(nodeType.CALL)
+  constructor(source, callee, args) {
+    super(nodeType.CALL, source)
     this.callee = callee
     this.args = args
   }

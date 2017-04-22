@@ -9,8 +9,8 @@ import * as nodeType from '../nodeType'
  */
 export default class Array extends Node {
 
-  constructor(elements) {
-    super(nodeType.ARRAY)
+  constructor(source, lements) {
+    super(nodeType.ARRAY, source)
     this.elements = elements
   }
 

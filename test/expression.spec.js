@@ -6,8 +6,8 @@ import stringify from '../stringify'
 describe('expression', () => {
   it('demo1', () => {
 
-    let ast = compile('a + b')
-    expect(stringify(ast)).toBe('a + b')
+    let ast = compile('a + b * 2')
+    expect(stringify(ast)).toBe('a + b * 2')
 
     let data = {
       a: 1,
@@ -32,7 +32,7 @@ describe('expression', () => {
       }
     )
 
-    expect(result).toBe(2)
+    expect(result).toBe(3)
 
   })
 
