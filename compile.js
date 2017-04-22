@@ -221,10 +221,11 @@ export default function compile(content) {
       // a(x)
       charCode = getCharCode()
       if (charCode === char.CODE_OPAREN) {
+        temp = parseTuple(char.CODE_CPAREN)
         return new CallNode(
           cutString(start),
           node,
-          parseTuple(char.CODE_CPAREN)
+          temp
         )
       }
       // a.x
