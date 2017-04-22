@@ -8,7 +8,6 @@ import * as keypathUtil from 'yox-common/util/keypath'
 import * as nodeType from './src/nodeType'
 
 import BinaryNode from './src/node/Binary'
-import MemberNode from './src/node/Member'
 import UnaryNode from './src/node/Unary'
 
 let executor = { }
@@ -27,7 +26,7 @@ executor[ nodeType.IDENTIFIER ] = function (node, context, setKeypath, addDep) {
 }
 
 executor[ nodeType.MEMBER ] = function (node, context, setKeypath, addDep) {
-  let keypaths = MemberNode.flatten(node).map(
+  let keypaths = node.props.map(
     function (node, index) {
       let { type } = node
       if (type !== nodeType.LITERAL) {

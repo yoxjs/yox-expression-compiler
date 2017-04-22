@@ -2,14 +2,22 @@
 import compile from '../compile'
 import execute from '../execute'
 
+import * as object from 'yox-common/util/object'
+
 describe('expression', () => {
   it('demo1', () => {
 
-    let ast = compile('a + b')
+    let ast = compile('a.b["u" + "ser"].d')
 
     let data = {
-      a: 1,
-      b: 1,
+      a: {
+        b: {
+          user: {
+            d: 2,
+          }
+        }
+      },
+      c: 'user'
     }
 
     let result = execute(
@@ -17,7 +25,7 @@ describe('expression', () => {
       {
         get: function (keypath) {
           return {
-            value: data[keypath],
+            value: object.get(data, keypath).value,
             keypath: keypath,
           }
         }
