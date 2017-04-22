@@ -3,7 +3,6 @@ import executeFunction from 'yox-common/function/execute'
 
 import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
-import * as object from 'yox-common/util/object'
 import * as keypathUtil from 'yox-common/util/keypath'
 
 import * as nodeType from './src/nodeType'

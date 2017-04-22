@@ -9,7 +9,7 @@ import * as nodeType from '../nodeType'
  */
 export default class Array extends Node {
 
-  constructor(source, lements) {
+  constructor(source, elements) {
     super(nodeType.ARRAY, source)
     this.elements = elements
   }
