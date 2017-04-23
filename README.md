@@ -23,9 +23,6 @@ let value = expressionCompiler.execute(
       }
     }
   },
-  function (keypath) {
-    // setKeypath
-  },
   function (key, value) {
     // addDep
   }

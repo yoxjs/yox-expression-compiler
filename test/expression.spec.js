@@ -30,9 +30,6 @@ describe('expression', () => {
           }
         }
       },
-      function (keypath) {
-
-      },
       function (key, value) {
 
       }

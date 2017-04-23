@@ -12,6 +12,7 @@ export default class Identifier extends Node {
   constructor(source, name) {
     super(nodeType.IDENTIFIER, source)
     this.name = name
+    this.keypath = name
   }
 
 }

@@ -11,26 +11,23 @@ import UnaryNode from './src/node/Unary'
 
 let executor = { }
 
-executor[ nodeType.LITERAL ] = function (node, context, setKeypath) {
-  setKeypath(env.UNDEFINED)
+executor[ nodeType.LITERAL ] = function (node, context) {
   return node.value
 }
 
-executor[ nodeType.IDENTIFIER ] = function (node, context, setKeypath, addDep) {
-  let keypath = node.name
-  setKeypath(keypath)
-  let result = context.get(keypath)
+executor[ nodeType.IDENTIFIER ] = function (node, context, addDep) {
+  let result = context.get(node.name)
   addDep(result.keypath, result.value)
   return result.value
 }
 
-executor[ nodeType.MEMBER ] = function (node, context, setKeypath, addDep) {
+executor[ nodeType.MEMBER ] = function (node, context, addDep) {
   let keypaths = node.props.map(
     function (node, index) {
       let { type } = node
       if (type !== nodeType.LITERAL) {
         if (index > 0) {
-          return execute(node, context, setKeypath, addDep)
+          return execute(node, context, addDep)
         }
         else if (type === nodeType.IDENTIFIER) {
           return node.name
@@ -41,54 +38,49 @@ executor[ nodeType.MEMBER ] = function (node, context, setKeypath, addDep) {
       }
     }
   )
-  let keypath = keypathUtil.stringify(keypaths)
-  setKeypath(keypath)
-  let result = context.get(keypath)
+  let result = context.get(
+    node.keypath = keypathUtil.stringify(keypaths)
+  )
   addDep(result.keypath, result.value)
   return result.value
 }
 
-executor[ nodeType.UNARY ] = function (node, context, setKeypath, addDep) {
-  setKeypath(env.UNDEFINED)
+executor[ nodeType.UNARY ] = function (node, context, addDep) {
   return UnaryNode[ node.operator ](
-    execute(node.arg, context, setKeypath, addDep)
+    execute(node.arg, context, addDep)
   )
 }
 
-executor[ nodeType.BINARY ] = function (node, context, setKeypath, addDep) {
-  setKeypath(env.UNDEFINED)
+executor[ nodeType.BINARY ] = function (node, context, addDep) {
   let { left, right } = node
   return BinaryNode[ node.operator ](
-    execute(left, context, setKeypath, addDep),
-    execute(right, context, setKeypath, addDep)
+    execute(left, context, addDep),
+    execute(right, context, addDep)
   )
 }
 
-executor[ nodeType.TERNARY ] = function (node, context, setKeypath, addDep) {
-  setKeypath(env.UNDEFINED)
+executor[ nodeType.TERNARY ] = function (node, context, addDep) {
   let { test, consequent, alternate } = node
-  return execute(test, context, setKeypath, addDep)
-    ? execute(consequent, context, setKeypath, addDep)
-    : execute(alternate, context, setKeypath, addDep)
+  return execute(test, context, addDep)
+    ? execute(consequent, context, addDep)
+    : execute(alternate, context, addDep)
 }
 
-executor[ nodeType.ARRAY ] = function (node, context, setKeypath, addDep) {
-  setKeypath(env.UNDEFINED)
+executor[ nodeType.ARRAY ] = function (node, context, addDep) {
   return node.elements.map(
     function (node) {
-      return execute(node, context, setKeypath, addDep)
+      return execute(node, context, addDep)
     }
   )
 }
 
-executor[ nodeType.CALL ] = function (node, context, setKeypath, addDep) {
-  setKeypath(env.UNDEFINED)
+executor[ nodeType.CALL ] = function (node, context, addDep) {
   return executeFunction(
-    execute(node.callee, context, setKeypath, addDep),
+    execute(node.callee, context, addDep),
     env.NULL,
     node.args.map(
       function (node) {
-        return execute(node, context, setKeypath, addDep)
+        return execute(node, context, addDep)
       }
     )
   )
@@ -99,10 +91,9 @@ executor[ nodeType.CALL ] = function (node, context, setKeypath, addDep) {
  *
  * @param {Node} node
  * @param {Context} context
- * @param {?Function} setKeypath
  * @param {?Function} addDep
  * @return {*}
  */
-export default function execute(node, context, setKeypath, addDep) {
-  return executor[ node.type ](node, context, setKeypath || env.noop, addDep || env.noop)
+export default function execute(node, context, addDep) {
+  return executor[ node.type ](node, context, addDep || env.noop)
 }
