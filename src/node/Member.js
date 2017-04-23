@@ -3,6 +3,7 @@ import Node from './Node'
 import * as nodeType from '../nodeType'
 
 import * as array from 'yox-common/util/array'
+import * as keypathUtil from 'yox-common/util/keypath'
 
 /**
  * Member 节点
@@ -27,6 +28,37 @@ export default class Member extends Node {
 
     this.props = props
 
+    let success = env.TRUE
+    let keypath = Member.stringify(
+      this,
+      function () {
+        success = env.FALSE
+      }
+    )
+    if (success) {
+      this.keypath = keypath
+    }
+
   }
 
+}
+
+Member.stringify = function (node, execute) {
+  let keypaths = node.props.map(
+    function (node, index) {
+      let { type } = node
+      if (type !== nodeType.LITERAL) {
+        if (index > 0) {
+          return execute(node)
+        }
+        else if (type === nodeType.IDENTIFIER) {
+          return node.name
+        }
+      }
+      else {
+        return node.value
+      }
+    }
+  )
+  return keypathUtil.stringify(keypaths)
 }
