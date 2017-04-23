@@ -18,7 +18,7 @@ executor[ nodeType.LITERAL ] = function (node, context) {
 
 executor[ nodeType.IDENTIFIER ] = function (node, context, addDep) {
   let result = context.get(node.name)
-  addDep(result.keypath, result.value)
+  addDep && addDep(result.keypath, result.value)
   return result.value
 }
 
@@ -33,7 +33,7 @@ executor[ nodeType.MEMBER ] = function (node, context, addDep) {
     )
   }
   let result = context.get(keypath)
-  addDep(result.keypath, result.value)
+  addDep && addDep(result.keypath, result.value)
   return result.value
 }
 
@@ -87,5 +87,5 @@ executor[ nodeType.CALL ] = function (node, context, addDep) {
  * @return {*}
  */
 export default function execute(node, context, addDep) {
-  return executor[ node.type ](node, context, addDep || env.noop)
+  return executor[ node.type ](node, context, addDep)
 }

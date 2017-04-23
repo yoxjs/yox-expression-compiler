@@ -2,6 +2,7 @@
 import Node from './Node'
 import * as nodeType from '../nodeType'
 
+import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
 import * as keypathUtil from 'yox-common/util/keypath'
 
