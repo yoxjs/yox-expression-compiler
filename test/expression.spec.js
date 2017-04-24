@@ -7,7 +7,7 @@ import * as object from 'yox-common/util/object'
 describe('expression', () => {
   it('demo1', () => {
 
-    let ast = compile('a.b["u" + "ser"].d')
+    let ast = compile('a.b["u" + "ser"].d + 2')
 
     let data = {
       a: {
@@ -35,7 +35,7 @@ describe('expression', () => {
       }
     )
 
-    expect(result).toBe(2)
+    expect(result).toBe(4)
 
   })
 

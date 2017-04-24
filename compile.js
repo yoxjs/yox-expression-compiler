@@ -1,6 +1,4 @@
 
-import matchFirst from 'yox-common/function/matchFirst'
-
 import * as env from 'yox-common/util/env'
 import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
@@ -206,10 +204,21 @@ export default function compile(content) {
 
   let parseOperator = function (sortedOperatorList) {
     skipWhitespace()
-    let literal = matchFirst(sortedOperatorList, string.slice(content, index))[ 0 ]
-    if (literal) {
-      index += literal.length
-      return literal
+
+    let value = string.slice(content, index), match
+    array.each(
+      sortedOperatorList,
+      function (prefix) {
+        if (string.startsWith(value, prefix)) {
+          match = prefix
+          return env.FALSE
+        }
+      }
+    )
+
+    if (match) {
+      index += match.length
+      return match
     }
   }
 
