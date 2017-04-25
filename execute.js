@@ -69,7 +69,7 @@ executor[ nodeType.ARRAY ] = function (node, context, addDep) {
 executor[ nodeType.CALL ] = function (node, context, addDep) {
   return executeFunction(
     execute(node.callee, context, addDep),
-    env.NULL,
+    context.get('$context').value,
     node.args.map(
       function (node) {
         return execute(node, context, addDep)
