@@ -1,9 +1,6 @@
 
 import executeFunction from 'yox-common/function/execute'
 
-import * as env from 'yox-common/util/env'
-import * as keypathUtil from 'yox-common/util/keypath'
-
 import * as nodeType from './src/nodeType'
 
 import UnaryNode from './src/node/Unary'
@@ -16,19 +13,19 @@ executor[ nodeType.LITERAL ] = function (node, context) {
   return node.value
 }
 
-executor[ nodeType.IDENTIFIER ] = function (node, context, addDep) {
+executor[ nodeType.IDENTIFIER ] = function (node, context, instance, addDep) {
   let result = context.get(node.name)
   addDep && addDep(result.keypath, result.value)
   return result.value
 }
 
-executor[ nodeType.MEMBER ] = function (node, context, addDep) {
+executor[ nodeType.MEMBER ] = function (node, context, instance, addDep) {
   let { keypath } = node
   if (!keypath) {
     keypath = MemberNode.stringify(
       node,
       function (node) {
-        return execute(node, context, addDep)
+        return execute(node, context, instance, addDep)
       }
     )
   }
@@ -37,13 +34,13 @@ executor[ nodeType.MEMBER ] = function (node, context, addDep) {
   return result.value
 }
 
-executor[ nodeType.UNARY ] = function (node, context, addDep) {
+executor[ nodeType.UNARY ] = function (node, context, instance, addDep) {
   return UnaryNode[ node.operator ](
     execute(node.arg, context, addDep)
   )
 }
 
-executor[ nodeType.BINARY ] = function (node, context, addDep) {
+executor[ nodeType.BINARY ] = function (node, context, instance, addDep) {
   let { left, right } = node
   return BinaryNode[ node.operator ](
     execute(left, context, addDep),
@@ -51,28 +48,28 @@ executor[ nodeType.BINARY ] = function (node, context, addDep) {
   )
 }
 
-executor[ nodeType.TERNARY ] = function (node, context, addDep) {
+executor[ nodeType.TERNARY ] = function (node, context, instance, addDep) {
   let { test, consequent, alternate } = node
   return execute(test, context, addDep)
     ? execute(consequent, context, addDep)
     : execute(alternate, context, addDep)
 }
 
-executor[ nodeType.ARRAY ] = function (node, context, addDep) {
+executor[ nodeType.ARRAY ] = function (node, context, instance, addDep) {
   return node.elements.map(
     function (node) {
-      return execute(node, context, addDep)
+      return execute(node, context, instance, addDep)
     }
   )
 }
 
-executor[ nodeType.CALL ] = function (node, context, addDep) {
+executor[ nodeType.CALL ] = function (node, context, instance, addDep) {
   return executeFunction(
     execute(node.callee, context, addDep),
-    context.get('$context').value,
+    instance,
     node.args.map(
       function (node) {
-        return execute(node, context, addDep)
+        return execute(node, context, instance, addDep)
       }
     )
   )
@@ -81,11 +78,12 @@ executor[ nodeType.CALL ] = function (node, context, addDep) {
 /**
  * 表达式求值
  *
- * @param {Node} node
- * @param {Context} context
- * @param {?Function} addDep
+ * @param {Node} node 表达式抽象节点
+ * @param {Context} context 读取数据的容器
+ * @param {Yox} instance 表达式函数调用的执行上下文
+ * @param {?Function} addDep 添加执行表达式过程中的依赖
  * @return {*}
  */
-export default function execute(node, context, addDep) {
-  return executor[ node.type ](node, context, addDep)
+export default function execute(node, context, instance, addDep) {
+  return executor[ node.type ](node, context, instance, addDep)
 }
