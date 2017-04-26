@@ -14,17 +14,9 @@ expressionCompiler.stringify(node) // a + b
 // Get value of the expression
 let value = expressionCompiler.execute(
   node,
-  {
-    // get value of the key parsed from expression
-    get: function (key) {
-      return {
-        value: 'value',
-        keypath: 'value\'s keypath'
-      }
-    }
+  function (key) {
+    return value
   },
-  function (key, value) {
-    // addDep
-  }
+  context
 )
 ``

@@ -22,16 +22,8 @@ describe('expression', () => {
 
     let result = execute(
       ast,
-      {
-        get: function (keypath) {
-          return {
-            value: object.get(data, keypath).value,
-            keypath: keypath,
-          }
-        }
-      },
-      function (key, value) {
-
+      function (keypath) {
+        return object.get(data, keypath).value
       }
     )
 

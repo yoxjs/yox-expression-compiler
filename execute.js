@@ -9,67 +9,63 @@ import MemberNode from './src/node/Member'
 
 let executor = { }
 
-executor[ nodeType.LITERAL ] = function (node, context) {
+executor[ nodeType.LITERAL ] = function (node) {
   return node.value
 }
 
-executor[ nodeType.IDENTIFIER ] = function (node, context, instance, addDep) {
-  let result = context.get(node.name)
-  addDep && addDep(result.keypath, result.value)
-  return result.value
+executor[ nodeType.IDENTIFIER ] = function (node, getter, context) {
+  return getter(node.name)
 }
 
-executor[ nodeType.MEMBER ] = function (node, context, instance, addDep) {
+executor[ nodeType.MEMBER ] = function (node, getter, context) {
   let { keypath } = node
   if (!keypath) {
     keypath = MemberNode.stringify(
       node,
       function (node) {
-        return execute(node, context, instance, addDep)
+        return execute(node, getter, context)
       }
     )
   }
-  let result = context.get(keypath)
-  addDep && addDep(result.keypath, result.value)
-  return result.value
+  return getter(keypath)
 }
 
-executor[ nodeType.UNARY ] = function (node, context, instance, addDep) {
+executor[ nodeType.UNARY ] = function (node, getter, context) {
   return UnaryNode[ node.operator ](
-    execute(node.arg, context, instance, addDep)
+    execute(node.arg, getter, context)
   )
 }
 
-executor[ nodeType.BINARY ] = function (node, context, instance, addDep) {
+executor[ nodeType.BINARY ] = function (node, getter, context) {
   let { left, right } = node
   return BinaryNode[ node.operator ](
-    execute(left, context, instance, addDep),
-    execute(right, context, instance, addDep)
+    execute(left, getter, context),
+    execute(right, getter, context)
   )
 }
 
-executor[ nodeType.TERNARY ] = function (node, context, instance, addDep) {
+executor[ nodeType.TERNARY ] = function (node, getter, context) {
   let { test, consequent, alternate } = node
-  return execute(test, context, instance, addDep)
-    ? execute(consequent, context, instance, addDep)
-    : execute(alternate, context, instance, addDep)
+  return execute(test, getter, context)
+    ? execute(consequent, getter, context)
+    : execute(alternate, getter, context)
 }
 
-executor[ nodeType.ARRAY ] = function (node, context, instance, addDep) {
+executor[ nodeType.ARRAY ] = function (node, getter, context) {
   return node.elements.map(
     function (node) {
-      return execute(node, context, instance, addDep)
+      return execute(node, getter, context)
     }
   )
 }
 
-executor[ nodeType.CALL ] = function (node, context, instance, addDep) {
+executor[ nodeType.CALL ] = function (node, getter, context) {
   return executeFunction(
-    execute(node.callee, context, instance, addDep),
-    instance,
+    execute(node.callee, getter, context),
+    context,
     node.args.map(
       function (node) {
-        return execute(node, context, instance, addDep)
+        return execute(node, getter, context)
       }
     )
   )
@@ -79,11 +75,10 @@ executor[ nodeType.CALL ] = function (node, context, instance, addDep) {
  * 表达式求值
  *
  * @param {Node} node 表达式抽象节点
- * @param {Context} context 读取数据的容器
- * @param {Yox} instance 表达式函数调用的执行上下文
- * @param {?Function} addDep 添加执行表达式过程中的依赖
+ * @param {Function} getter 读取数据的方法
+ * @param {*} context 表达式函数调用的执行上下文
  * @return {*}
  */
-export default function execute(node, context, instance, addDep) {
-  return executor[ node.type ](node, context, instance, addDep)
+export default function execute(node, getter, context) {
+  return executor[ node.type ](node, getter, context)
 }
