@@ -36,23 +36,23 @@ executor[ nodeType.MEMBER ] = function (node, context, instance, addDep) {
 
 executor[ nodeType.UNARY ] = function (node, context, instance, addDep) {
   return UnaryNode[ node.operator ](
-    execute(node.arg, context, addDep)
+    execute(node.arg, context, instance, addDep)
   )
 }
 
 executor[ nodeType.BINARY ] = function (node, context, instance, addDep) {
   let { left, right } = node
   return BinaryNode[ node.operator ](
-    execute(left, context, addDep),
-    execute(right, context, addDep)
+    execute(left, context, instance, addDep),
+    execute(right, context, instance, addDep)
   )
 }
 
 executor[ nodeType.TERNARY ] = function (node, context, instance, addDep) {
   let { test, consequent, alternate } = node
-  return execute(test, context, addDep)
-    ? execute(consequent, context, addDep)
-    : execute(alternate, context, addDep)
+  return execute(test, context, instance, addDep)
+    ? execute(consequent, context, instance, addDep)
+    : execute(alternate, context, instance, addDep)
 }
 
 executor[ nodeType.ARRAY ] = function (node, context, instance, addDep) {
@@ -65,7 +65,7 @@ executor[ nodeType.ARRAY ] = function (node, context, instance, addDep) {
 
 executor[ nodeType.CALL ] = function (node, context, instance, addDep) {
   return executeFunction(
-    execute(node.callee, context, addDep),
+    execute(node.callee, context, instance, addDep),
     instance,
     node.args.map(
       function (node) {
