@@ -22,11 +22,11 @@ import UnaryNode from './src/node/Unary'
 // 举个例子：a === true
 // 从解析器的角度来说，a 和 true 是一样的 token
 const keywords = { }
-// 兼容 IE8
-keywords[ 'true' ] = env.TRUE
-keywords[ 'false' ] = env.FALSE
-keywords[ 'null' ] = env.NULL
-keywords[ 'undefined' ] = env.UNDEFINED
+
+keywords[ env.RAW_TRUE ] = env.TRUE
+keywords[ env.RAW_FALSE ] = env.FALSE
+keywords[ env.RAW_NULL ] = env.NULL
+keywords[ env.RAW_UNDEFINED ] = env.UNDEFINED
 
 // 缓存编译结果
 let compileCache = { }
