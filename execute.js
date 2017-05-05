@@ -2,12 +2,11 @@
 import executeFunction from 'yox-common/function/execute'
 
 import * as nodeType from './src/nodeType'
+import * as interpreter from './src/interpreter'
 
-import UnaryNode from './src/node/Unary'
-import BinaryNode from './src/node/Binary'
 import MemberNode from './src/node/Member'
 
-let executor = { }
+const executor = { }
 
 executor[ nodeType.LITERAL ] = function (node) {
   return node.value
@@ -31,24 +30,22 @@ executor[ nodeType.MEMBER ] = function (node, getter, context) {
 }
 
 executor[ nodeType.UNARY ] = function (node, getter, context) {
-  return UnaryNode[ node.operator ](
+  return interpreter.unary[ node.operator ](
     execute(node.arg, getter, context)
   )
 }
 
 executor[ nodeType.BINARY ] = function (node, getter, context) {
-  let { left, right } = node
-  return BinaryNode[ node.operator ](
-    execute(left, getter, context),
-    execute(right, getter, context)
+  return interpreter.binary[ node.operator ](
+    execute(node.left, getter, context),
+    execute(node.right, getter, context)
   )
 }
 
 executor[ nodeType.TERNARY ] = function (node, getter, context) {
-  let { test, consequent, alternate } = node
-  return execute(test, getter, context)
-    ? execute(consequent, getter, context)
-    : execute(alternate, getter, context)
+  return execute(node.test, getter, context)
+    ? execute(node.consequent, getter, context)
+    : execute(node.alternate, getter, context)
 }
 
 executor[ nodeType.ARRAY ] = function (node, getter, context) {

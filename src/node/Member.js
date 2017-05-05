@@ -9,13 +9,14 @@ import * as keypathUtil from 'yox-common/util/keypath'
 /**
  * Member 节点
  *
+ * @param {string} raw
  * @param {Node} object
  * @param {Node} prop
  */
 export default class Member extends Node {
 
-  constructor(source, object, prop) {
-    super(nodeType.MEMBER, source)
+  constructor(raw, object, prop) {
+    super(nodeType.MEMBER, raw)
 
     let props = [ ]
     if (object.type === nodeType.MEMBER) {

@@ -5,12 +5,13 @@ import * as nodeType from '../nodeType'
 /**
  * Identifier 节点
  *
+ * @param {string} raw
  * @param {string} name
  */
 export default class Identifier extends Node {
 
-  constructor(source, name) {
-    super(nodeType.IDENTIFIER, source)
+  constructor(raw, name) {
+    super(nodeType.IDENTIFIER, raw)
     this.name = name
     this.keypath = name
   }

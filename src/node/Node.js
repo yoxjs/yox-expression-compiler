@@ -6,9 +6,9 @@ import * as string from 'yox-common/util/string'
  */
 export default class Node {
 
-  constructor(type, source) {
+  constructor(type, raw) {
     this.type = type
-    this.source = string.trim(source)
+    this.raw = string.trim(raw)
   }
 
 }

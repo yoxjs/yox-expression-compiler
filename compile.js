@@ -166,7 +166,6 @@ export default function compile(content) {
     if (literal) {
       return careKeyword && object.has(keywords, literal)
         ? new LiteralNode(literal, keywords[ literal ])
-        // this 也视为 IDENTIFIER
         : new IdentifierNode(literal, literal)
     }
 
@@ -203,6 +202,7 @@ export default function compile(content) {
   }
 
   let parseOperator = function (sortedOperatorList) {
+
     skipWhitespace()
 
     let value = string.slice(content, index), match
@@ -220,6 +220,7 @@ export default function compile(content) {
       index += match.length
       return match
     }
+
   }
 
   let parseVariable = function () {
@@ -245,7 +246,7 @@ export default function compile(content) {
           cutString(start),
           node,
           new LiteralNode(
-            temp.source,
+            temp.raw,
             temp.name
           )
         )
