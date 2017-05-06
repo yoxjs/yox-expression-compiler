@@ -36,7 +36,7 @@ executor[ nodeType.MEMBER ] = function (node, getter, context) {
         }
       }
     )
-    keypath = keypathUtil.stringify(keypaths)
+    keypath = keypathUtil.stringify(keypaths, env.FALSE)
   }
   return getter(keypath)
 }
