@@ -1,5 +1,6 @@
 
 import executeFunction from 'yox-common/function/execute'
+import * as keypathUtil from 'yox-common/util/keypath'
 
 import * as nodeType from './src/nodeType'
 import * as interpreter from './src/interpreter'
@@ -19,12 +20,23 @@ executor[ nodeType.IDENTIFIER ] = function (node, getter, context) {
 executor[ nodeType.MEMBER ] = function (node, getter, context) {
   let { keypath } = node
   if (!keypath) {
-    keypath = MemberNode.stringify(
-      node,
-      function (node) {
-        return execute(node, getter, context)
+    let keypaths = node.props.map(
+      function (node, index) {
+        let { type } = node
+        if (type !== nodeType.LITERAL) {
+          if (index > 0) {
+            return execute(node, getter, context)
+          }
+          else if (type === nodeType.IDENTIFIER) {
+            return node.name
+          }
+        }
+        else {
+          return node.value
+        }
       }
     )
+    keypath = keypathUtil.stringify(keypaths)
   }
   return getter(keypath)
 }

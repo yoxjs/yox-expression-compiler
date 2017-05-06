@@ -2,7 +2,6 @@
 import Node from './Node'
 import * as nodeType from '../nodeType'
 
-import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
 import * as keypathUtil from 'yox-common/util/keypath'
 
@@ -30,37 +29,12 @@ export default class Member extends Node {
 
     this.props = props
 
-    let success = env.TRUE
-    let keypath = Member.stringify(
-      this,
-      function () {
-        success = env.FALSE
-      }
-    )
-    if (success) {
-      this.keypath = keypath
+    if (object.keypath
+      && prop.type === nodeType.LITERAL
+    ) {
+      this.keypath = keypathUtil.join(object.keypath, prop.value)
     }
 
   }
 
-}
-
-Member.stringify = function (node, execute) {
-  let keypaths = node.props.map(
-    function (node, index) {
-      let { type } = node
-      if (type !== nodeType.LITERAL) {
-        if (index > 0) {
-          return execute(node)
-        }
-        else if (type === nodeType.IDENTIFIER) {
-          return node.name
-        }
-      }
-      else {
-        return node.value
-      }
-    }
-  )
-  return keypathUtil.stringify(keypaths)
 }
