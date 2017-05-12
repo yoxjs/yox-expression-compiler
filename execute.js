@@ -15,7 +15,7 @@ executor[ nodeType.LITERAL ] = function (node) {
   return node.value
 }
 
-executor[ nodeType.IDENTIFIER ] = function (node, getter, context) {
+executor[ nodeType.IDENTIFIER ] = function (node, getter) {
   return getter(node.name)
 }
 
