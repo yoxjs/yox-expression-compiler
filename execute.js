@@ -7,8 +7,6 @@ import * as keypathUtil from 'yox-common/util/keypath'
 import * as nodeType from './src/nodeType'
 import * as interpreter from './src/interpreter'
 
-import MemberNode from './src/node/Member'
-
 const executor = { }
 
 executor[ nodeType.LITERAL ] = function (node) {

@@ -77,8 +77,7 @@ export default function compile(content) {
     return compileCache[ content ]
   }
 
-  let { length } = content
-  let index = 0, charCode
+  let { length } = content, index = 0, charCode
 
   let throwError = function () {
     logger.fatal(`Failed to compile expression: ${char.CHAR_BREAKLINE}${content}`)
