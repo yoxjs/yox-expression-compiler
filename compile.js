@@ -377,7 +377,7 @@ export default function compile(content) {
 
     // 主要是区分三元和二元表达式
     // 三元表达式可以认为是 3 个二元表达式组成的
-    // test ? consequent : alternate
+    // test ? yes : no
 
     // 跳过开始字符
     if (delimiter) {
@@ -391,20 +391,20 @@ export default function compile(content) {
     if (getCharCode() === char.CODE_QUMARK) {
       index++
 
-      let consequent = parseBinary()
+      let yes = parseBinary()
       skipWhitespace()
 
       if (getCharCode() === char.CODE_COLON) {
         index++
 
-        let alternate = parseBinary()
+        let no = parseBinary()
         skipWhitespace()
 
         return new TernaryNode(
           cutString(start),
           test,
-          consequent,
-          alternate
+          yes,
+          no
         )
       }
       else {

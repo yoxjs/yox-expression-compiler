@@ -56,8 +56,8 @@ executor[ nodeType.BINARY ] = function (node, getter, context) {
 
 executor[ nodeType.TERNARY ] = function (node, getter, context) {
   return execute(node.test, getter, context)
-    ? execute(node.consequent, getter, context)
-    : execute(node.alternate, getter, context)
+    ? execute(node.yes, getter, context)
+    : execute(node.no, getter, context)
 }
 
 executor[ nodeType.ARRAY ] = function (node, getter, context) {

@@ -7,16 +7,16 @@ import * as nodeType from '../nodeType'
  *
  * @param {string} raw
  * @param {Node} test
- * @param {Node} consequent
- * @param {Node} alternate
+ * @param {Node} yes
+ * @param {Node} no
  */
 export default class Ternary extends Node {
 
-  constructor(raw, test, consequent, alternate) {
+  constructor(raw, test, yes, no) {
     super(nodeType.TERNARY, raw)
     this.test = test
-    this.consequent = consequent
-    this.alternate = alternate
+    this.yes = yes
+    this.no = no
   }
 
 }
