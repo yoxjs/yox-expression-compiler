@@ -334,27 +334,40 @@ export default function compile(content) {
     // 处理优先级，确保循环结束时，是相同的优先级操作
     while (next = parseOperator(operator.binaryList)) {
 
-      length = stack.length
-
-      // 处理左边
-      if (length > 7 && operator.binaryMap[ next ] < stack[ length - 4 ]) {
-        stack.splice(
-          length - 7,
-          6,
-          new BinaryNode(
-            cutString(stack[ length - 8 ], stack[ length - 1 ]),
-            stack[ length - 7 ],
-            stack[ length - 5 ],
-            stack[ length - 2 ]
-          )
-        )
-      }
-
       array.push(stack, next)
       array.push(stack, operator.binaryMap[ next ])
       array.push(stack, index)
       array.push(stack, parseToken())
       array.push(stack, index)
+
+      length = stack.length
+
+      if (length > 12) {
+        if (operator.binaryMap[next] < stack[length - 9]) {
+          stack.splice(
+            length - 12,
+            6,
+            new BinaryNode(
+              cutString(stack[ length - 13 ], stack[ length - 6 ]),
+              stack[ length - 12 ],
+              stack[ length - 10 ],
+              stack[ length - 7 ]
+            )
+          )
+        }
+        else {
+          stack.splice(
+            length - 7,
+            6,
+            new BinaryNode(
+              cutString(stack[ length - 8 ], stack[ length - 1 ]),
+              stack[ length - 7 ],
+              stack[ length - 5 ],
+              stack[ length - 2 ]
+            )
+          )
+        }
+      }
 
     }
 
