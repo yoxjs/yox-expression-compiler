@@ -334,57 +334,59 @@ export default function compile(content) {
     // 处理优先级，确保循环结束时，是相同的优先级操作
     while (next = parseOperator(operator.binaryList)) {
 
+      length = stack.length
+
+      if (length > 7 && operator.binaryMap[ next ] < stack[ length - 4 ]) {
+        stack.splice(
+          length - 7,
+          6,
+          new BinaryNode(
+            cutString(stack[ length - 8 ], stack[ length - 1 ]),
+            stack[ length - 7 ],
+            stack[ length - 5 ],
+            stack[ length - 2 ]
+          )
+        )
+      }
+
       array.push(stack, next)
       array.push(stack, operator.binaryMap[ next ])
       array.push(stack, index)
       array.push(stack, parseToken())
       array.push(stack, index)
 
+    }
+
+    while (env.TRUE) {
       length = stack.length
-
-      if (length > 12) {
-        if (operator.binaryMap[next] < stack[length - 9]) {
-          stack.splice(
-            length - 12,
-            6,
-            new BinaryNode(
-              cutString(stack[ length - 13 ], stack[ length - 6 ]),
-              stack[ length - 12 ],
-              stack[ length - 10 ],
-              stack[ length - 7 ]
-            )
+      if (length > 8 && stack[ length - 4 ] > stack[ length - 9 ]) {
+        stack.splice(
+          length - 7,
+          6,
+          new BinaryNode(
+            cutString(stack[ length - 8 ], stack[ length - 1 ]),
+            stack[ length - 7 ],
+            stack[ length - 5 ],
+            stack[ length - 2 ]
           )
-        }
-        else {
-          stack.splice(
-            length - 7,
-            6,
-            new BinaryNode(
-              cutString(stack[ length - 8 ], stack[ length - 1 ]),
-              stack[ length - 7 ],
-              stack[ length - 5 ],
-              stack[ length - 2 ]
-            )
-          )
-        }
-      }
-
-    }
-
-    while (stack.length > 7) {
-      stack.splice(
-        1,
-        6,
-        new BinaryNode(
-          cutString(stack[ 0 ], stack[ 7 ]),
-          stack[ 1 ],
-          stack[ 3 ],
-          stack[ 6 ]
         )
-      )
+      }
+      else if (length > 7) {
+        stack.splice(
+          1,
+          6,
+          new BinaryNode(
+            cutString(stack[ 0 ], stack[ 7 ]),
+            stack[ 1 ],
+            stack[ 3 ],
+            stack[ 6 ]
+          )
+        )
+      }
+      else {
+        return stack[ 1 ]
+      }
     }
-
-    return stack[ 1 ]
 
   }
 
