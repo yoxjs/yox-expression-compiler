@@ -87,8 +87,8 @@ export default function compile(content) {
     return char.codeAt(content, index)
   }
 
-  let cutString = function (start) {
-    return content.substring(start, index)
+  let cutString = function (start, end) {
+    return content.substring(start, end == env.NULL ? index : end)
   }
 
   let skipWhitespace = function () {
@@ -326,29 +326,27 @@ export default function compile(content) {
 
   let parseBinary = function () {
 
-    let stack = [ index, parseToken() ], right, next
+    let stack = [ index, parseToken(), index ], next, length
 
-    let createBinaryNode = function () {
-      array.pop(stack)
-      array.pop(stack)
-      let action = array.pop(stack)
-      let left = array.pop(stack)
-      return new BinaryNode(
-        cutString(array.last(stack)),
-        left,
-        action,
-        right
-      )
-    }
+    // stack 的结构必须是 token 之后跟一个 index
+    // 这样在裁剪原始字符串时，才有据可查
 
+    // 处理优先级，确保循环结束时，是相同的优先级操作
     while (next = parseOperator(operator.binaryList)) {
 
+      length = stack.length
+
       // 处理左边
-      if (stack.length > 5 && operator.binaryMap[ next ] < stack[ stack.length - 3 ]) {
-        right = array.pop(stack)
-        array.push(
-          stack,
-          createBinaryNode()
+      if (length > 7 && operator.binaryMap[ next ] < stack[ length - 4 ]) {
+        stack.splice(
+          length - 7,
+          6,
+          new BinaryNode(
+            cutString(stack[ length - 8 ], stack[ length - 1 ]),
+            stack[ length - 7 ],
+            stack[ length - 5 ],
+            stack[ length - 2 ]
+          )
         )
       }
 
@@ -356,20 +354,24 @@ export default function compile(content) {
       array.push(stack, operator.binaryMap[ next ])
       array.push(stack, index)
       array.push(stack, parseToken())
+      array.push(stack, index)
 
     }
 
-    // 处理右边
-    // 右边只有等到所有 token 解析完成才能开始
-    // 比如 a + b * c / d
-    // 此时右边的优先级 >= 左边的优先级，因此可以脑残的直接逆序遍历
-
-    right = array.pop(stack)
-    while (stack.length > 4) {
-      right = createBinaryNode()
+    while (stack.length > 7) {
+      stack.splice(
+        1,
+        6,
+        new BinaryNode(
+          cutString(stack[ 0 ], stack[ 7 ]),
+          stack[ 1 ],
+          stack[ 3 ],
+          stack[ 6 ]
+        )
+      )
     }
 
-    return right
+    return stack[ 1 ]
 
   }
 
