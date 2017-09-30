@@ -161,6 +161,27 @@ describe('expression', () => {
 
   })
 
+  it('object', () => {
+
+    let data = { a: false, b: 2, c: 1, d: '2' }
+    let get = function (keypath) {
+      return object.get(data, keypath).value
+    }
+
+    let ast = compile('{ a: 1 }')
+    expect(execute(ast, get).a).toBe(1)
+    expect(ast.raw).toBe('{ a: 1 }')
+
+    ast = compile('{ a: a }')
+    expect(execute(ast, get).a).toBe(false)
+    expect(ast.raw).toBe('{ a: false }')
+
+    ast = compile(' { sum: b + c } ')
+    expect(execute(ast, get).sum).toBe(3)
+    expect(ast.raw).toBe('{ sum: b + c }')
+
+  })
+
   it('demo1', () => {
 
     let ast = compile('a.b["u" + "ser"].d + 2')

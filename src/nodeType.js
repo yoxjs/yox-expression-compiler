@@ -49,8 +49,15 @@ export const TERNARY = 6
 export const ARRAY = 7
 
 /**
+ * 对象表达式
+ *
+ * @type {number}
+ */
+export const Object = 8
+
+/**
  * 函数调用表达式，如 a()
  *
  * @type {number}
  */
-export const CALL = 8
+export const CALL = 9

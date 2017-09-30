@@ -9,6 +9,7 @@ import * as logger from 'yox-common/util/logger'
 import * as operator from './src/operator'
 
 import ArrayNode from './src/node/Array'
+import ObjectNode from './src/node/Object'
 import BinaryNode from './src/node/Binary'
 import CallNode from './src/node/Call'
 import TernaryNode from './src/node/Ternary'
@@ -200,6 +201,45 @@ export default function compile(content) {
 
   }
 
+  let parseObject = function () {
+
+    let keys = [ ], values = [ ], current = keys
+
+    // 跳过开始字符 {
+    index++
+
+    while (index < length) {
+      charCode = getCharCode()
+      // }
+      if (charCode === char.CODE_CBRACE) {
+        index++
+        if (keys.length !== values.length) {
+          throwError()
+        }
+        return { keys, values }
+      }
+      // :
+      else if (charCode === char.CHAR_COLON) {
+        current = values
+        index++
+      }
+      // ,
+      else if (charCode === char.CODE_COMMA) {
+        current = keys
+        index++
+      }
+      else {
+        array.push(
+          current,
+          parseExpression()
+        )
+      }
+    }
+
+    throwError()
+
+  }
+
   let parseOperator = function (sortedOperatorList) {
 
     skipWhitespace()
@@ -301,6 +341,14 @@ export default function compile(content) {
       return new ArrayNode(
         cutString(start),
         temp
+      )
+    }
+    else if (charCode === char.CHAR_OBRACE) {
+      temp = parseObject()
+      return new ObjectNode(
+        cutString(start),
+        temp.keys,
+        temp.values
       )
     }
     // (xx)

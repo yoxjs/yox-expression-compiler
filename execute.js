@@ -2,6 +2,7 @@
 import executeFunction from 'yox-common/function/execute'
 
 import * as env from 'yox-common/util/env'
+import * as array from 'yox-common/util/array'
 import * as keypathUtil from 'yox-common/util/keypath'
 
 import * as nodeType from './src/nodeType'
@@ -66,6 +67,17 @@ executor[ nodeType.ARRAY ] = function (node, getter, context) {
       return execute(node, getter, context)
     }
   )
+}
+
+executor[ nodeType.OBJECT ] = function (node, getter, context) {
+  let result = { }
+  array.each(
+    node.keys,
+    function (key, index) {
+      result[ key ] = execute(node.values[ index ], getter, context)
+    }
+  )
+  return result
 }
 
 executor[ nodeType.CALL ] = function (node, getter, context) {
