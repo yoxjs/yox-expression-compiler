@@ -53,7 +53,7 @@ export const ARRAY = 7
  *
  * @type {number}
  */
-export const Object = 8
+export const OBJECT = 8
 
 /**
  * 函数调用表达式，如 a()

@@ -7,6 +7,7 @@ import * as string from 'yox-common/util/string'
 import * as logger from 'yox-common/util/logger'
 
 import * as operator from './src/operator'
+import * as nodeType from './src/nodeType'
 
 import ArrayNode from './src/node/Array'
 import ObjectNode from './src/node/Object'
@@ -216,10 +217,25 @@ export default function compile(content) {
         if (keys.length !== values.length) {
           throwError()
         }
-        return { keys, values }
+        return {
+          keys: keys.map(
+            function (item) {
+              if (item.type === nodeType.IDENTIFIER) {
+                return item.name
+              }
+              else if (item.type === nodeType.LITERAL) {
+                return item.value
+              }
+              else {
+                throwError()
+              }
+            }
+          ),
+          values,
+        }
       }
       // :
-      else if (charCode === char.CHAR_COLON) {
+      else if (charCode === char.CODE_COLON) {
         current = values
         index++
       }
@@ -343,7 +359,7 @@ export default function compile(content) {
         temp
       )
     }
-    else if (charCode === char.CHAR_OBRACE) {
+    else if (charCode === char.CODE_OBRACE) {
       temp = parseObject()
       return new ObjectNode(
         cutString(start),
