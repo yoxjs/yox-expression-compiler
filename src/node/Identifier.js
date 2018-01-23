@@ -13,7 +13,7 @@ export default class Identifier extends Node {
   constructor(raw, name) {
     super(nodeType.IDENTIFIER, raw)
     this.name = name
-    this.keypath = name
+    this.staticKeypath = name
   }
 
 }

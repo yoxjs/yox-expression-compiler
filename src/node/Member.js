@@ -29,10 +29,10 @@ export default class Member extends Node {
 
     this.props = props
 
-    if (object.keypath
+    if (object.staticKeypath
       && prop.type === nodeType.LITERAL
     ) {
-      this.keypath = keypathUtil.join(object.keypath, prop.value)
+      this.staticKeypath = keypathUtil.join(object.staticKeypath, prop.value)
     }
 
   }

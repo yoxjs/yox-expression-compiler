@@ -19,7 +19,7 @@ executor[ nodeType.IDENTIFIER ] = function (node, getter) {
 }
 
 executor[ nodeType.MEMBER ] = function (node, getter, context) {
-  let { keypath } = node
+  let keypath = node.staticKeypath
   if (!keypath) {
     let keypaths = node.props.map(
       function (node, index) {
@@ -37,7 +37,7 @@ executor[ nodeType.MEMBER ] = function (node, getter, context) {
         }
       }
     )
-    keypath = keypathUtil.stringify(keypaths, env.FALSE)
+    keypath = node.dynamicKeypath = keypathUtil.stringify(keypaths, env.FALSE)
   }
   return getter(keypath)
 }
