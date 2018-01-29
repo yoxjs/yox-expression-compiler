@@ -3,7 +3,6 @@ import executeFunction from 'yox-common/function/execute'
 
 import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
-import * as keypathUtil from 'yox-common/util/keypath'
 
 import * as nodeType from './src/nodeType'
 import * as interpreter from './src/interpreter'
@@ -21,23 +20,25 @@ executor[ nodeType.IDENTIFIER ] = function (node, getter) {
 executor[ nodeType.MEMBER ] = function (node, getter, context) {
   let keypath = node.staticKeypath
   if (!keypath) {
-    let keypaths = node.props.map(
-      function (node, index) {
-        let { type } = node
-        if (type !== nodeType.LITERAL) {
-          if (index > 0) {
-            return execute(node, getter, context)
+    keypath =
+    node.dynamicKeypath = node.props
+      .map(
+        function (node, index) {
+          let { type } = node
+          if (type !== nodeType.LITERAL) {
+            if (index > 0) {
+              return execute(node, getter, context)
+            }
+            else if (type === nodeType.IDENTIFIER) {
+              return node.name
+            }
           }
-          else if (type === nodeType.IDENTIFIER) {
-            return node.name
+          else {
+            return node.value
           }
         }
-        else {
-          return node.value
-        }
-      }
-    )
-    keypath = node.dynamicKeypath = keypathUtil.stringify(keypaths, env.FALSE)
+      )
+      .join(env.KEYPATH_SEPARATOR)
   }
   return getter(keypath)
 }

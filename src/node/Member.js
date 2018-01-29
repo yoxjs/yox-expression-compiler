@@ -2,8 +2,8 @@
 import Node from './Node'
 import * as nodeType from '../nodeType'
 
+import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
-import * as keypathUtil from 'yox-common/util/keypath'
 
 /**
  * Member 节点
@@ -18,12 +18,11 @@ export default class Member extends Node {
     super(nodeType.MEMBER, raw)
 
     let props = [ ]
-    if (object.type === nodeType.MEMBER) {
-      array.push(props, object.props)
-    }
-    else {
-      array.push(props, object)
-    }
+
+    array.push(
+      props,
+      object.type === nodeType.MEMBER ? object.props : object
+    )
 
     array.push(props, prop)
 
@@ -32,7 +31,7 @@ export default class Member extends Node {
     if (object.staticKeypath
       && prop.type === nodeType.LITERAL
     ) {
-      this.staticKeypath = keypathUtil.join(object.staticKeypath, prop.value)
+      this.staticKeypath = object.staticKeypath + env.KEYPATH_SEPARATOR + prop.value
     }
 
   }
