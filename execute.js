@@ -21,8 +21,8 @@ executor[ nodeType.MEMBER ] = function (node, getter, context) {
   let keypath = node.staticKeypath
   if (!keypath) {
     keypath =
-    node.dynamicKeypath = node.props
-      .map(
+    node.dynamicKeypath = array.join(
+      node.props.map(
         function (node, index) {
           let { type } = node
           if (type !== nodeType.LITERAL) {
@@ -37,8 +37,9 @@ executor[ nodeType.MEMBER ] = function (node, getter, context) {
             return node.value
           }
         }
-      )
-      .join(env.KEYPATH_SEPARATOR)
+      ),
+      env.KEYPATH_SEPARATOR
+    )
   }
   return getter(keypath)
 }
