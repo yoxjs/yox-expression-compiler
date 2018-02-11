@@ -12,7 +12,3 @@ export default class Node {
   }
 
 }
-
-Node.is = function (node) {
-  return node instanceof Node
-}

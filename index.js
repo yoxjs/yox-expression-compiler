@@ -82,7 +82,7 @@ export function compile(content) {
     return compileCache[ content ]
   }
 
-  let { length } = content, index = 0, charCode
+  let length = content[ env.RAW_LENGTH ], index = 0, charCode
 
   let throwError = function () {
     logger.fatal(`Failed to compile expression: ${char.CHAR_BREAKLINE}${content}`)
@@ -217,7 +217,7 @@ export function compile(content) {
       // }
       if (charCode === char.CODE_CBRACE) {
         index++
-        if (keys.length !== values.length) {
+        if (keys[ env.RAW_LENGTH ] !== values[ env.RAW_LENGTH ]) {
           throwError()
         }
         return {
@@ -275,7 +275,7 @@ export function compile(content) {
     )
 
     if (match) {
-      index += match.length
+      index += match[ env.RAW_LENGTH ]
       return match
     }
 
@@ -401,7 +401,7 @@ export function compile(content) {
     // 处理优先级，确保循环结束时，是相同的优先级操作
     while (next = parseOperator(operator.binaryList)) {
 
-      length = stack.length
+      length = stack[ env.RAW_LENGTH ]
 
       if (length > 7 && operator.binaryMap[ next ] < stack[ length - 4 ]) {
         stack.splice(
@@ -425,7 +425,7 @@ export function compile(content) {
     }
 
     while (env.TRUE) {
-      length = stack.length
+      length = stack[ env.RAW_LENGTH ]
       if (length > 8 && stack[ length - 4 ] > stack[ length - 9 ]) {
         stack.splice(
           length - 7,
