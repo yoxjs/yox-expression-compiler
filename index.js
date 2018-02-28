@@ -594,14 +594,18 @@ executor[ nodeType.OBJECT ] = function (node, getter, context) {
 }
 
 executor[ nodeType.CALL ] = function (node, getter, context) {
-  return executeFunction(
-    execute(node.callee, getter, context),
-    context,
-    node.args.map(
+  let { args } = node
+  if (args) {
+    args = args.map(
       function (node) {
         return execute(node, getter, context)
       }
     )
+  }
+  return executeFunction(
+    execute(node.callee, getter, context),
+    context,
+    args
   )
 }
 
