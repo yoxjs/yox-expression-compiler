@@ -28,6 +28,10 @@ export default class Member extends Node {
 
     this.props = props
 
+    if (props[ 0 ].name === env.RAW_THIS) {
+      this.lookup = env.FALSE
+    }
+
     if (object.staticKeypath
       && prop.type === nodeType.LITERAL
     ) {
