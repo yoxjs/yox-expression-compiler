@@ -28,7 +28,7 @@ export default class Member extends Node {
 
     array.push(props, prop)
 
-    if (props[ 0 ].name === env.RAW_THIS) {
+    if (props[ 0 ].raw === env.RAW_THIS) {
       this.lookup = env.FALSE
       props.shift()
     }
