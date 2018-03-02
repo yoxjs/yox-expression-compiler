@@ -525,7 +525,7 @@ executor[ nodeType.LITERAL ] = function (node) {
 }
 
 executor[ nodeType.IDENTIFIER ] = function (node, getter) {
-  return getter(node.name, node.lookup)
+  return getter(node.name, node)
 }
 
 executor[ nodeType.MEMBER ] = function (node, getter, context) {
@@ -552,7 +552,7 @@ executor[ nodeType.MEMBER ] = function (node, getter, context) {
       env.KEYPATH_SEPARATOR
     )
   }
-  return getter(keypath, node.lookup)
+  return getter(keypath, node)
 }
 
 executor[ nodeType.UNARY ] = function (node, getter, context) {
