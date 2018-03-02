@@ -15,14 +15,12 @@ export default class Identifier extends Node {
 
   constructor(raw, name) {
     super(nodeType.IDENTIFIER, raw)
-    this.name = name
     if (name === env.RAW_THIS) {
+      name = char.CHAR_BLANK
       this.lookup = env.FALSE
-      this.staticKeypath = char.CHAR_BLANK
     }
-    else {
-      this.staticKeypath = name
-    }
+    this.name =
+    this.staticKeypath = name
   }
 
 }
