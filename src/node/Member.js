@@ -2,6 +2,8 @@
 import Node from './Node'
 import * as nodeType from '../nodeType'
 
+import isDef from 'yox-common/function/isDef'
+
 import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
 
@@ -26,16 +28,21 @@ export default class Member extends Node {
 
     array.push(props, prop)
 
-    this.props = props
-
     if (props[ 0 ].name === env.RAW_THIS) {
       this.lookup = env.FALSE
+      props.shift()
     }
 
-    if (object.staticKeypath
+    this.props = props
+
+    let { staticKeypath } = object
+
+    if (isDef(staticKeypath)
       && prop.type === nodeType.LITERAL
     ) {
-      this.staticKeypath = object.staticKeypath + env.KEYPATH_SEPARATOR + prop.value
+      this.staticKeypath = staticKeypath
+        ? staticKeypath + env.KEYPATH_SEPARATOR + prop.value
+        : prop.value
     }
 
   }
