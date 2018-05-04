@@ -2,8 +2,14 @@
 import Node from './Node'
 import * as nodeType from '../nodeType'
 
+import * as config from 'yox-config'
 import * as env from 'yox-common/util/env'
 import * as char from 'yox-common/util/char'
+import * as object from 'yox-common/util/object'
+
+let names = { }
+names[ env.RAW_THIS ] = char.CHAR_BLANK
+names[ env.KEYPATH_PARENT ] = config.SPECIAL_PARENT
 
 /**
  * Identifier 节点
@@ -15,11 +21,8 @@ export default class Identifier extends Node {
 
   constructor(raw, name) {
     super(nodeType.IDENTIFIER, raw)
-    if (name === env.RAW_THIS) {
-      name = char.CHAR_BLANK
-      this.lookup = env.FALSE
-    }
-    else if (name === env.KEYPATH_PARENT) {
+    if (object.has(names, name)) {
+      name = names[ name ]
       this.lookup = env.FALSE
     }
     this.name =

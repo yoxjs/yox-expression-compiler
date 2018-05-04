@@ -294,7 +294,10 @@ export function compile(content) {
       node = new MemberNode(
         cutString(prevStart),
         prevNode,
-        node
+        new LiteralNode(
+          node.raw,
+          node.name
+        )
       )
     }
 
