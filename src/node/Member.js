@@ -29,11 +29,9 @@ export default class Member extends Node {
     array.push(props, prop)
 
     let firstRaw = props[ 0 ].raw
-    if (firstRaw === env.RAW_THIS) {
-      this.lookup = env.FALSE
-      props.shift()
-    }
-    else if (firstRaw === env.KEYPATH_PARENT) {
+    if (firstRaw === env.KEYPATH_PUBLIC_CURRENT
+      || firstRaw === env.KEYPATH_PUBLIC_PARENT
+    ) {
       this.lookup = env.FALSE
     }
 

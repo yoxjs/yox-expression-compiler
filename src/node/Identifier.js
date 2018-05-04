@@ -2,14 +2,13 @@
 import Node from './Node'
 import * as nodeType from '../nodeType'
 
-import * as config from 'yox-config'
 import * as env from 'yox-common/util/env'
 import * as char from 'yox-common/util/char'
 import * as object from 'yox-common/util/object'
 
 let names = { }
-names[ env.RAW_THIS ] = char.CHAR_BLANK
-names[ env.KEYPATH_PARENT ] = config.SPECIAL_PARENT
+names[ env.KEYPATH_PUBLIC_CURRENT ] = env.KEYPATH_PRIVATE_CURRENT
+names[ env.KEYPATH_PUBLIC_PARENT ] = env.KEYPATH_PRIVATE_PARENT
 
 /**
  * Identifier 节点

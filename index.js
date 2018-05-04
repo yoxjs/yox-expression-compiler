@@ -363,14 +363,14 @@ export function compile(content) {
     // ./
     if (charCode === char.CODE_SLASH) {
       index++
-      node = new IdentifierNode(env.RAW_THIS, env.RAW_THIS)
+      node = new IdentifierNode(env.KEYPATH_PUBLIC_CURRENT, env.KEYPATH_PUBLIC_CURRENT)
     }
     // ../
     else if (charCode === char.CODE_DOT) {
       index++
       if (getCharCode() === char.CODE_SLASH) {
         index++
-        node = new IdentifierNode(env.KEYPATH_PARENT, env.KEYPATH_PARENT)
+        node = new IdentifierNode(env.KEYPATH_PUBLIC_PARENT, env.KEYPATH_PUBLIC_PARENT)
       }
     }
 
@@ -379,7 +379,10 @@ export function compile(content) {
         node = new MemberNode(
           cutString(start),
           prevNode,
-          node
+          new LiteralNode(
+            node.raw,
+            node.name
+          )
         )
       }
       charCode = getCharCode()
