@@ -19,6 +19,9 @@ export default class Identifier extends Node {
       name = char.CHAR_BLANK
       this.lookup = env.FALSE
     }
+    else if (name === env.KEYPATH_PARENT) {
+      this.lookup = env.FALSE
+    }
     this.name =
     this.staticKeypath = name
   }

@@ -93,6 +93,10 @@ export function compile(content) {
     return char.codeAt(content, index)
   }
 
+  let getNextCharCode = function () {
+    return char.codeAt(content, index + 1)
+  }
+
   let cutString = function (start, end) {
     return content.substring(start, end == env.NULL ? index : end)
   }
@@ -282,9 +286,17 @@ export function compile(content) {
 
   }
 
-  let parseVariable = function () {
+  let parseVariable = function (prevStart, prevNode) {
 
     let start = index, node = parseIdentifier(env.TRUE), temp
+
+    if (prevNode) {
+      node = new MemberNode(
+        cutString(prevStart),
+        prevNode,
+        node
+      )
+    }
 
     while (index < length) {
       // a(x)
@@ -328,6 +340,58 @@ export function compile(content) {
 
   }
 
+  let parseNumber = function (start) {
+    skipNumber()
+    let temp = cutString(start)
+    return new LiteralNode(
+      temp,
+      parseFloat(temp)
+    )
+  }
+
+  let parsePath = function (start, prevNode) {
+
+    // 跳过第一个点号
+    index++
+    charCode = getCharCode()
+
+    let node
+
+    // ./
+    if (charCode === char.CODE_SLASH) {
+      index++
+      node = new IdentifierNode(env.RAW_THIS, env.RAW_THIS)
+    }
+    // ../
+    else if (charCode === char.CODE_DOT) {
+      index++
+      if (getCharCode() === char.CODE_SLASH) {
+        index++
+        node = new IdentifierNode(env.KEYPATH_PARENT, env.KEYPATH_PARENT)
+      }
+    }
+
+    if (node) {
+      if (prevNode) {
+        node = new MemberNode(
+          cutString(start),
+          prevNode,
+          node
+        )
+      }
+      charCode = getCharCode()
+      if (charCode === char.CODE_DOT) {
+        return parsePath(start, node)
+      }
+      else if (isIdentifierStart(charCode)) {
+        return parseVariable(start, node)
+      }
+    }
+
+    throwError()
+
+  }
+
   let parseToken = function () {
 
     skipWhitespace()
@@ -346,14 +410,15 @@ export function compile(content) {
         string.slice(temp, 1, -1)
       )
     }
-    // 1.1 或 .1
-    else if (isDigit(charCode) || charCode === char.CODE_DOT) {
-      skipNumber()
-      temp = cutString(start)
-      return new LiteralNode(
-        temp,
-        parseFloat(temp)
-      )
+    // 1.1
+    else if (isDigit(charCode)) {
+      return parseNumber(start)
+    }
+    // .1  ./  ../
+    else if (charCode === char.CODE_DOT) {
+      return isDigit(getNextCharCode())
+        ? parseNumber(start)
+        : parsePath(start)
     }
     // [xx, xx]
     else if (charCode === char.CODE_OBRACK) {
@@ -551,7 +616,6 @@ executor[ nodeType.MEMBER ] = function (node, getter, context) {
         keypath = keypathUtil.join(keypath, next)
       }
     )
-    node.dynamicKeypath = keypath
   }
   return getter(keypath, node)
 }
