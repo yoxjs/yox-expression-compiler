@@ -410,11 +410,8 @@ export function compile(content) {
     if (charCode === char.CODE_SQUOTE || charCode === char.CODE_DQUOTE) {
       // 截出的字符串包含引号
       skipString()
-      temp = cutString(start)
-      return new LiteralNode(
-        temp,
-        string.slice(temp, 1, -1)
-      )
+      temp = string.slice(cutString(start), 1, -1)
+      return new LiteralNode(temp, temp)
     }
     // 1.1
     else if (isDigit(charCode)) {
