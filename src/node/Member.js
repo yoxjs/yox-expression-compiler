@@ -43,8 +43,8 @@ export default class Member extends Node {
       && prop.type === nodeType.LITERAL
     ) {
       this.staticKeypath = staticKeypath
-        ? staticKeypath + env.KEYPATH_SEPARATOR + prop.value
-        : prop.value
+        ? staticKeypath + env.KEYPATH_SEPARATOR + prop[ env.RAW_VALUE ]
+        : prop[ env.RAW_VALUE ]
     }
 
   }

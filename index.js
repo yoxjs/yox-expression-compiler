@@ -232,7 +232,7 @@ export function compile(content) {
                 return item.name
               }
               else if (item.type === nodeType.LITERAL) {
-                return item.value
+                return item[ env.RAW_VALUE ]
               }
               else {
                 throwError()
@@ -590,7 +590,7 @@ export function compile(content) {
 const executor = { }
 
 executor[ nodeType.LITERAL ] = function (node) {
-  return node.value
+  return node[ env.RAW_VALUE ]
 }
 
 executor[ nodeType.IDENTIFIER ] = function (node, getter) {
@@ -614,7 +614,7 @@ executor[ nodeType.MEMBER ] = function (node, getter, context) {
           }
         }
         else {
-          next = node.value
+          next = node[ env.RAW_VALUE ]
         }
         keypath = keypathUtil.join(keypath, next)
       }
