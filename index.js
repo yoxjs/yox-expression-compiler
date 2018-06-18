@@ -229,7 +229,7 @@ export function compile(content) {
           keys: keys.map(
             function (item) {
               if (item.type === nodeType.IDENTIFIER) {
-                return item.name
+                return item[ env.RAW_NAME ]
               }
               else if (item.type === nodeType.LITERAL) {
                 return item[ env.RAW_VALUE ]
@@ -296,7 +296,7 @@ export function compile(content) {
         prevNode,
         new LiteralNode(
           node.raw,
-          node.name
+          node[ env.RAW_NAME ]
         )
       )
     }
@@ -321,7 +321,7 @@ export function compile(content) {
           node,
           new LiteralNode(
             temp.raw,
-            temp.name
+            temp[ env.RAW_NAME ]
           )
         )
       }
@@ -381,7 +381,7 @@ export function compile(content) {
           prevNode,
           new LiteralNode(
             node.raw,
-            node.name
+            node[ env.RAW_NAME ]
           )
         )
       }
@@ -594,7 +594,7 @@ executor[ nodeType.LITERAL ] = function (node) {
 }
 
 executor[ nodeType.IDENTIFIER ] = function (node, getter) {
-  return getter(node.name, node)
+  return getter(node[ env.RAW_NAME ], node)
 }
 
 executor[ nodeType.MEMBER ] = function (node, getter, context) {
@@ -610,7 +610,7 @@ executor[ nodeType.MEMBER ] = function (node, getter, context) {
             next = execute(node, getter, context)
           }
           else if (type === nodeType.IDENTIFIER) {
-            next = node.name
+            next = node[ env.RAW_NAME ]
           }
         }
         else {
