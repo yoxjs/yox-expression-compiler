@@ -23,7 +23,7 @@ export default class Member extends Node {
 
     array.push(
       props,
-      object.type === nodeType.MEMBER ? object.props : object
+      object[ env.RAW_TYPE ] === nodeType.MEMBER ? object.props : object
     )
 
     array.push(props, prop)
@@ -40,7 +40,7 @@ export default class Member extends Node {
     let { staticKeypath } = object
 
     if (isDef(staticKeypath)
-      && prop.type === nodeType.LITERAL
+      && prop[ env.RAW_TYPE ] === nodeType.LITERAL
     ) {
       this.staticKeypath = staticKeypath
         ? staticKeypath + env.KEYPATH_SEPARATOR + prop[ env.RAW_VALUE ]

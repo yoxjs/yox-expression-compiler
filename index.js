@@ -228,10 +228,10 @@ export function compile(content) {
         return {
           keys: keys.map(
             function (item) {
-              if (item.type === nodeType.IDENTIFIER) {
+              if (item[ env.RAW_TYPE ] === nodeType.IDENTIFIER) {
                 return item[ env.RAW_NAME ]
               }
-              else if (item.type === nodeType.LITERAL) {
+              else if (item[ env.RAW_TYPE ] === nodeType.LITERAL) {
                 return item[ env.RAW_VALUE ]
               }
               else {
@@ -604,7 +604,7 @@ executor[ nodeType.MEMBER ] = function (node, getter, context) {
     array.each(
       node.props,
       function (node, index) {
-        let { type } = node, next = char.CHAR_BLANK
+        let type = node[ env.RAW_TYPE ], next = char.CHAR_BLANK
         if (type !== nodeType.LITERAL) {
           if (index > 0) {
             next = execute(node, getter, context)
@@ -686,5 +686,5 @@ executor[ nodeType.CALL ] = function (node, getter, context) {
  * @return {*}
  */
 export function execute(node, getter, context) {
-  return executor[ node.type ](node, getter, context)
+  return executor[ node[ env.RAW_TYPE ] ](node, getter, context)
 }
