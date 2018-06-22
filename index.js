@@ -598,7 +598,7 @@ executor[ nodeType.IDENTIFIER ] = function (node, getter) {
 }
 
 executor[ nodeType.MEMBER ] = function (node, getter, context) {
-  let keypath = node.staticKeypath
+  let keypath = node[ env.RAW_STATIC_KEYPATH ]
   if (!keypath) {
     keypath = char.CHAR_BLANK
     array.each(

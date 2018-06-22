@@ -25,7 +25,7 @@ export default class Identifier extends Node {
       this.lookup = env.FALSE
     }
     this[ env.RAW_NAME ] =
-    this.staticKeypath = name
+    this[ env.RAW_STATIC_KEYPATH ] = name
   }
 
 }

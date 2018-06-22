@@ -37,12 +37,12 @@ export default class Member extends Node {
 
     this.props = props
 
-    let { staticKeypath } = object
+    let staticKeypath = object[ env.RAW_STATIC_KEYPATH ]
 
     if (isDef(staticKeypath)
       && prop[ env.RAW_TYPE ] === nodeType.LITERAL
     ) {
-      this.staticKeypath = staticKeypath
+      this[ env.RAW_STATIC_KEYPATH ] = staticKeypath
         ? staticKeypath + env.KEYPATH_SEPARATOR + prop[ env.RAW_VALUE ]
         : prop[ env.RAW_VALUE ]
     }
