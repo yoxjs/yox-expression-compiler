@@ -83,33 +83,33 @@ export function compile(content) {
     return compileCache[ content ]
   }
 
-  let length = content[ env.RAW_LENGTH ], index = 0, charCode
+  let length = content[ env.RAW_LENGTH ], index = 0, charCode,
 
-  let throwError = function () {
+  throwError = function () {
     logger.fatal(`Failed to compile expression: ${char.CHAR_BREAKLINE}${content}`)
-  }
+  },
 
-  let getCharCode = function () {
+  getCharCode = function () {
     return char.codeAt(content, index)
-  }
+  },
 
-  let getNextCharCode = function () {
+  getNextCharCode = function () {
     return char.codeAt(content, index + 1)
-  }
+  },
 
-  let cutString = function (start, end) {
+  cutString = function (start, end) {
     return content.substring(start, end == env.NULL ? index : end)
-  }
+  },
 
-  let skipWhitespace = function () {
+  skipWhitespace = function () {
     while ((charCode = getCharCode())
       && (charCode === char.CODE_WHITESPACE || charCode === char.CODE_TAB)
     ) {
       index++
     }
-  }
+  },
 
-  let skipNumber = function () {
+  skipNumber = function () {
     if (getCharCode() === char.CODE_DOT) {
       skipDecimal()
     }
@@ -119,16 +119,16 @@ export function compile(content) {
         skipDecimal()
       }
     }
-  }
+  },
 
-  let skipDigit = function () {
+  skipDigit = function () {
     do {
       index++
     }
     while (isDigit(getCharCode()))
-  }
+  },
 
-  let skipDecimal = function () {
+  skipDecimal = function () {
     // 跳过点号
     index++
     // 后面必须紧跟数字
@@ -138,9 +138,9 @@ export function compile(content) {
     else {
       throwError()
     }
-  }
+  },
 
-  let skipString = function () {
+  skipString = function () {
 
     let quote = getCharCode()
 
@@ -155,23 +155,23 @@ export function compile(content) {
 
     throwError()
 
-  }
+  },
 
-  let skipIdentifier = function () {
+  skipIdentifier = function () {
     // 第一个字符一定是经过 isIdentifierStart 判断的
     // 因此循环至少要执行一次
     do {
       index++
     }
     while (isIdentifierPart(getCharCode()))
-  }
+  },
 
-  let parseIdentifier = function (careKeyword) {
+  parseIdentifier = function (careKeyword) {
 
-    let start = index
+    let start = index, literal
     skipIdentifier()
 
-    let literal = cutString(start)
+    literal = cutString(start)
     if (literal) {
       return careKeyword && object.has(keywords, literal)
         ? new LiteralNode(literal, keywords[ literal ])
@@ -180,9 +180,9 @@ export function compile(content) {
 
     throwError()
 
-  }
+  },
 
-  let parseTuple = function (delimiter) {
+  parseTuple = function (delimiter) {
 
     let list = [ ]
 
@@ -208,9 +208,9 @@ export function compile(content) {
 
     throwError()
 
-  }
+  },
 
-  let parseObject = function () {
+  parseObject = function () {
 
     let keys = [ ], values = [ ], current = keys
 
@@ -262,9 +262,9 @@ export function compile(content) {
 
     throwError()
 
-  }
+  },
 
-  let parseOperator = function (sortedOperatorList) {
+  parseOperator = function (sortedOperatorList) {
 
     skipWhitespace()
 
@@ -284,9 +284,9 @@ export function compile(content) {
       return match
     }
 
-  }
+  },
 
-  let parseVariable = function (prevStart, prevNode) {
+  parseVariable = function (prevStart, prevNode) {
 
     let start = index, node = parseIdentifier(env.TRUE), temp
 
@@ -341,18 +341,18 @@ export function compile(content) {
 
     return node
 
-  }
+  },
 
-  let parseNumber = function (start) {
+  parseNumber = function (start) {
     skipNumber()
     let temp = cutString(start)
     return new LiteralNode(
       temp,
       parseFloat(temp)
     )
-  }
+  },
 
-  let parsePath = function (start, prevNode) {
+  parsePath = function (start, prevNode) {
 
     // 跳过第一个点号
     index++
@@ -396,9 +396,9 @@ export function compile(content) {
 
     throwError()
 
-  }
+  },
 
-  let parseToken = function () {
+  parseToken = function () {
 
     skipWhitespace()
 
@@ -458,9 +458,9 @@ export function compile(content) {
       )
     }
     throwError()
-  }
+  },
 
-  let parseBinary = function () {
+  parseBinary = function () {
 
     let stack = [ index, parseToken(), index ], next, length
 
@@ -524,9 +524,9 @@ export function compile(content) {
       }
     }
 
-  }
+  },
 
-  let parseExpression = function (delimiter) {
+  parseExpression = function (delimiter) {
 
     // 主要是区分三元和二元表达式
     // 三元表达式可以认为是 3 个二元表达式组成的
