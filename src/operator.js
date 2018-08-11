@@ -23,6 +23,9 @@ export const LTE = '<='
 export const GT = '>'
 export const GTE = '>='
 
+export const TO = '=>'
+export const UNTIL = '->'
+
 export const unaryMap = { }
 
 unaryMap[ PLUS ] =
@@ -37,25 +40,28 @@ export const unaryList = object.sort(unaryMap, env.TRUE)
 // 操作符和对应的优先级，数字越大优先级越高
 export const binaryMap = { }
 
-binaryMap[ OR ] = 1
+binaryMap[ TO ] =
+binaryMap[ UNTIL ] = 1
 
-binaryMap[ AND ] = 2
+binaryMap[ OR ] = 2
+
+binaryMap[ AND ] = 3
 
 binaryMap[ LE ] =
 binaryMap[ LNE ] =
 binaryMap[ SE ] =
-binaryMap[ SNE ] = 3
+binaryMap[ SNE ] = 4
 
 binaryMap[ LT ] =
 binaryMap[ LTE ] =
 binaryMap[ GT ] =
-binaryMap[ GTE ] = 4
+binaryMap[ GTE ] = 5
 
 binaryMap[ PLUS ] =
-binaryMap[ MINUS ] = 5
+binaryMap[ MINUS ] = 6
 
 binaryMap[ MULTIPLY ] =
 binaryMap[ DIVIDE ] =
-binaryMap[ MODULO ] = 6
+binaryMap[ MODULO ] = 7
 
 export const binaryList = object.sort(binaryMap, env.TRUE)

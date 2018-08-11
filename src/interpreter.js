@@ -1,4 +1,5 @@
 
+import * as env from 'yox-common/util/env'
 import * as operator from './operator'
 
 export const unary = { }
@@ -65,4 +66,30 @@ binary[ operator.DIVIDE ] = function (a, b) {
 }
 binary[ operator.MODULO ] = function (a, b) {
   return a % b
+}
+binary[ operator.TO ] = function (a, b) {
+  return a > b
+    ? function (callback) {
+        for (let i = a; i >= b; i--) {
+          callback(i)
+        }
+      }
+    : function (callback) {
+        for (let i = a; i <= b; i++) {
+          callback(i)
+        }
+      }
+}
+binary[ operator.UNTIL ] = function (a, b) {
+  return a > b
+    ? function (callback) {
+        for (let i = a; i > b; i--) {
+          callback(i)
+        }
+      }
+    : function (callback) {
+        for (let i = a; i < b; i++) {
+          callback(i)
+        }
+      }
 }
