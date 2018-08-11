@@ -70,26 +70,26 @@ binary[ operator.MODULO ] = function (a, b) {
 binary[ operator.TO ] = function (a, b) {
   return a > b
     ? function (callback) {
-        for (let i = a; i >= b; i--) {
-          callback(i)
+        for (let i = a, index = 0; i >= b; i--) {
+          callback(i, index++)
         }
       }
     : function (callback) {
-        for (let i = a; i <= b; i++) {
-          callback(i)
+        for (let i = a, index = 0; i <= b; i++) {
+          callback(i, index++)
         }
       }
 }
 binary[ operator.UNTIL ] = function (a, b) {
   return a > b
     ? function (callback) {
-        for (let i = a; i > b; i--) {
-          callback(i)
+        for (let i = a, index = 0; i > b; i--) {
+          callback(i, index++)
         }
       }
     : function (callback) {
-        for (let i = a; i < b; i++) {
-          callback(i)
+        for (let i = a, index = 0; i < b; i++) {
+          callback(i, index++)
         }
       }
 }
