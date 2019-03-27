@@ -4,15 +4,16 @@ import * as nodeType from '../nodeType'
 
 /**
  * Ternary 节点
- *
- * @param {string} raw
- * @param {Node} test
- * @param {Node} yes
- * @param {Node} no
  */
 export default class Ternary extends Node {
 
-  constructor(raw, test, yes, no) {
+  test: Node
+
+  yes: Node
+
+  no: Node
+
+  constructor(raw: string, test: Node, yes: Node, no: Node) {
     super(nodeType.TERNARY, raw)
     this.test = test
     this.yes = yes

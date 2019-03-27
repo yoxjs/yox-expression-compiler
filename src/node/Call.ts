@@ -4,14 +4,14 @@ import * as nodeType from '../nodeType'
 
 /**
  * Call 节点
- *
- * @param {string} raw
- * @param {Node} callee
- * @param {Array.<Node>} args
  */
 export default class Call extends Node {
 
-  constructor(raw, callee, args) {
+  callee: Node
+
+  args: Node[]
+
+  constructor(raw: string, callee: Node, args: Node[]) {
     super(nodeType.CALL, raw)
     this.callee = callee
     this.args = args
