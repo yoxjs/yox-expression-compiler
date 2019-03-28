@@ -7,11 +7,8 @@ import * as nodeType from '../nodeType'
  */
 export default class Array extends Node {
 
-  elements: Node[]
-
-  constructor(raw: string, elements: Node[]) {
+  constructor(raw: string, public elements: Node[]) {
     super(nodeType.ARRAY, raw)
-    this.elements = elements
   }
 
 }

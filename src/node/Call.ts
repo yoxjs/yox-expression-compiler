@@ -7,14 +7,8 @@ import * as nodeType from '../nodeType'
  */
 export default class Call extends Node {
 
-  callee: Node
-
-  args: Node[]
-
-  constructor(raw: string, callee: Node, args: Node[]) {
+  constructor(raw: string, public callee: Node, public args: Node[]) {
     super(nodeType.CALL, raw)
-    this.callee = callee
-    this.args = args
   }
 
 }

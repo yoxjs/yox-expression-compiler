@@ -7,17 +7,8 @@ import * as nodeType from '../nodeType'
  */
 export default class Binary extends Node {
 
-  left: Node
-
-  operator: string
-
-  right: Node
-
-  constructor(raw: string, left: Node, operator: string, right: Node) {
+  constructor(raw: string, public left: Node, public operator: string, public right: Node) {
     super(nodeType.BINARY, raw)
-    this.left = left
-    this.operator = operator
-    this.right = right
   }
 
 }

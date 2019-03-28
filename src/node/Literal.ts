@@ -7,11 +7,8 @@ import * as nodeType from '../nodeType'
  */
 export default class Literal extends Node {
 
-  value: any
-
-  constructor(raw: string, value: any) {
+  constructor(raw: string, public value: any) {
     super(nodeType.LITERAL, raw)
-    this.value = value
   }
 
 }

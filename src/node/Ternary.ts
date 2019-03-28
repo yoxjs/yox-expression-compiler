@@ -1,4 +1,3 @@
-
 import Node from './Node'
 import * as nodeType from '../nodeType'
 
@@ -7,17 +6,8 @@ import * as nodeType from '../nodeType'
  */
 export default class Ternary extends Node {
 
-  test: Node
-
-  yes: Node
-
-  no: Node
-
-  constructor(raw: string, test: Node, yes: Node, no: Node) {
+  constructor(raw: string, public test: Node, public yes: Node, public no: Node) {
     super(nodeType.TERNARY, raw)
-    this.test = test
-    this.yes = yes
-    this.no = no
   }
 
 }
