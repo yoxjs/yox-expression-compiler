@@ -5,14 +5,18 @@ import * as array from 'yox-common/util/array'
 import * as string from 'yox-common/util/string'
 import * as object from 'yox-common/util/object'
 import * as logger from 'yox-common/util/logger'
+import * as keypathUtil from 'yox-common/util/keypath'
 
 import toNumber from 'yox-common/function/toNumber'
+
+import * as nodeType from '../nodeType'
 
 import Node from '../node/Node'
 import Identifier from '../node/Identifier'
 import Literal from '../node/Literal'
 import Call from '../node/Call';
 import Member from '../node/Member';
+import Variable from '../node/Variable';
 
 
 export default class Scanner {
@@ -182,7 +186,7 @@ export default class Scanner {
   }
 
   /**
-   * 扫描元组，即 a, b, c 这种格式，可以是参数列表，也可以是数组
+   * 扫描元组，即 `a, b, c` 这种格式，可以是参数列表，也可以是数组
    *
    * @param startIndex
    * @param endCode 元组的结束字符编码
@@ -191,6 +195,7 @@ export default class Scanner {
 
     const instance = this, list: Node[] = []
 
+    loop:
     do {
       instance.advance()
       switch (instance.code) {
@@ -205,7 +210,7 @@ export default class Scanner {
 
         case CODE_EOF:
           instance.reportError(startIndex, 'parse tuple error')
-          break
+          break loop
 
         default:
           array.push(
@@ -215,17 +220,17 @@ export default class Scanner {
 
       }
     }
-    while (instance.index < instance.length)
+    while (env.TRUE)
 
   }
 
   /**
-   * 扫描路径，如 ./ 和 ../
+   * 扫描路径，如 `./` 和 `../`
    *
    * @param startIndex
    * @param prevNode
    */
-  scanPath(startIndex: number, prevNode?: Member | Identifier) {
+  scanPath(startIndex: number, prevNode?: Variable): Variable | void {
 
     // 方便压缩
     const instance = this
@@ -243,15 +248,13 @@ export default class Scanner {
     if (instance.code === char.CODE_SLASH) {
       instance.advance()
 
-      let node: Member | Identifier = new Identifier(name, name)
-
-      if (prevNode) {
-        node = new Member(
-          string.slice(instance.content, startIndex, instance.index),
-          prevNode,
-          new Literal(node.raw, name)
-        )
-      }
+      let node: Variable = prevNode
+        ? createMember(
+            string.slice(instance.content, startIndex, instance.index),
+            prevNode,
+            new Literal(name, name)
+          )
+        : createIdentifier(name, name)
 
       // 单纯是 ./ 或 ../ 没有意义
       // 后面必须跟着标识符或 ../
@@ -274,7 +277,7 @@ export default class Scanner {
    * 扫描变量
    *
    */
-  scanVariable(startIndex: number, careKeyword: boolean, prevNode?: Member | Identifier) {
+  scanVariable(startIndex: number, careKeyword: boolean, prevNode?: Variable) {
 
     switch (this.code) {
       // a(x)
@@ -339,9 +342,12 @@ export default class Scanner {
 
     const raw = this.cutString(isIdentifierPart)
 
+
+
+
     return careKeyword && object.has(keywords, raw)
       ? new Literal(raw, keywords[raw])
-      : new Identifier(raw, raw)
+      : createIdentifier(raw, raw)
 
   }
 
@@ -380,6 +386,14 @@ keywords[env.RAW_TRUE] = env.TRUE
 keywords[env.RAW_FALSE] = env.FALSE
 keywords[env.RAW_NULL] = env.NULL
 keywords[env.RAW_UNDEFINED] = env.UNDEFINED
+
+/**
+ * 对外和对内的路径表示法不同
+ */
+const keypathNames = {}
+
+keypathNames[env.KEYPATH_PUBLIC_CURRENT] = env.KEYPATH_PRIVATE_CURRENT
+keypathNames[env.KEYPATH_PUBLIC_PARENT] = env.KEYPATH_PRIVATE_PARENT
 
 /**
  * 是否是空白符，用下面的代码在浏览器测试一下
@@ -421,4 +435,56 @@ function isIdentifierStart(code: number): boolean {
  */
 function isIdentifierPart(code: number): boolean {
   return isIdentifierStart(code) || isDigit(code)
+}
+
+/**
+ * 把创建 Identifier 的转换逻辑从构造函数里抽出来，保持数据类的纯粹性
+ *
+ * @param raw
+ * @param name
+ */
+function createIdentifier(raw: string, name: string): Identifier {
+
+  let lookup = env.TRUE
+
+  // public -> private
+  if (object.has(keypathNames, name)) {
+    name = keypathNames[name]
+    lookup = env.FALSE
+  }
+
+  return new Identifier(raw, lookup, name)
+
+}
+
+/**
+ * 把创建 Member 的转换逻辑从构造函数里抽出来，保持数据类的纯粹性
+ *
+ * @param raw
+ * @param object
+ * @param prop
+ */
+function createMember(raw: string, object: Variable, prop: Variable | Literal) {
+
+  let props: Identifier[] = []
+
+  array.push(
+    props,
+    object.type === nodeType.MEMBER
+      ? (<Member>object).props
+      : object
+  )
+
+  array.push(props, prop)
+
+  let staticKeypath: string | void = env.UNDEFINED
+
+  if (is.string(object.staticKeypath)
+    && prop.type === nodeType.LITERAL
+  ) {
+    staticKeypath = keypathUtil.join(<string>object.staticKeypath, (<Literal>prop).value)
+  }
+
+  return new Member(raw, props[0].lookup, staticKeypath, props)
+
 }

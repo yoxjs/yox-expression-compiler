@@ -1,4 +1,3 @@
-
 import * as string from 'yox-common/util/string'
 
 /**
@@ -7,17 +6,11 @@ import * as string from 'yox-common/util/string'
 export default class Node {
 
   /**
-   * 节点类型
-   */
-  type: number
-
-  /**
    * 解析出来的原始字符串
    */
   raw: string
 
-  constructor(type: number, raw: string) {
-    this.type = type
+  constructor(public type: number, raw: string) {
     this.raw = string.trim(raw)
   }
 
