@@ -14,10 +14,9 @@ import * as nodeType from '../nodeType'
 import Node from '../node/Node'
 import Identifier from '../node/Identifier'
 import Literal from '../node/Literal'
-import Call from '../node/Call';
-import Member from '../node/Member';
-import Variable from '../node/Variable';
-
+import Call from '../node/Call'
+import Member from '../node/Member'
+import Variable from '../node/Variable'
 
 export default class Scanner {
 
@@ -35,7 +34,10 @@ export default class Scanner {
    * 向前移动一个字符
    */
   advance() {
-    this.code = ++this.index >= this.length ? CODE_EOF : char.codeAt(this.content, this.index)
+    const instance = this
+    if (instance.index < instance.length) {
+      instance.code = ++instance.index >= instance.length ? CODE_EOF : char.codeAt(instance.content, instance.index)
+    }
   }
 
   /**
@@ -47,30 +49,21 @@ export default class Scanner {
     return string.slice(this.content, startIndex, this.index)
   }
 
+  scan() {
+
+  }
+
   /**
    * 尝试解析下一个 token
    */
   scanToken() {
 
-    // 这两个是不会变的
-    const { content, length } = this
-
-    // 这两个是会变的
-    let { code, index } = this
-
     // 匹配第一个非空白符
-    while (isWhitespace(code)) {
-      if (++index < length) {
-        code = char.codeAt(content, index)
-      }
-      else {
-        code = CODE_EOF
-        break
-      }
+    while (isWhitespace(this.code)) {
+      this.advance()
     }
 
-    this.code = code
-    this.index = index
+    let { code, index } = this
 
     if (code === CODE_EOF) {
       return
@@ -134,25 +127,14 @@ export default class Scanner {
    * @param startIndex
    * @return
    */
-  scanNumber(startIndex: number): Literal | void {
+  scanNumber(startIndex: number): Literal | never {
 
-    const instance = this
-
-    // 数字有很多可能的形式，如 100、100.1、.1 等
-    // 先切出第一部分，raw 可能是整型部分，也可能是 .1 的全部
-    let raw = instance.cutString(isDigit, startIndex)
-
-    // 尽可能的尝试匹配小数，如果写成 1.2.3 或 .1.2 也会匹配成功，虽然它是个错误的数字
-    while (instance.code === char.CODE_DOT) {
-      raw += instance.cutString(isDigit)
-    }
+    const raw = this.cutString(isNumber, startIndex)
 
     // 尝试转型，如果转型失败，则确定是个错误的数字
-    if (is.numeric(raw)) {
-      return new Literal(raw, +raw)
-    }
-
-    instance.reportError(startIndex, `Invalid number literal when parsing ${raw}`)
+    return is.numeric(raw)
+      ? new Literal(raw, +raw)
+      : this.reportError(startIndex, `Invalid number literal when parsing ${raw}`)
 
   }
 
@@ -163,34 +145,38 @@ export default class Scanner {
    *
    * @param startIndex
    */
-  scanString(startIndex: number, endCode: number): Literal {
+  scanString(startIndex: number, endCode: number): Literal | never {
 
     const instance = this
 
-    // 记录上一个字符，因为结束引号前不能有转义字符
-    let lastCode: number
+    loop: while (env.TRUE) {
 
-    while (env.TRUE) {
-      lastCode = instance.code
       instance.advance()
 
-      if (instance.code === endCode && lastCode !== CODE_BACKSLASH) {
-        break
+      switch (instance.code) {
+        // 碰到转义符直接跳过下一个字符
+        case CODE_BACKSLASH:
+          instance.advance()
+          break
+
+        case endCode:
+          break loop
+
       }
-      else if (instance.code === CODE_EOF) {
-        instance.reportError(startIndex, 'Unterminated quote')
-        break
+
+      if (instance.code === CODE_EOF) {
+        return instance.reportError(startIndex, 'Unterminated quote')
       }
 
     }
 
-    // 不包含引号
-    const raw = instance.pick(startIndex + 1)
-
     // 跳过结束的引号
     instance.advance()
 
-    return new Literal(raw, raw)
+    const raw = instance.pick(startIndex)
+
+    // new Function 处理字符转义
+    return new Literal(raw, new Function(`return ${raw}`)())
 
   }
 
@@ -204,8 +190,7 @@ export default class Scanner {
 
     const instance = this, nodes: Node[] = []
 
-    loop:
-    while (env.TRUE) {
+    loop: while (env.TRUE) {
       instance.advance()
       switch (instance.code) {
 
@@ -322,7 +307,7 @@ export default class Scanner {
       case CODE_OPAREN:
         let args = instance.scanTuple(instance.index, CODE_CPAREN)
         return new Call(
-          string.slice(instance.content, startIndex, instance.index),
+          instance.pick(startIndex),
           node,
           args
         )
@@ -428,7 +413,7 @@ keypathNames[env.KEYPATH_PUBLIC_PARENT] = env.KEYPATH_PRIVATE_PARENT
  * http://www.adamkoch.com/2009/07/25/white-space-and-character-160/
  */
 function isWhitespace(code: number): boolean {
-  return code < 33 || code === 160
+  return (code > 0 && code < 33) || code === 160
 }
 
 /**
@@ -436,6 +421,13 @@ function isWhitespace(code: number): boolean {
  */
 function isDigit(code: number): boolean {
   return code > 47 && code < 58 // 0...9
+}
+
+/**
+ * 是否是数字
+ */
+function isNumber(code: number): boolean {
+  return isDigit(code) || code === CODE_DOT
 }
 
 /**
