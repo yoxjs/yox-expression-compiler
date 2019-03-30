@@ -39,6 +39,15 @@ export default class Scanner {
   }
 
   /**
+   * 截取一段字符串
+   *
+   * @param startIndex
+   */
+  pick(startIndex: number): string {
+    return string.slice(this.content, startIndex, this.index)
+  }
+
+  /**
    * 尝试解析下一个 token
    */
   scanToken() {
@@ -68,7 +77,8 @@ export default class Scanner {
     }
 
     if (isIdentifierStart(code)) {
-      return this.scanVariable(index, env.TRUE)
+      let identifier = this.scanIdentifier(index, env.TRUE)
+      return this.scanVariable(this.index, [identifier])
     }
     if (isDigit(code)) {
       return this.scanNumber(index)
@@ -113,7 +123,7 @@ export default class Scanner {
     while (match(this.code)) {
       this.advance()
     }
-    return string.slice(this.content, startIndex, this.index)
+    return this.pick(startIndex)
   }
 
   /**
@@ -160,7 +170,7 @@ export default class Scanner {
     // 记录上一个字符，因为结束引号前不能有转义字符
     let lastCode: number
 
-    do {
+    while (env.TRUE) {
       lastCode = instance.code
       instance.advance()
 
@@ -173,10 +183,9 @@ export default class Scanner {
       }
 
     }
-    while (env.TRUE)
 
     // 不包含引号
-    const raw = string.slice(instance.content, startIndex + 1, instance.index)
+    const raw = instance.pick(startIndex + 1)
 
     // 跳过结束的引号
     instance.advance()
@@ -191,85 +200,110 @@ export default class Scanner {
    * @param startIndex
    * @param endCode 元组的结束字符编码
    */
-  scanTuple(startIndex: number, endCode: number): Node[] | void {
+  scanTuple(startIndex: number, endCode: number): Node[] | never {
 
-    const instance = this, list: Node[] = []
+    const instance = this, nodes: Node[] = []
 
     loop:
-    do {
+    while (env.TRUE) {
       instance.advance()
       switch (instance.code) {
 
         case endCode:
           instance.advance()
-          return list
+          return nodes
 
         case CODE_COMMA:
           instance.advance()
           break
 
         case CODE_EOF:
-          instance.reportError(startIndex, 'parse tuple error')
           break loop
 
         default:
           array.push(
-            list,
+            nodes,
             instance.scanToken()
           )
 
       }
     }
-    while (env.TRUE)
+
+    return instance.reportError(startIndex, 'parse tuple error')
 
   }
 
   /**
    * 扫描路径，如 `./` 和 `../`
    *
+   * 路径必须位于开头，如 ./../ 或 ../../，不存在 a/../b/../c 这样的情况，因为路径是用来切换或指定 context 的
+   *
    * @param startIndex
    * @param prevNode
    */
-  scanPath(startIndex: number, prevNode?: Variable): Variable | void {
+  scanPath(startIndex: number): Variable | never {
 
     // 方便压缩
     const instance = this
 
-    // 要么是 current 要么是 parent
-    let name = env.KEYPATH_PUBLIC_CURRENT
+    // 进入此函数时，已确定前一个 code 是 CODE_DOT
+    // 此时只需判断接下来是 ./ 还是 / 就行了
 
-    // ../
-    if (instance.code === char.CODE_DOT) {
-      instance.advance()
-      name = env.KEYPATH_PUBLIC_PARENT
-    }
+    let name: string, nodes: Variable[] = [], error = char.CHAR_BLANK
 
-    // 如果以 / 结尾，则命中 ./ 或 ../
-    if (instance.code === char.CODE_SLASH) {
-      instance.advance()
+    while (env.TRUE) {
+      // 要么是 current 要么是 parent
+      name = env.KEYPATH_PUBLIC_CURRENT
 
-      let node: Variable = prevNode
-        ? createMember(
-            string.slice(instance.content, startIndex, instance.index),
-            prevNode,
-            new Literal(name, name)
-          )
-        : createIdentifier(name, name)
-
-      // 单纯是 ./ 或 ../ 没有意义
-      // 后面必须跟着标识符或 ../
-      if (isIdentifierStart(instance.code)) {
-        return instance.scanVariable(startIndex, env.FALSE, node)
-      }
-      else if (instance.code === char.CODE_DOT) {
-        // scanPath 要求调用前先跳过第一个 .
+      // ../
+      if (instance.code === CODE_DOT) {
         instance.advance()
-        return instance.scanPath(startIndex, node)
+        name = env.KEYPATH_PUBLIC_PARENT
       }
 
+      array.push(
+        nodes,
+        createIdentifier(name, name)
+      )
+
+      // 如果以 / 结尾，则命中 ./ 或 ../
+      if (instance.code === CODE_SLASH) {
+        instance.advance()
+
+        // 可能有人会怀疑，此处出现 ../1 这样的情况
+        // 层级对象有数字属性是什么情况，不用考虑代码维护性吗?
+        // 拒绝支持这种变态需求，谢谢
+        if (isIdentifierStart(instance.code)) {
+          array.push(
+            nodes,
+            instance.scanIdentifier(instance.index)
+          )
+          return instance.scanVariable(startIndex, nodes)
+        }
+        else if (instance.code === char.CODE_DOT) {
+          // 先跳过第一个 .
+          instance.advance()
+          // 继续循环
+        }
+        else {
+          // 类似 ./ 或 ../ 这样后面不跟标识符是想干嘛？报错可好？
+          error = 'path error'
+          break
+        }
+
+      }
+      // 类似 . 或 ..，可能就是想读取层级对象
+      // 此处不用关心后面跟的具体是什么字符，那是其他函数的事情，就算报错也让别的函数去报
+      // 此处也不用关心延展操作符，即 ...object，因为表达式引擎管不了这事，它没法把对象变成 attr1=value1 attr2=value2 的格式
+      // 这应该是模板引擎该做的事
+      else {
+        break
+      }
     }
 
-    instance.reportError(startIndex, 'path error')
+    if (error) {
+      return instance.reportError(startIndex, error)
+    }
 
   }
 
@@ -277,86 +311,70 @@ export default class Scanner {
    * 扫描变量
    *
    */
-  scanVariable(startIndex: number, careKeyword: boolean, prevNode?: Variable) {
+  scanVariable(startIndex: number, nodes: Node[]) {
 
-    switch (this.code) {
+    const instance = this
+
+    // 标识符后面紧着的字符，可以是 ( . [
+    switch (instance.code) {
+
       // a(x)
       case CODE_OPAREN:
-        let args = this.scanTuple(this.index, CODE_CPAREN)
-        return new Call('', node, args)
+        let args = instance.scanTuple(instance.index, CODE_CPAREN)
+        return new Call(
+          string.slice(instance.content, startIndex, instance.index),
+          node,
+          args
+        )
 
       // a.x
       case CODE_DOT:
-        this.advance()
-        let prop = this.scanIdentifier()
-
-    }
-
-    while (index < length) {
-      // a(x)
-      charCode = getCharCode()
-      if (charCode === CODE_OPAREN) {
-        temp = parseTuple(CODE_CPAREN)
-        return new CallNode(
-          cutString(start),
-          node,
-          temp
+        instance.advance()
+        // 接下来的字符，可能是数字，也可能是标识符，此时无需识别关键字
+        let { raw } = instance.scanIdentifier(instance.index)
+        // 如果是数字，则存储为数字，避免运行时转型
+        array.push(
+          nodes,
+          new Literal(raw, is.numeric(raw) ? +raw : raw)
         )
-      }
-      // a.x
-      else if (charCode === CODE_DOT) {
-        index++
-        temp = parseIdentifier()
-        node = new MemberNode(
-          cutString(start),
-          node,
-          new LiteralNode(
-            temp.raw,
-            temp[env.RAW_NAME]
-          )
-        )
-      }
-      // a[x]
-      else if (charCode === char.CODE_OBRACK) {
-        temp = parseExpression(char.CODE_CBRACK)
-        node = new MemberNode(
-          cutString(start),
-          node,
-          temp
-        )
-      }
-      else {
         break
-      }
+
+      // a[]
+      case CODE_OBRACK:
+        let prop1 = parseExpression(CODE_CBRACK)
+        array.push(
+          nodes,
+          prop1
+        )
+        break
+
+      default:
+        break
     }
+
+    return node
 
   }
 
   /**
    * 扫描标识符
    *
+   * @param startIndex
    * @param careKeyword 是否识别关键字
    * @return
    */
-  scanIdentifier(careKeyword = false): Identifier | Literal {
+  scanIdentifier(startIndex: number, careKeyword = false): Identifier | Literal {
 
-    const raw = this.cutString(isIdentifierPart)
+    const raw = this.cutString(isIdentifierPart, startIndex)
 
-
-
-
-    return careKeyword && object.has(keywords, raw)
-      ? new Literal(raw, keywords[raw])
+    return careKeyword && object.has(keywordLiterals, raw)
+      ? new Literal(raw, keywordLiterals[raw])
       : createIdentifier(raw, raw)
 
   }
 
-
-
-
-
-  reportError(start: number, message: string) {
-    logger.error(message)
+  reportError(start: number, message: string): never {
+    return logger.fatal(message)
   }
 
 }
@@ -380,12 +398,12 @@ const CODE_CBRACE = 125   // }
  * 举个例子：a === true
  * 从解析器的角度来说，a 和 true 是一样的 token
  */
-const keywords = {}
+const keywordLiterals = {}
 
-keywords[env.RAW_TRUE] = env.TRUE
-keywords[env.RAW_FALSE] = env.FALSE
-keywords[env.RAW_NULL] = env.NULL
-keywords[env.RAW_UNDEFINED] = env.UNDEFINED
+keywordLiterals[env.RAW_TRUE] = env.TRUE
+keywordLiterals[env.RAW_FALSE] = env.FALSE
+keywordLiterals[env.RAW_NULL] = env.NULL
+keywordLiterals[env.RAW_UNDEFINED] = env.UNDEFINED
 
 /**
  * 对外和对内的路径表示法不同
@@ -487,4 +505,10 @@ function createMember(raw: string, object: Variable, prop: Variable | Literal) {
 
   return new Member(raw, props[0].lookup, staticKeypath, props)
 
+}
+
+function createMemberIfNeeded(raw: string, nodes: Node[]) {
+  return nodes.length > 1
+    ? new Member(raw, nodes[0].lookup, '', nodes)
+    : nodes[0]
 }
