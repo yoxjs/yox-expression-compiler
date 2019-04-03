@@ -58,8 +58,8 @@ export default class Scanner {
    *
    * @param startIndex
    */
-  pick(startIndex: number): string {
-    return string.slice(this.content, startIndex, this.index)
+  pick(startIndex: number, endIndex = this.index): string {
+    return string.slice(this.content, startIndex, endIndex)
   }
 
   /**
@@ -123,18 +123,24 @@ export default class Scanner {
 
     }
 
+    let error = 'scanToken 毛都没找到'
+
     // 最后的垂死挣扎，实在没辙只能报错了
     // 因为 scanOperator 会导致 index 发生变化，只能放在最后尝试
     const operator = instance.scanOperator(index)
     if (operator && interpreter.unary[operator]) {
-      return createUnary(
-        operator,
-        instance.scanTernary(instance.index),
-        instance.pick(index)
-      )
+      const node = instance.scanTernary(instance.index)
+      if (node) {
+        return createUnary(
+          operator,
+          node,
+          instance.pick(index)
+        )
+      }
+      error = '一元运算的表达式没找到'
     }
 
-    instance.fatal(index, '没找到表达式')
+    instance.fatal(index, error)
 
   }
 
@@ -303,7 +309,7 @@ export default class Scanner {
    */
   scanTuple(startIndex: number, endCode: number): Node[] | never {
 
-    let instance = this, nodes: Node[] = [], error = char.CHAR_BLANK
+    let instance = this, nodes: Node[] = [], error = char.CHAR_BLANK, node: Node | void
 
     // 跳过开始字符，如 [ 和 (
     instance.advance()
@@ -321,11 +327,14 @@ export default class Scanner {
           break loop
 
         default:
-          array.push(
-            nodes,
-            instance.scanTernary(instance.index)
-          )
-
+          // 1. ( )
+          // 2. (1, 2, )
+          // 这两个例子都会出现 scanTernary 为空的情况
+          // 但是不用报错
+          node = instance.scanTernary(instance.index)
+          if (node) {
+            array.push(nodes, node)
+          }
       }
     }
 
@@ -628,7 +637,9 @@ export default class Scanner {
     // 算法参考 https://en.wikipedia.org/wiki/Shunting-yard_algorithm
     let instance = this,
 
-    output: any[] = [],
+    nodes: any[] = [],
+
+    indexes: number[] = [],
 
     token: Node | void,
 
@@ -644,31 +655,40 @@ export default class Scanner {
 
     while (env.TRUE) {
 
+      array.push(indexes, instance.index)
       token = instance.scanToken()
+
       if (token) {
 
-        array.push(output, token)
+        array.push(nodes, token)
 
+        array.push(indexes, instance.index)
         operator = instance.scanOperator(instance.index)
+
         // 必须是二元运算符，一元不行
         if (operator && (operatorInfo = interpreter.binary[operator])) {
 
           // 比较前一个运算符
-          lastOperatorIndex = output.length - 2
+          lastOperatorIndex = nodes.length - 2
 
           // 如果前一个运算符的优先级 >= 现在这个，则新建 Binary
           // 如 a + b * c / d，当从左到右读取到 / 时，发现和前一个 * 优先级相同，则把 b * c 取出用于创建 Binary
-          if ((lastOperator = output[lastOperatorIndex])
+          if ((lastOperator = nodes[lastOperatorIndex])
             && (lastOperatorInfo = interpreter.binary[lastOperator])
             && lastOperatorInfo.prec >= operatorInfo.prec
           ) {
-            output.splice(
+            nodes.splice(
               lastOperatorIndex - 1, 3,
-              createBinary(output[lastOperatorIndex - 1], lastOperator, output[lastOperatorIndex + 1], '')
+              createBinary(
+                nodes[lastOperatorIndex - 1],
+                lastOperator,
+                nodes[lastOperatorIndex + 1],
+                instance.pick(indexes[lastOperatorIndex - 1], indexes[lastOperatorIndex + 1])
+              )
             )
           }
 
-          array.push(output, operator)
+          array.push(nodes, operator)
 
           continue
 
@@ -681,9 +701,9 @@ export default class Scanner {
 
     }
 
-    return output.length === 3
-      ? createBinary(output[0], output[1], output[2], instance.pick(startIndex))
-      : output[0]
+    return nodes.length === 3
+      ? createBinary(nodes[0], nodes[1], nodes[2], instance.pick(startIndex))
+      : nodes[0]
 
   }
 
