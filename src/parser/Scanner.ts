@@ -13,26 +13,32 @@ import * as interpreter from '../interpreter'
 import Node from '../node/Node'
 import Identifier from '../node/Identifier'
 import Literal from '../node/Literal'
-import Call from '../node/Call'
 import Member from '../node/Member'
 import Ternary from '../node/Ternary'
 import Binary from '../node/Binary'
 import Unary from '../node/Unary'
+import Call from '../node/Call'
 
 import ArrayNode from '../node/Array'
 import ObjectNode from '../node/Object'
 
 export default class Scanner {
 
-  index: number = -1
+  end: number
 
-  length: number
+  index: number
 
-  code: number = CODE_EOF
+  code: number
 
-  constructor(public content: string) {
-    this.length = content.length
-    this.advance()
+  content: string
+
+  constructor(content: string) {
+    const instance = this, { length } = content
+    instance.index = -1
+    instance.end = length > 0 ? length - 1 : 0
+    instance.code = CODE_EOF
+    instance.content = content
+    instance.advance()
   }
 
   /**
@@ -40,8 +46,10 @@ export default class Scanner {
    */
   advance() {
     const instance = this
-    if (instance.index < instance.length) {
-      instance.code = ++instance.index >= instance.length ? CODE_EOF : char.codeAt(instance.content, instance.index)
+    if (instance.index <= instance.end) {
+      instance.code = ++instance.index > instance.end
+        ? CODE_EOF
+        : char.codeAt(instance.content, instance.index)
     }
   }
 
@@ -59,7 +67,7 @@ export default class Scanner {
    *
    * @param endCode
    */
-  scanToken(endCode?: number) {
+  scanToken(endCode?: number): Node | void {
 
     const instance = this
 
@@ -84,21 +92,11 @@ export default class Scanner {
       return instance.scanNumber(index)
     }
 
-    const operator = instance.scanOperator(index)
-    if (operator && interpreter.unary[operator]) {
-      return createUnary(
-        operator,
-        instance.scanTernary(instance.index),
-        instance.pick(index)
-      )
-    }
-
     switch (code) {
 
       // 'x' "x"
       case CODE_SQUOTE:
       case CODE_DQUOTE:
-        instance.advance()
         return instance.scanString(index, code)
 
       // .1  ./  ../
@@ -123,6 +121,17 @@ export default class Scanner {
       case CODE_OBRACE:
         return instance.scanObject(index)
 
+    }
+
+    // 最后的垂死挣扎，实在没辙只能报错了
+    // 因为 scanOperator 会导致 index 发生变化，只能放在最后尝试
+    const operator = instance.scanOperator(index)
+    if (operator && interpreter.unary[operator]) {
+      return createUnary(
+        operator,
+        instance.scanTernary(instance.index),
+        instance.pick(index)
+      )
     }
 
     instance.fatal(index, '没找到表达式')
@@ -168,12 +177,18 @@ export default class Scanner {
    * 支持反斜线转义引号
    *
    * @param startIndex
+   * @param endCode
    */
   scanString(startIndex: number, endCode: number): Literal | never {
 
     let instance = this, error = char.CHAR_BLANK
 
     loop: while (env.TRUE) {
+
+      // 这句有两个作用：
+      // 1. 跳过开始的引号
+      // 2. 驱动 index 前进
+      instance.advance()
 
       switch (instance.code) {
 
@@ -191,8 +206,6 @@ export default class Scanner {
           break loop
 
       }
-
-      instance.advance()
 
     }
 
@@ -228,12 +241,12 @@ export default class Scanner {
         case CODE_CBRACE:
           instance.advance()
           if (keys.length !== values.length) {
-            error = 'parse object error'
+            error = 'keys 和 values 的长度不一致'
           }
           break loop
 
         case CODE_EOF:
-          error = 'parse object error'
+          error = 'scanObject 到头了还没解析完'
           break loop
 
         // :
@@ -249,21 +262,29 @@ export default class Scanner {
           break
 
         default:
+          // 解析 key 的时候，node 可以为空，如 { }
+          // 解析 value 的时候，node 不能为空
           node = instance.scanTernary(instance.index)
           if (scanKey) {
-            if (node.type === nodeType.IDENTIFIER) {
-              array.push(keys, (node as Identifier).name)
-            }
-            else if (node.type === nodeType.LITERAL) {
-              array.push(keys, (node as Literal).value)
-            }
-            else {
-              error = 'key is not ok'
-              break loop
+            if (node) {
+              if (node.type === nodeType.IDENTIFIER) {
+                array.push(keys, (node as Identifier).name)
+              }
+              else if (node.type === nodeType.LITERAL) {
+                array.push(keys, (node as Literal).value)
+              }
+              else {
+                error = 'object key node type is not ok'
+                break loop
+              }
             }
           }
-          else {
+          else if (node) {
             array.push(values, node)
+          }
+          else {
+            error = 'object value is not found'
+            break loop
           }
       }
     }
@@ -601,7 +622,7 @@ export default class Scanner {
    *
    * @param startIndex
    */
-  scanBinary(startIndex: number): Node {
+  scanBinary(startIndex: number): Node | void {
 
     // 二元运算，如 a + b * c / d，这里涉及运算符的优先级
     // 算法参考 https://en.wikipedia.org/wiki/Shunting-yard_algorithm
@@ -672,7 +693,7 @@ export default class Scanner {
    * @param startIndex
    * @param endCode
    */
-  scanTernary(startIndex: number, endCode?: number): Node {
+  scanTernary(startIndex: number, endCode?: number): Node | void {
 
     /**
      * https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
@@ -939,8 +960,8 @@ function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Member {
   if (firstNode.type === nodeType.IDENTIFIER
     || firstNode.type === nodeType.MEMBER
   ) {
-    lookup = firstNode.lookup
-    staticKeypath = firstNode.staticKeypath
+    lookup = (firstNode as Identifier).lookup
+    staticKeypath = (firstNode as Identifier).staticKeypath
   }
 
   // 算出 staticKeypath 的唯一方式是，第一位元素是 Identifier，后面都是 Literal
