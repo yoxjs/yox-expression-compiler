@@ -10,6 +10,7 @@ import * as keypathUtil from 'yox-common/util/keypath'
 import toNumber from 'yox-common/function/toNumber'
 
 import * as nodeType from '../nodeType'
+import * as interpreter from '../interpreter'
 
 import Node from '../node/Node'
 import Identifier from '../node/Identifier'
@@ -17,6 +18,8 @@ import Literal from '../node/Literal'
 import Call from '../node/Call'
 import Member from '../node/Member'
 import Variable from '../node/Variable'
+import Ternary from '../node/Ternary';
+import Binary from '../node/Binary';
 
 export default class Scanner {
 
@@ -28,6 +31,7 @@ export default class Scanner {
 
   constructor(public content: string) {
     this.length = content.length
+    this.advance()
   }
 
   /**
@@ -49,58 +53,58 @@ export default class Scanner {
     return string.slice(this.content, startIndex, this.index)
   }
 
-  scan() {
-
-  }
-
   /**
    * 尝试解析下一个 token
+   *
+   * @param endCode
    */
-  scanToken() {
+  scanToken(endCode?: number) {
+
+    const instance = this
 
     // 匹配第一个非空白符
-    while (isWhitespace(this.code)) {
-      this.advance()
+    while (isWhitespace(instance.code)) {
+      instance.advance()
     }
 
-    let { code, index } = this
+    let { code, index } = instance
 
-    if (code === CODE_EOF) {
+    if (code === CODE_EOF || code === endCode) {
       return
     }
 
     if (isIdentifierStart(code)) {
-      let identifier = this.scanIdentifier(index, env.TRUE)
-      return this.scanVariable(this.index, [identifier])
+      return instance.scanIdentifier(index, env.TRUE)
     }
     if (isDigit(code)) {
-      return this.scanNumber(index)
+      return instance.scanNumber(index)
     }
 
     switch (code) {
 
       case CODE_SQUOTE:
       case CODE_DQUOTE:
-        return this.scanString(index, code)
+        return instance.scanString(index, code)
 
       // .1  ./  ../
       case CODE_DOT:
-        this.advance()
-        return isDigit(this.code)
-          ? this.scanNumber(index)
-          : this.scanPath(index)
+        instance.advance()
+        return isDigit(instance.code)
+          ? instance.scanNumber(index)
+          : instance.scanPath(index)
 
       // (xx)
       case CODE_OPAREN:
-        return parseExpression(CODE_CPAREN)
+        instance.advance()
+        return instance.scanTernary(index, CODE_CPAREN)
 
       // { }
       case CODE_OBRACE:
-        return 1
+        return
 
       // [x, y, z]
       case CODE_OBRACK:
-        return 2
+        return
     }
 
   }
@@ -134,7 +138,7 @@ export default class Scanner {
     // 尝试转型，如果转型失败，则确定是个错误的数字
     return is.numeric(raw)
       ? new Literal(raw, +raw)
-      : this.reportError(startIndex, `Invalid number literal when parsing ${raw}`)
+      : this.fatal(startIndex, `Invalid number literal when parsing ${raw}`)
 
   }
 
@@ -165,7 +169,7 @@ export default class Scanner {
       }
 
       if (instance.code === CODE_EOF) {
-        return instance.reportError(startIndex, 'Unterminated quote')
+        return instance.fatal(startIndex, 'Unterminated quote')
       }
 
     }
@@ -191,7 +195,6 @@ export default class Scanner {
     const instance = this, nodes: Node[] = []
 
     loop: while (env.TRUE) {
-      instance.advance()
       switch (instance.code) {
 
         case endCode:
@@ -208,13 +211,13 @@ export default class Scanner {
         default:
           array.push(
             nodes,
-            instance.scanToken()
+            instance.scanTernary(instance.index)
           )
 
       }
     }
 
-    return instance.reportError(startIndex, 'parse tuple error')
+    return instance.fatal(startIndex, 'parse tuple error')
 
   }
 
@@ -286,9 +289,7 @@ export default class Scanner {
       }
     }
 
-    if (error) {
-      return instance.reportError(startIndex, error)
-    }
+    return instance.fatal(startIndex, error)
 
   }
 
@@ -300,44 +301,45 @@ export default class Scanner {
 
     const instance = this
 
-    // 标识符后面紧着的字符，可以是 ( . [
-    switch (instance.code) {
+    // // 标识符后面紧着的字符，可以是 ( . [
+    // switch (instance.code) {
 
-      // a(x)
-      case CODE_OPAREN:
-        let args = instance.scanTuple(instance.index, CODE_CPAREN)
-        return new Call(
-          instance.pick(startIndex),
-          node,
-          args
-        )
+    //   // a(x)
+    //   case CODE_OPAREN:
+    //     instance.advance()
+    //     let args = instance.scanTuple(instance.index, CODE_CPAREN)
+    //     return new Call(
+    //       instance.pick(startIndex),
+    //       node,
+    //       args
+    //     )
 
-      // a.x
-      case CODE_DOT:
-        instance.advance()
-        // 接下来的字符，可能是数字，也可能是标识符，此时无需识别关键字
-        let { raw } = instance.scanIdentifier(instance.index)
-        // 如果是数字，则存储为数字，避免运行时转型
-        array.push(
-          nodes,
-          new Literal(raw, is.numeric(raw) ? +raw : raw)
-        )
-        break
+    //   // a.x
+    //   case CODE_DOT:
+    //     instance.advance()
+    //     // 接下来的字符，可能是数字，也可能是标识符，此时无需识别关键字
+    //     let { raw } = instance.scanIdentifier(instance.index)
+    //     // 如果是数字，则存储为数字，避免运行时转型
+    //     array.push(
+    //       nodes,
+    //       new Literal(raw, is.numeric(raw) ? +raw : raw)
+    //     )
+    //     break
 
-      // a[]
-      case CODE_OBRACK:
-        let prop1 = parseExpression(CODE_CBRACK)
-        array.push(
-          nodes,
-          prop1
-        )
-        break
+    //   // a[]
+    //   case CODE_OBRACK:
+    //     let prop1 = parseExpression(CODE_CBRACK)
+    //     array.push(
+    //       nodes,
+    //       prop1
+    //     )
+    //     break
 
-      default:
-        break
-    }
+    //   default:
+    //     break
+    // }
 
-    return node
+    // return node
 
   }
 
@@ -358,7 +360,242 @@ export default class Scanner {
 
   }
 
-  reportError(start: number, message: string): never {
+  /**
+   * 扫描运算符
+   *
+   * @param startIndex
+   */
+  scanOperator(startIndex: number): string | void {
+
+    const instance = this
+
+    switch (instance.code) {
+
+      // +、/、%、~、^
+      case CODE_PLUS:
+      case CODE_DIVIDE:
+      case CODE_MODULO:
+      case CODE_WAVE:
+      case CODE_XOR:
+        instance.advance()
+        break;
+
+      // *、**
+      case CODE_MULTIPLY:
+        instance.advance()
+        if (instance.code === CODE_MULTIPLY) {
+          instance.advance()
+        }
+        break
+
+      // -、->
+      case CODE_MINUS:
+        instance.advance()
+        if (instance.code === CODE_GREAT) {
+          instance.advance()
+        }
+        break
+
+      // !、!!、!=、!==
+      case CODE_NOT:
+        instance.advance()
+        if (instance.code === CODE_NOT) {
+          instance.advance()
+        }
+        else if (instance.code === CODE_EQUAL) {
+          instance.advance()
+          if (instance.code === CODE_EQUAL) {
+            instance.advance()
+          }
+        }
+        break
+
+      // &、&&
+      case CODE_AND:
+        instance.advance()
+        if (instance.code === CODE_AND) {
+          instance.advance()
+        }
+        break
+
+      // |、||
+      case CODE_OR:
+        instance.advance()
+        if (instance.code === CODE_OR) {
+          instance.advance()
+        }
+        break
+
+      // ==、===、=>
+      case CODE_EQUAL:
+        instance.advance()
+        if (instance.code === CODE_EQUAL) {
+          instance.advance()
+          if (instance.code === CODE_EQUAL) {
+            instance.advance()
+          }
+        }
+        else if (instance.code === CODE_GREAT) {
+          instance.advance()
+        }
+        else {
+          // 一个等号要报错
+          instance.fatal(startIndex, '不支持赋值')
+        }
+        break
+
+      // <、<=、<<
+      case CODE_LESS:
+        instance.advance()
+        if (instance.code === CODE_EQUAL
+          || instance.code === CODE_LESS
+        ) {
+          instance.advance()
+        }
+        break
+
+      // >、>=、>>、>>>
+      case CODE_GREAT:
+        instance.advance()
+        if (instance.code === CODE_EQUAL) {
+          instance.advance()
+        }
+        else if (instance.code === CODE_GREAT) {
+          instance.advance()
+          if (instance.code === CODE_GREAT) {
+            instance.advance()
+          }
+        }
+        break
+    }
+
+    if (instance.code > startIndex) {
+      return instance.pick(startIndex)
+    }
+
+  }
+
+  /**
+   * 扫描二元运算
+   *
+   * @param startIndex
+   */
+  scanBinary(startIndex: number): Node {
+
+    // 二元运算，如 a + b * c / d，这里涉及运算符的优先级
+    // 算法参考 https://en.wikipedia.org/wiki/Shunting-yard_algorithm
+    let instance = this,
+
+    output: any[] = [],
+
+    token: Node | void,
+
+    operator: string | void,
+
+    operatorInfo: any | void,
+
+    lastOperator: string | void,
+
+    lastOperatorIndex: number | void,
+
+    lastOperatorInfo: any | void
+
+    while (env.TRUE) {
+
+      token = instance.scanToken()
+      if (token) {
+
+        array.push(output, token)
+
+        operator = instance.scanOperator(instance.index)
+        // 必须是二元运算符，一元不行
+        if (operator && (operatorInfo = interpreter.binary[operator])) {
+
+          // 比较前一个运算符
+          lastOperatorIndex = output.length - 2
+
+          // 如果前一个运算符的优先级 >= 现在这个，则新建 Binary
+          // 如 a + b * c / d，当从左到右读取到 / 时，发现和前一个 * 优先级相同，则把 b * c 取出用于创建 Binary
+          if ((lastOperator = output[lastOperatorIndex])
+            && (lastOperatorInfo = interpreter.binary[lastOperator])
+            && lastOperatorInfo.prec >= operatorInfo.prec
+          ) {
+            output.splice(
+              lastOperatorIndex - 1, 3,
+              new Binary('', output[lastOperatorIndex - 1], lastOperator, output[lastOperatorIndex + 1])
+            )
+          }
+
+          array.push(output, operator)
+
+          continue
+
+        }
+
+      }
+
+      // 没匹配到 token 或 operator 则跳出循环
+      break
+
+    }
+
+    return output.length === 3
+      ? new Binary(instance.pick(startIndex), output[0], output[1], output[2])
+      : output[0]
+
+  }
+
+  /**
+   * 扫描三元运算
+   *
+   * @param startIndex
+   * @param endCode
+   */
+  scanTernary(startIndex: number, endCode?: number): Node {
+
+    /**
+     * https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
+     *
+     * ?: 运算符的优先级几乎是最低的，比它低的只有四种： 赋值、yield、延展、逗号
+     * 我们不支持这四种，因此可认为 ?: 优先级最低
+     */
+
+    let instance = this,
+
+    test = instance.scanBinary(startIndex),
+
+    yes: Node | void,
+
+    no: Node | void
+
+    if (instance.code === CODE_QUESTION) {
+      yes = instance.scanBinary(instance.index)
+
+      if (instance.code === CODE_COLON) {
+        no = instance.scanBinary(instance.index)
+      }
+
+      if (test && yes && no) {
+        test = new Ternary(
+          instance.pick(startIndex),
+          test, yes, no
+        )
+      }
+      else {
+        instance.fatal(startIndex, 'are you kiding me?')
+      }
+    }
+
+    // 过掉结束字符
+    if (endCode) {
+      instance.scanToken(endCode)
+    }
+
+    return test
+
+  }
+
+  fatal(start: number, message: string): never {
     return logger.fatal(message)
   }
 
@@ -377,6 +614,22 @@ const CODE_OBRACK = 91    // [
 const CODE_CBRACK = 93    // ]
 const CODE_OBRACE = 123   // {
 const CODE_CBRACE = 125   // }
+const CODE_QUESTION = 63  // ?
+const CODE_COLON = 58     // :
+
+const CODE_PLUS = 43      // +
+const CODE_MINUS = 45     // -
+const CODE_MULTIPLY = 42  // *
+const CODE_DIVIDE = 47    // /
+const CODE_MODULO = 37    // %
+const CODE_WAVE = 126     // ~
+const CODE_AND = 38       // &
+const CODE_OR = 124       // |
+const CODE_XOR = 94       // ^
+const CODE_NOT = 33       // !
+const CODE_LESS = 60      // <
+const CODE_EQUAL = 61     // =
+const CODE_GREAT = 62     // >
 
 /**
  * 区分关键字和普通变量

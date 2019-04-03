@@ -1,93 +1,63 @@
-import * as operator from './operator'
-
-export const unary = { }
-
-unary[operator.PLUS] = function (a: any) {
-  return +a
-}
-unary[operator.MINUS] = function (a: any) {
-  return -a
-}
-unary[operator.NOT] = function (a: any) {
-  return !a
-}
-unary[operator.WAVE] = function (a: any) {
-  return ~a
-}
-unary[operator.BOOLEAN] = function (a: any) {
-  return !!a
+export const unary = {
+  '+': function (a: any) { return +a },
+  '-': function (a: any) { return -a },
+  '~': function (a: any) { return ~a },
+  '!': function (a: any) { return !a },
+  '!!': function (a: any) { return !!a },
 }
 
-export const binary = { }
+// prec => precedence
+// 参考 https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
+export const binary = {
+  '**': { prec: 15, exec: function (a: any, b: any) { return a ** b } },
+  '*': { prec: 14, exec: function (a: any, b: any) { return a * b } },
+  '/': { prec: 14, exec: function (a: any, b: any) { return a / b } },
+  '%': { prec: 14, exec: function (a: any, b: any) { return a % b } },
+  '+': { prec: 13, exec: function (a: any, b: any) { return a + b } },
+  '-': { prec: 13, exec: function (a: any, b: any) { return a - b } },
+  '<<': { prec: 12, exec: function (a: any, b: any) { return a << b } },
+  '>>': { prec: 12, exec: function (a: any, b: any) { return a >> b } },
+  '>>>': { prec: 12, exec: function (a: any, b: any) { return a >>> b } },
+  '<': { prec: 11, exec: function (a: any, b: any) { return a < b } },
+  '<=': { prec: 11, exec: function (a: any, b: any) { return a <= b } },
+  '>': { prec: 11, exec: function (a: any, b: any) { return a > b } },
+  '>=': { prec: 11, exec: function (a: any, b: any) { return a >= b } },
+  '==': { prec: 10, exec: function (a: any, b: any) { return a == b } },
+  '!=': { prec: 10, exec: function (a: any, b: any) { return a != b } },
+  '===': { prec: 10, exec: function (a: any, b: any) { return a === b } },
+  '!==': { prec: 10, exec: function (a: any, b: any) { return a !== b } },
+  '&': { prec: 9, exec: function (a: any, b: any) { return a & b } },
+  '^': { prec: 8, exec: function (a: any, b: any) { return a ^ b } },
+  '|': { prec: 7, exec: function (a: any, b: any) { return a | b } },
+  '&&': { prec: 6, exec: function (a: any, b: any) { return a && b } },
+  '||': { prec: 5, exec: function (a: any, b: any) { return a || b } },
 
-binary[operator.OR] = function (a: any, b: any) {
-  return a || b
-}
-binary[operator.AND] = function (a: any, b: any) {
-  return a && b
-}
-binary[operator.SE] = function (a: any, b: any) {
-  return a === b
-}
-binary[operator.SNE] = function (a: any, b: any) {
-  return a !== b
-}
-binary[operator.LE] = function (a: any, b: any) {
-  return a == b
-}
-binary[operator.LNE] = function (a: any, b: any) {
-  return a != b
-}
-binary[operator.LT] = function (a: any, b: any) {
-  return a < b
-}
-binary[operator.LTE] = function (a: any, b: any) {
-  return a <= b
-}
-binary[operator.GT] = function (a: any, b: any) {
-  return a > b
-}
-binary[operator.GTE] = function (a: any, b: any) {
-  return a >= b
-}
-binary[operator.PLUS] = function (a: any, b: any) {
-  return a + b
-}
-binary[operator.MINUS] = function (a: any, b: any) {
-  return a - b
-}
-binary[operator.MULTIPLY] = function (a: any, b: any) {
-  return a * b
-}
-binary[operator.DIVIDE] = function (a: any, b: any) {
-  return a / b
-}
-binary[operator.MODULO] = function (a: any, b: any) {
-  return a % b
-}
-binary[operator.TO] = function (a: any, b: any) {
-  return a > b
-    ? function (callback: (index: number, counter: number) => void) {
+  '->': { prec: 0, exec: function (a: any, b: any) {
+    return a > b
+      ? function (callback: (index: number, counter: number) => void) {
         for (let i = a, index = 0; i >= b; i--) {
           callback(i, index++)
         }
       }
-    : function (callback: (index: number, counter: number) => void) {
+      : function (callback: (index: number, counter: number) => void) {
         for (let i = a, index = 0; i <= b; i++) {
           callback(i, index++)
         }
       }
-}
-binary[operator.UNTIL] = function (a: any, b: any) {
-  return a > b
-    ? function (callback: (index: number, counter: number) => void) {
+    }
+  },
+  '=>': { prec: 0, exec: function (a: any, b: any) {
+    return a > b
+      ? function (callback: (index: number, counter: number) => void) {
         for (let i = a, index = 0; i > b; i--) {
           callback(i, index++)
         }
       }
-    : function (callback: (index: number, counter: number) => void) {
+      : function (callback: (index: number, counter: number) => void) {
         for (let i = a, index = 0; i < b; i++) {
           callback(i, index++)
         }
       }
+    }
+  }
 }
