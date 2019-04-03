@@ -20,6 +20,10 @@ import Member from '../node/Member'
 import Variable from '../node/Variable'
 import Ternary from '../node/Ternary';
 import Binary from '../node/Binary';
+import Unary from '../node/Unary';
+
+import ArrayNode from '../node/Array';
+import ObjectNode from '../node/Object';
 
 export default class Scanner {
 
@@ -80,10 +84,22 @@ export default class Scanner {
       return instance.scanNumber(index)
     }
 
+    const operator = instance.scanOperator(index)
+    if (operator && interpreter.unary[operator]) {
+      const arg = instance.scanTernary(instance.index)
+      return new Unary(
+        instance.pick(index),
+        operator,
+        arg
+      )
+    }
+
     switch (code) {
 
+      // 'x' "x"
       case CODE_SQUOTE:
       case CODE_DQUOTE:
+        instance.advance()
         return instance.scanString(index, code)
 
       // .1  ./  ../
@@ -98,13 +114,16 @@ export default class Scanner {
         instance.advance()
         return instance.scanTernary(index, CODE_CPAREN)
 
-      // { }
-      case CODE_OBRACE:
-        return
-
-      // [x, y, z]
+      // [xx, xx]
       case CODE_OBRACK:
-        return
+        instance.advance()
+        const elements = instance.scanTuple(instance.index, CODE_CBRACK)
+        return new ArrayNode(instance.pick(index), elements)
+
+      // { a: 'x', b: 'x' }
+      case CODE_OBRACE:
+        return instance.scanObject(index)
+
     }
 
   }
@@ -151,36 +170,107 @@ export default class Scanner {
    */
   scanString(startIndex: number, endCode: number): Literal | never {
 
-    const instance = this
+    let instance = this, error = char.CHAR_BLANK
 
     loop: while (env.TRUE) {
 
-      instance.advance()
-
       switch (instance.code) {
-        // 碰到转义符直接跳过下一个字符
+
+        // \" \'
         case CODE_BACKSLASH:
           instance.advance()
           break
 
         case endCode:
+          instance.advance()
+          break loop
+
+        case CODE_EOF:
+          error = 'Unterminated quote'
           break loop
 
       }
 
-      if (instance.code === CODE_EOF) {
-        return instance.fatal(startIndex, 'Unterminated quote')
-      }
+      instance.advance()
 
     }
 
-    // 跳过结束的引号
-    instance.advance()
-
-    const raw = instance.pick(startIndex)
+    if (error) {
+      return instance.fatal(startIndex, error)
+    }
 
     // new Function 处理字符转义
+    const raw = instance.pick(startIndex)
     return new Literal(raw, new Function(`return ${raw}`)())
+
+  }
+
+  /**
+   * 扫描对象字面量
+   *
+   * @param startIndex
+   */
+  scanObject(startIndex: number): Node | never {
+
+    let instance = this, keys = [], values = [], scanKey = env.TRUE, error = char.CHAR_BLANK, node: Node | void
+
+    // 跳过 {
+    instance.advance()
+
+    loop: while (env.TRUE) {
+
+      switch (instance.code) {
+
+        case CODE_CBRACE:
+          instance.advance()
+          if (keys.length !== values.length) {
+            error = 'parse object error'
+          }
+          break loop
+
+        case CODE_EOF:
+          error = 'parse object error'
+          break loop
+
+        // :
+        case CODE_COLON:
+          instance.advance()
+          scanKey = env.FALSE
+          break
+
+        // ,
+        case CODE_COMMA:
+          instance.advance()
+          scanKey = env.TRUE
+          break
+
+        default:
+          node = instance.scanTernary(instance.index)
+          if (scanKey) {
+            if (node.type === nodeType.IDENTIFIER) {
+              array.push(keys, (node as Identifier).name)
+            }
+            else if (node.type === nodeType.LITERAL) {
+              array.push(keys, (node as Literal).value)
+            }
+            else {
+              error = 'key is not ok'
+              break loop
+            }
+          }
+          else {
+            array.push(values, node)
+          }
+      }
+    }
+
+    return error
+      ? instance.fatal(startIndex, error)
+      : new ObjectNode(
+          instance.pick(startIndex),
+          keys,
+          values
+        )
 
   }
 
@@ -192,20 +282,20 @@ export default class Scanner {
    */
   scanTuple(startIndex: number, endCode: number): Node[] | never {
 
-    const instance = this, nodes: Node[] = []
+    let instance = this, nodes: Node[] = [], error = char.CHAR_BLANK
+
+    // 调用此方法前，必须先跳过开始字符，如 [ 和 (
 
     loop: while (env.TRUE) {
       switch (instance.code) {
 
         case endCode:
-          instance.advance()
-          return nodes
-
         case CODE_COMMA:
           instance.advance()
           break
 
         case CODE_EOF:
+          error = 'parse tuple error'
           break loop
 
         default:
@@ -217,7 +307,9 @@ export default class Scanner {
       }
     }
 
-    return instance.fatal(startIndex, 'parse tuple error')
+    return error
+      ? instance.fatal(startIndex, error)
+      : nodes
 
   }
 
@@ -231,15 +323,13 @@ export default class Scanner {
    */
   scanPath(startIndex: number): Variable | never {
 
-    // 方便压缩
-    const instance = this
+    let instance = this, nodes: Variable[] = [], error = char.CHAR_BLANK, name: string | void
 
     // 进入此函数时，已确定前一个 code 是 CODE_DOT
     // 此时只需判断接下来是 ./ 还是 / 就行了
 
-    let name: string, nodes: Variable[] = [], error = char.CHAR_BLANK
-
     while (env.TRUE) {
+
       // 要么是 current 要么是 parent
       name = env.KEYPATH_PUBLIC_CURRENT
 
@@ -258,7 +348,7 @@ export default class Scanner {
       if (instance.code === CODE_SLASH) {
         instance.advance()
 
-        // 可能有人会怀疑，此处出现 ../1 这样的情况
+        // 可能有人会怀疑，此处可能出现 `../1` 这样的写法
         // 层级对象有数字属性是什么情况，不用考虑代码维护性吗?
         // 拒绝支持这种变态需求，谢谢
         if (isIdentifierStart(instance.code)) {
@@ -266,7 +356,6 @@ export default class Scanner {
             nodes,
             instance.scanIdentifier(instance.index)
           )
-          return instance.scanVariable(startIndex, nodes)
         }
         else if (instance.code === char.CODE_DOT) {
           // 先跳过第一个 .
