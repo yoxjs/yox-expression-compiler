@@ -22,10 +22,10 @@
   },
   "homepage": "https://github.com/yoxjs/yox-expression-compiler#readme",
   "devDependencies": {
-    "@babel/core": "^7.4.0",
-    "@babel/preset-env": "^7.4.2",
+    "@babel/core": "^7.4.3",
+    "@babel/preset-env": "^7.4.3",
     "@babel/preset-typescript": "^7.3.3",
-    "babel-jest": "^24.5.0",
+    "babel-jest": "^24.7.0",
     "jest": "^24.5.0",
     "yox-common": "^0.17.3"
   }

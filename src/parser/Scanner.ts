@@ -637,9 +637,8 @@ export default class Scanner {
     // 算法参考 https://en.wikipedia.org/wiki/Shunting-yard_algorithm
     let instance = this,
 
-    nodes: any[] = [],
-
-    indexes: number[] = [],
+    // 格式为 [ index1, node1, index2, node2, ... ]
+    output: any[] = [],
 
     token: Node | void,
 
@@ -655,40 +654,40 @@ export default class Scanner {
 
     while (env.TRUE) {
 
-      array.push(indexes, instance.index)
+      array.push(output, instance.index)
       token = instance.scanToken()
 
       if (token) {
 
-        array.push(nodes, token)
+        array.push(output, token)
 
-        array.push(indexes, instance.index)
+        array.push(output, instance.index)
         operator = instance.scanOperator(instance.index)
 
         // 必须是二元运算符，一元不行
         if (operator && (operatorInfo = interpreter.binary[operator])) {
 
           // 比较前一个运算符
-          lastOperatorIndex = nodes.length - 2
+          lastOperatorIndex = output.length - 4
 
           // 如果前一个运算符的优先级 >= 现在这个，则新建 Binary
           // 如 a + b * c / d，当从左到右读取到 / 时，发现和前一个 * 优先级相同，则把 b * c 取出用于创建 Binary
-          if ((lastOperator = nodes[lastOperatorIndex])
+          if ((lastOperator = output[lastOperatorIndex])
             && (lastOperatorInfo = interpreter.binary[lastOperator])
             && lastOperatorInfo.prec >= operatorInfo.prec
           ) {
-            nodes.splice(
-              lastOperatorIndex - 1, 3,
+            output.splice(
+              lastOperatorIndex - 3, 6,
               createBinary(
-                nodes[lastOperatorIndex - 1],
+                output[lastOperatorIndex - 2],
                 lastOperator,
-                nodes[lastOperatorIndex + 1],
-                instance.pick(indexes[lastOperatorIndex - 1], indexes[lastOperatorIndex + 1])
+                output[lastOperatorIndex + 3],
+                instance.pick(output[lastOperatorIndex - 3], output[lastOperatorIndex + 2])
               )
             )
           }
 
-          array.push(nodes, operator)
+          array.push(output, operator)
 
           continue
 
@@ -701,9 +700,9 @@ export default class Scanner {
 
     }
 
-    return nodes.length === 3
-      ? createBinary(nodes[0], nodes[1], nodes[2], instance.pick(startIndex))
-      : nodes[0]
+    return output.length === 3
+      ? createBinary(output[0], output[1], output[2], instance.pick(startIndex))
+      : output[0]
 
   }
 
