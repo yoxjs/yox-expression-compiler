@@ -7,7 +7,6 @@ import * as object from 'yox-common/util/object'
 import * as logger from 'yox-common/util/logger'
 import * as keypathUtil from 'yox-common/util/keypath'
 
-
 import * as nodeType from '../nodeType'
 import * as interpreter from '../interpreter'
 
@@ -17,12 +16,12 @@ import Literal from '../node/Literal'
 import Call from '../node/Call'
 import Member from '../node/Member'
 import Variable from '../node/Variable'
-import Ternary from '../node/Ternary';
-import Binary from '../node/Binary';
-import Unary from '../node/Unary';
+import Ternary from '../node/Ternary'
+import Binary from '../node/Binary'
+import Unary from '../node/Unary'
 
-import ArrayNode from '../node/Array';
-import ObjectNode from '../node/Object';
+import ArrayNode from '../node/Array'
+import ObjectNode from '../node/Object'
 
 export default class Scanner {
 
@@ -70,7 +69,7 @@ export default class Scanner {
       instance.advance()
     }
 
-    let { code, index } = instance
+    const { code, index } = instance
 
     if (code === CODE_EOF || code === endCode) {
       return
@@ -79,7 +78,7 @@ export default class Scanner {
     if (isIdentifierStart(code)) {
       return instance.scanIdentifierTail(
         index,
-        [instance.scanIdentifier(index, env.TRUE) ]
+        [instance.scanIdentifier(index)]
       )
     }
     if (isDigit(code)) {
@@ -125,6 +124,8 @@ export default class Scanner {
         return instance.scanObject(index)
 
     }
+
+    instance.fatal(index, '没找到表达式')
 
   }
 
@@ -342,22 +343,22 @@ export default class Scanner {
 
       array.push(
         nodes,
-        createIdentifier(name, name)
+        createIdentifier(name, name, nodes[env.RAW_LENGTH] > 0)
       )
 
       // 如果以 / 结尾，则命中 ./ 或 ../
       if (instance.code === CODE_SLASH) {
         instance.advance()
 
-        // 没写错，这里不必强调 isIdentifierStart
+        // 没写错，这里不必强调 isIdentifierStart，数字开头也可以吧
         if (isIdentifierPart(instance.code)) {
           array.push(
             nodes,
-            instance.scanIdentifier(instance.index)
+            instance.scanIdentifier(instance.index, env.TRUE)
           )
           return instance.scanIdentifierTail(startIndex, nodes)
         }
-        else if (instance.code === char.CODE_DOT) {
+        else if (instance.code === CODE_DOT) {
           // 先跳过第一个 .
           instance.advance()
           // 继续循环
@@ -436,7 +437,7 @@ export default class Scanner {
             // 无需识别关键字
             array.push(
               nodes,
-              instance.scanIdentifier(instance.index)
+              instance.scanIdentifier(instance.index, env.TRUE)
             )
             break
           }
@@ -472,16 +473,16 @@ export default class Scanner {
    * 扫描标识符
    *
    * @param startIndex
-   * @param careKeyword 是否识别关键字
+   * @param isProp 是否是对象的属性
    * @return
    */
-  scanIdentifier(startIndex: number, careKeyword = false): Identifier | Literal {
+  scanIdentifier(startIndex: number, isProp = env.FALSE): Identifier | Literal {
 
     const raw = this.cutString(isIdentifierPart, startIndex)
 
-    return careKeyword && object.has(keywordLiterals, raw)
+    return !isProp && object.has(keywordLiterals, raw)
       ? new Literal(raw, keywordLiterals[raw])
-      : createIdentifier(raw, raw)
+      : createIdentifier(raw, raw, isProp)
 
   }
 
@@ -834,8 +835,9 @@ function isIdentifierPart(code: number): boolean {
  *
  * @param raw
  * @param name
+ * @param isProp 是否是对象的属性
  */
-function createIdentifier(raw: string, name: string): Identifier {
+function createIdentifier(raw: string, name: string, isProp = env.FALSE): Identifier | Literal {
 
   let lookup = env.TRUE
 
@@ -845,17 +847,55 @@ function createIdentifier(raw: string, name: string): Identifier {
     lookup = env.FALSE
   }
 
-  return new Identifier(raw, lookup, name)
+  // 对象属性需要区分 a.b 和 a[b]
+  // 如果不借用 Literal 无法实现这个判断
+  // 同理，如果用了这种方式，就无法区分 a.b 和 a['b']，但是无所谓，这两种表示法本就一个意思
+
+  return isProp
+    ? new Literal(raw, name)
+    : new Identifier(raw, lookup, name)
 
 }
 
+/**
+ * 通过判断 nodes 来决定是否需要创建 Member
+ *
+ * 创建 Member 至少需要 nodes 有两个元素
+ *
+ * nodes 元素类型没有限制，可以是 Identifier、Literal、Call，或是别的完整表达式
+ *
+ * @param raw
+ * @param nodes
+ */
 function createMemberIfNeeded(raw: string, nodes: Node[]): Node {
-  let firstNode = nodes[0], lookup = env.TRUE
-  if (firstNode.type === nodeType.IDENTIFIER || firstNode.type === nodeType.MEMBER) {
-    lookup = firstNode.lookup
+
+  let firstNode = nodes[0], length = nodes[env.RAW_LENGTH], lookup = env.TRUE, staticKeypath: string | void
+
+  if (firstNode.type === nodeType.IDENTIFIER
+    || firstNode.type === nodeType.MEMBER
+  ) {
+    lookup = (firstNode as Variable).lookup
+    staticKeypath = (firstNode as Variable).staticKeypath
   }
-  // staticKeypath, nodes 还是要区分 IDENTIFIER 和 Literal，否则无法区分 a[b] 和 a.b
-  return nodes.length > 1
-    ? new Member(raw, lookup, '', nodes)
+
+  // 算出 staticKeypath 的唯一方式是，第一位元素是 Identifier，后面都是 Literal
+  // 否则就表示中间包含动态元素，这会导致无法计算静态路径
+  // 如 a.b.c 可以算出 staticKeypath，而 a[b].c 则不行，因为 b 是动态的
+  if (is.string(staticKeypath)) {
+    for (let i = 1, value: any; i < length; i++) {
+      if (nodes[i].type === nodeType.LITERAL) {
+        value = (nodes[i] as Literal).value
+        if (is.string(value) || is.number(value)) {
+          staticKeypath = keypathUtil.join(staticKeypath as string, value)
+          continue
+        }
+      }
+      staticKeypath = env.UNDEFINED
+      break
+    }
+  }
+
+  return length > 1
+    ? new Member(raw, lookup, staticKeypath, nodes)
     : firstNode
 }
