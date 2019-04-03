@@ -1,14 +1,13 @@
 
 import Node from './Node'
-import * as nodeType from '../nodeType'
 
 /**
  * Object 节点
  */
-export default class Object extends Node {
+export default interface Object extends Node {
 
-  constructor(raw: string, public keys: string[], public values: Node[]) {
-    super(nodeType.OBJECT, raw)
-  }
+  keys: string[]
+
+  values: Node[]
 
 }

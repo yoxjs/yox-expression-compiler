@@ -1,13 +1,14 @@
-import Variable from './Variable'
-import * as nodeType from '../nodeType'
+import Node from './Node'
 
 /**
  * Identifier 节点
  */
-export default class Identifier extends Variable {
+export default interface Identifier extends Node {
 
-  constructor(raw: string, lookup: boolean, public name: string) {
-    super(nodeType.IDENTIFIER, raw, lookup, name)
-  }
+  name: string
+
+  lookup: boolean
+
+  staticKeypath: string | void
 
 }

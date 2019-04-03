@@ -15,7 +15,6 @@ import Identifier from '../node/Identifier'
 import Literal from '../node/Literal'
 import Call from '../node/Call'
 import Member from '../node/Member'
-import Variable from '../node/Variable'
 import Ternary from '../node/Ternary'
 import Binary from '../node/Binary'
 import Unary from '../node/Unary'
@@ -87,11 +86,10 @@ export default class Scanner {
 
     const operator = instance.scanOperator(index)
     if (operator && interpreter.unary[operator]) {
-      const arg = instance.scanTernary(instance.index)
-      return new Unary(
-        instance.pick(index),
+      return createUnary(
         operator,
-        arg
+        instance.scanTernary(instance.index),
+        instance.pick(index)
       )
     }
 
@@ -116,8 +114,10 @@ export default class Scanner {
 
       // [xx, xx]
       case CODE_OBRACK:
-        const elements = instance.scanTuple(index, CODE_CBRACK)
-        return new ArrayNode(instance.pick(index), elements)
+        return createArray(
+          instance.scanTuple(index, CODE_CBRACK),
+          instance.pick(index)
+        )
 
       // { a: 'x', b: 'x' }
       case CODE_OBRACE:
@@ -157,7 +157,7 @@ export default class Scanner {
 
     // 尝试转型，如果转型失败，则确定是个错误的数字
     return is.numeric(raw)
-      ? new Literal(raw, +raw)
+      ? createLiteral(+raw, raw)
       : this.fatal(startIndex, `Invalid number literal when parsing ${raw}`)
 
   }
@@ -202,7 +202,10 @@ export default class Scanner {
 
     // new Function 处理字符转义
     const raw = instance.pick(startIndex)
-    return new Literal(raw, new Function(`return ${raw}`)())
+    return createLiteral(
+      new Function(`return ${raw}`)(),
+      raw
+    )
 
   }
 
@@ -267,11 +270,7 @@ export default class Scanner {
 
     return error
       ? instance.fatal(startIndex, error)
-      : new ObjectNode(
-          instance.pick(startIndex),
-          keys,
-          values
-        )
+      : createObject(keys, values, instance.pick(startIndex))
 
   }
 
@@ -325,7 +324,7 @@ export default class Scanner {
    */
   scanPath(startIndex: number): Node | never {
 
-    let instance = this, nodes: Variable[] = [], error = char.CHAR_BLANK, name: string | void
+    let instance = this, nodes: Node[] = [], error = char.CHAR_BLANK, name: string | void
 
     // 进入此函数时，已确定前一个 code 是 CODE_DOT
     // 此时只需判断接下来是 ./ 还是 / 就行了
@@ -420,11 +419,7 @@ export default class Scanner {
 
           array.push(
             nodes,
-            new Call(
-              instance.pick(startIndex),
-              node,
-              args
-            )
+            createCall(node, args, instance.pick(startIndex))
           )
           break
 
@@ -481,7 +476,7 @@ export default class Scanner {
     const raw = this.cutString(isIdentifierPart, startIndex)
 
     return !isProp && object.has(keywordLiterals, raw)
-      ? new Literal(raw, keywordLiterals[raw])
+      ? createLiteral(keywordLiterals[raw], raw)
       : createIdentifier(raw, raw, isProp)
 
   }
@@ -648,7 +643,7 @@ export default class Scanner {
           ) {
             output.splice(
               lastOperatorIndex - 1, 3,
-              new Binary('', output[lastOperatorIndex - 1], lastOperator, output[lastOperatorIndex + 1])
+              createBinary(output[lastOperatorIndex - 1], lastOperator, output[lastOperatorIndex + 1], '')
             )
           }
 
@@ -666,7 +661,7 @@ export default class Scanner {
     }
 
     return output.length === 3
-      ? new Binary(instance.pick(startIndex), output[0], output[1], output[2])
+      ? createBinary(output[0], output[1], output[2], instance.pick(startIndex))
       : output[0]
 
   }
@@ -706,9 +701,9 @@ export default class Scanner {
       }
 
       if (test && yes && no) {
-        test = new Ternary(
-          instance.pick(startIndex),
-          test, yes, no
+        test = createTernary(
+          test, yes, no,
+          instance.pick(startIndex)
         )
       }
       else {
@@ -830,6 +825,70 @@ function isIdentifierPart(code: number): boolean {
   return isIdentifierStart(code) || isDigit(code)
 }
 
+
+function createArray(elements: Node[], raw: string): ArrayNode {
+  return {
+    type: nodeType.ARRAY,
+    raw,
+    elements,
+  }
+}
+
+function createObject(keys: string[], values: Node[], raw: string): ObjectNode {
+  return {
+    type: nodeType.OBJECT,
+    raw,
+    keys,
+    values,
+  }
+}
+
+function createUnary(operator: string, arg: Node, raw: string): Unary {
+  return {
+    type: nodeType.UNARY,
+    raw,
+    operator,
+    arg
+  }
+}
+
+function createBinary(left: Node, operator: string, right: Node, raw: string): Binary {
+  return {
+    type: nodeType.BINARY,
+    raw,
+    left,
+    operator,
+    right
+  }
+}
+
+function createTernary(test: Node, yes: Node, no: Node, raw: string): Ternary {
+  return {
+    type: nodeType.TERNARY,
+    raw,
+    test,
+    yes,
+    no
+  }
+}
+
+function createCall(callee: Node, args: Node[], raw: string): Call {
+  return {
+    type: nodeType.CALL,
+    raw,
+    callee,
+    args,
+  }
+}
+
+function createLiteral(value: any, raw: string): Literal {
+  return {
+    type: nodeType.LITERAL,
+    raw,
+    value,
+  }
+}
+
 /**
  * 把创建 Identifier 的转换逻辑从构造函数里抽出来，保持数据类的纯粹性
  *
@@ -852,8 +911,14 @@ function createIdentifier(raw: string, name: string, isProp = env.FALSE): Identi
   // 同理，如果用了这种方式，就无法区分 a.b 和 a['b']，但是无所谓，这两种表示法本就一个意思
 
   return isProp
-    ? new Literal(raw, name)
-    : new Identifier(raw, lookup, name)
+    ? createLiteral(name, raw)
+    : {
+        type: nodeType.IDENTIFIER,
+        raw,
+        name,
+        lookup,
+        staticKeypath: name
+      }
 
 }
 
@@ -867,15 +932,15 @@ function createIdentifier(raw: string, name: string, isProp = env.FALSE): Identi
  * @param raw
  * @param nodes
  */
-function createMemberIfNeeded(raw: string, nodes: Node[]): Node {
+function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Member {
 
   let firstNode = nodes[0], length = nodes[env.RAW_LENGTH], lookup = env.TRUE, staticKeypath: string | void
 
   if (firstNode.type === nodeType.IDENTIFIER
     || firstNode.type === nodeType.MEMBER
   ) {
-    lookup = (firstNode as Variable).lookup
-    staticKeypath = (firstNode as Variable).staticKeypath
+    lookup = firstNode.lookup
+    staticKeypath = firstNode.staticKeypath
   }
 
   // 算出 staticKeypath 的唯一方式是，第一位元素是 Identifier，后面都是 Literal
@@ -896,6 +961,12 @@ function createMemberIfNeeded(raw: string, nodes: Node[]): Node {
   }
 
   return length > 1
-    ? new Member(raw, lookup, staticKeypath, nodes)
+    ? {
+        type: nodeType.MEMBER,
+        raw,
+        lookup,
+        staticKeypath,
+        props: nodes
+      }
     : firstNode
 }

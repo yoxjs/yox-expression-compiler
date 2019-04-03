@@ -1,14 +1,16 @@
-import Variable from './Variable'
+import Node from './Node'
 
 import * as nodeType from '../nodeType'
 
 /**
  * Member 节点
  */
-export default class Member extends Variable {
+export default interface Member extends Node {
 
-  constructor(raw: string, lookup: boolean, staticKeypath: string | void, public props: Node[]) {
-    super(nodeType.MEMBER, raw, lookup, staticKeypath)
-  }
+  props: Node[]
+
+  lookup: boolean
+
+  staticKeypath: string | void
 
 }

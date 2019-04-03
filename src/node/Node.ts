@@ -1,8 +1,10 @@
 /**
  * 节点基类
  */
-export default class Node {
+export default interface Node {
 
-  constructor(public type: number, public raw: string) {}
+  type: number
+
+  raw: string
 
 }
