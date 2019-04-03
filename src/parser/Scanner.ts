@@ -7,7 +7,6 @@ import * as object from 'yox-common/util/object'
 import * as logger from 'yox-common/util/logger'
 import * as keypathUtil from 'yox-common/util/keypath'
 
-import toNumber from 'yox-common/function/toNumber'
 
 import * as nodeType from '../nodeType'
 import * as interpreter from '../interpreter'
@@ -78,7 +77,10 @@ export default class Scanner {
     }
 
     if (isIdentifierStart(code)) {
-      return instance.scanIdentifier(index, env.TRUE)
+      return instance.scanIdentifierTail(
+        index,
+        [instance.scanIdentifier(index, env.TRUE) ]
+      )
     }
     if (isDigit(code)) {
       return instance.scanNumber(index)
@@ -111,13 +113,11 @@ export default class Scanner {
 
       // (xx)
       case CODE_OPAREN:
-        instance.advance()
         return instance.scanTernary(index, CODE_CPAREN)
 
       // [xx, xx]
       case CODE_OBRACK:
-        instance.advance()
-        const elements = instance.scanTuple(instance.index, CODE_CBRACK)
+        const elements = instance.scanTuple(index, CODE_CBRACK)
         return new ArrayNode(instance.pick(index), elements)
 
       // { a: 'x', b: 'x' }
@@ -284,7 +284,8 @@ export default class Scanner {
 
     let instance = this, nodes: Node[] = [], error = char.CHAR_BLANK
 
-    // 调用此方法前，必须先跳过开始字符，如 [ 和 (
+    // 跳过开始字符，如 [ 和 (
+    instance.advance()
 
     loop: while (env.TRUE) {
       switch (instance.code) {
@@ -321,7 +322,7 @@ export default class Scanner {
    * @param startIndex
    * @param prevNode
    */
-  scanPath(startIndex: number): Variable | never {
+  scanPath(startIndex: number): Node | never {
 
     let instance = this, nodes: Variable[] = [], error = char.CHAR_BLANK, name: string | void
 
@@ -348,14 +349,13 @@ export default class Scanner {
       if (instance.code === CODE_SLASH) {
         instance.advance()
 
-        // 可能有人会怀疑，此处可能出现 `../1` 这样的写法
-        // 层级对象有数字属性是什么情况，不用考虑代码维护性吗?
-        // 拒绝支持这种变态需求，谢谢
-        if (isIdentifierStart(instance.code)) {
+        // 没写错，这里不必强调 isIdentifierStart
+        if (isIdentifierPart(instance.code)) {
           array.push(
             nodes,
             instance.scanIdentifier(instance.index)
           )
+          return instance.scanIdentifierTail(startIndex, nodes)
         }
         else if (instance.code === char.CODE_DOT) {
           // 先跳过第一个 .
@@ -386,49 +386,85 @@ export default class Scanner {
    * 扫描变量
    *
    */
-  scanVariable(startIndex: number, nodes: Node[]) {
+  scanIdentifierTail(startIndex: number, nodes: Node[]): Node | never {
 
-    const instance = this
+    let instance = this, error = char.CHAR_BLANK, node: Node | void, raw: string | void
 
-    // // 标识符后面紧着的字符，可以是 ( . [
-    // switch (instance.code) {
+    /**
+     * 标识符后面紧着的字符，可以是 ( . [，此外还存在各种组合，感受一下：
+     *
+     * a.b.c().length
+     * a[b].c()()
+     * a[b][c]()[d](e, f, g).length
+     *
+     */
 
-    //   // a(x)
-    //   case CODE_OPAREN:
-    //     instance.advance()
-    //     let args = instance.scanTuple(instance.index, CODE_CPAREN)
-    //     return new Call(
-    //       instance.pick(startIndex),
-    //       node,
-    //       args
-    //     )
+    loop: while (env.TRUE) {
 
-    //   // a.x
-    //   case CODE_DOT:
-    //     instance.advance()
-    //     // 接下来的字符，可能是数字，也可能是标识符，此时无需识别关键字
-    //     let { raw } = instance.scanIdentifier(instance.index)
-    //     // 如果是数字，则存储为数字，避免运行时转型
-    //     array.push(
-    //       nodes,
-    //       new Literal(raw, is.numeric(raw) ? +raw : raw)
-    //     )
-    //     break
+      switch (instance.code) {
 
-    //   // a[]
-    //   case CODE_OBRACK:
-    //     let prop1 = parseExpression(CODE_CBRACK)
-    //     array.push(
-    //       nodes,
-    //       prop1
-    //     )
-    //     break
+        // a(x)
+        case CODE_OPAREN:
 
-    //   default:
-    //     break
-    // }
+          raw = instance.pick(startIndex)
 
-    // return node
+          // 参数列表
+          const args = instance.scanTuple(instance.index, CODE_CPAREN)
+
+          // 函数名
+          node = createMemberIfNeeded(raw, nodes)
+
+          // 整理队列
+          nodes.length = 0
+
+          array.push(
+            nodes,
+            new Call(
+              instance.pick(startIndex),
+              node,
+              args
+            )
+          )
+          break
+
+        // a.x
+        case CODE_DOT:
+          instance.advance()
+
+          // 接下来的字符，可能是数字，也可能是标识符，如果不是就报错
+          if (isIdentifierPart(instance.code)) {
+            // 无需识别关键字
+            array.push(
+              nodes,
+              instance.scanIdentifier(instance.index)
+            )
+            break
+          }
+          else {
+            error = '. 后面跟的都是啥玩意啊'
+            break loop
+          }
+
+        // a[]
+        case CODE_OBRACK:
+
+          node = instance.scanTernary(instance.index, CODE_CBRACK)
+          if (node) {
+            array.push(nodes, node)
+            break
+          }
+          else {
+            error = '[] 内部不能为空'
+            break loop
+          }
+
+      }
+
+    }
+
+    return error
+      ? instance.fatal(startIndex, error)
+      : createMemberIfNeeded(instance.pick(startIndex), nodes)
 
   }
 
@@ -649,9 +685,13 @@ export default class Scanner {
      * 我们不支持这四种，因此可认为 ?: 优先级最低
      */
 
-    let instance = this,
+    const instance = this
 
-    test = instance.scanBinary(startIndex),
+    if (endCode) {
+      instance.advance()
+    }
+
+    let test = instance.scanBinary(startIndex),
 
     yes: Node | void,
 
@@ -809,40 +849,13 @@ function createIdentifier(raw: string, name: string): Identifier {
 
 }
 
-/**
- * 把创建 Member 的转换逻辑从构造函数里抽出来，保持数据类的纯粹性
- *
- * @param raw
- * @param object
- * @param prop
- */
-function createMember(raw: string, object: Variable, prop: Variable | Literal) {
-
-  let props: Identifier[] = []
-
-  array.push(
-    props,
-    object.type === nodeType.MEMBER
-      ? (<Member>object).props
-      : object
-  )
-
-  array.push(props, prop)
-
-  let staticKeypath: string | void = env.UNDEFINED
-
-  if (is.string(object.staticKeypath)
-    && prop.type === nodeType.LITERAL
-  ) {
-    staticKeypath = keypathUtil.join(<string>object.staticKeypath, (<Literal>prop).value)
+function createMemberIfNeeded(raw: string, nodes: Node[]): Node {
+  let firstNode = nodes[0], lookup = env.TRUE
+  if (firstNode.type === nodeType.IDENTIFIER || firstNode.type === nodeType.MEMBER) {
+    lookup = firstNode.lookup
   }
-
-  return new Member(raw, props[0].lookup, staticKeypath, props)
-
-}
-
-function createMemberIfNeeded(raw: string, nodes: Node[]) {
+  // staticKeypath, nodes 还是要区分 IDENTIFIER 和 Literal，否则无法区分 a[b] 和 a.b
   return nodes.length > 1
-    ? new Member(raw, nodes[0].lookup, '', nodes)
-    : nodes[0]
+    ? new Member(raw, lookup, '', nodes)
+    : firstNode
 }
