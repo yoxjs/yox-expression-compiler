@@ -139,6 +139,15 @@ export default class Parser {
     if (operator && interpreter.unary[operator]) {
       const node = instance.scanTernary(instance.index)
       if (node) {
+        if (node.type === nodeType.LITERAL) {
+          const value = (node as Literal).value
+          if (is.number(value)) {
+            return createLiteral(
+              - value,
+              instance.pick(index)
+            )
+          }
+        }
         return createUnary(
           operator,
           node,
