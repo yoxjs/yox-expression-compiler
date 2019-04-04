@@ -7,22 +7,22 @@ import * as object from 'yox-common/util/object'
 import * as logger from 'yox-common/util/logger'
 import * as keypathUtil from 'yox-common/util/keypath'
 
-import * as nodeType from '../nodeType'
-import * as interpreter from '../interpreter'
+import * as nodeType from './nodeType'
+import * as interpreter from './interpreter'
 
-import Node from '../node/Node'
-import Identifier from '../node/Identifier'
-import Literal from '../node/Literal'
-import Member from '../node/Member'
-import Ternary from '../node/Ternary'
-import Binary from '../node/Binary'
-import Unary from '../node/Unary'
-import Call from '../node/Call'
+import Node from './node/Node'
+import Identifier from './node/Identifier'
+import Literal from './node/Literal'
+import Member from './node/Member'
+import Ternary from './node/Ternary'
+import Binary from './node/Binary'
+import Unary from './node/Unary'
+import Call from './node/Call'
 
-import ArrayNode from '../node/Array'
-import ObjectNode from '../node/Object'
+import ArrayNode from './node/Array'
+import ObjectNode from './node/Object'
 
-export default class Scanner {
+export default class Parser {
 
   end: number
 
@@ -33,7 +33,7 @@ export default class Scanner {
   content: string
 
   constructor(content: string) {
-    const instance = this, { length } = content
+    const instance = this, length = content[env.RAW_LENGTH]
     instance.index = -1
     instance.end = length > 0 ? length - 1 : 0
     instance.code = CODE_EOF
@@ -156,20 +156,6 @@ export default class Scanner {
   }
 
   /**
-   * 根据某种规则裁剪一段字符串
-   *
-   * @param match 裁剪规则
-   * @return
-   */
-  cutString(match: (code: number) => boolean, startIndex = this.index): string {
-    this.go()
-    while (match(this.code)) {
-      this.go()
-    }
-    return this.pick(startIndex)
-  }
-
-  /**
    * 扫描数字
    *
    * 支持整数和小数
@@ -179,12 +165,18 @@ export default class Scanner {
    */
   scanNumber(startIndex: number): Literal | never {
 
-    const raw = this.cutString(isNumber, startIndex)
+    const instance = this
+
+    while (isNumber(instance.code)) {
+      instance.go()
+    }
+
+    const raw = instance.pick(startIndex)
 
     // 尝试转型，如果转型失败，则确定是个错误的数字
     return is.numeric(raw)
       ? createLiteral(+raw, raw)
-      : this.fatal(startIndex, `Invalid number literal when parsing ${raw}`)
+      : instance.fatal(startIndex, `Invalid number literal when parsing ${raw}`)
 
   }
 
@@ -528,7 +520,13 @@ export default class Scanner {
    */
   scanIdentifier(startIndex: number, isProp = env.FALSE): Identifier | Literal {
 
-    const raw = this.cutString(isIdentifierPart, startIndex)
+    const instance = this
+
+    while (isIdentifierPart(instance.code)) {
+      instance.go()
+    }
+
+    const raw = instance.pick(startIndex)
 
     return !isProp && object.has(keywordLiterals, raw)
       ? createLiteral(keywordLiterals[raw], raw)
@@ -795,7 +793,7 @@ export default class Scanner {
         )
       }
       else {
-        instance.fatal(startIndex, 'are you kiding me?')
+        instance.fatal(startIndex, 'are you kidding me?')
       }
     }
 

@@ -6,20 +6,20 @@ import * as array from 'yox-common/util/array'
 import * as object from 'yox-common/util/object'
 import * as keypathUtil from 'yox-common/util/keypath'
 
-import * as nodeType from '../nodeType'
-import * as interpreter from '../interpreter'
+import * as nodeType from './nodeType'
+import * as interpreter from './interpreter'
 
-import Node from '../node/Node'
-import Identifier from '../node/Identifier'
-import Literal from '../node/Literal'
-import Member from '../node/Member'
-import Ternary from '../node/Ternary'
-import Binary from '../node/Binary'
-import Unary from '../node/Unary'
-import Call from '../node/Call'
+import Node from './node/Node'
+import Identifier from './node/Identifier'
+import Literal from './node/Literal'
+import Member from './node/Member'
+import Ternary from './node/Ternary'
+import Binary from './node/Binary'
+import Unary from './node/Unary'
+import Call from './node/Call'
 
-import ArrayNode from '../node/Array'
-import ObjectNode from '../node/Object'
+import ArrayNode from './node/Array'
+import ObjectNode from './node/Object'
 
 const nodeExecutor = {}
 
@@ -27,7 +27,7 @@ nodeExecutor[nodeType.LITERAL] = function (node: Literal) {
   return node.value
 }
 
-nodeExecutor[nodeType.IDENTIFIER] = function (node: Identifier, getter?: (keypath: string, node: Node) => any): any {
+nodeExecutor[nodeType.IDENTIFIER] = function (node: Identifier, getter: (keypath: string, node: Node) => any): any {
   return getter(node.name, node)
 }
 
@@ -82,7 +82,9 @@ nodeExecutor[nodeType.MEMBER] = function (node: Member, getter?: (keypath: strin
     return data ? data.value : env.UNDEFINED
   }
 
-  return getter(staticKeypath as string, node)
+  if (getter) {
+    return getter(staticKeypath as string, node)
+  }
 
 }
 
@@ -136,6 +138,6 @@ nodeExecutor[nodeType.CALL] = function (node: Call, getter?: (keypath: string, n
   )
 }
 
-export default function execute(node: Node, getter?: (keypath: string, node: Node) => any, context?: any): any {
+export function execute(node: Node, getter?: (keypath: string, node: Node) => any, context?: any): any {
   return nodeExecutor[node.type](node, getter, context)
 }

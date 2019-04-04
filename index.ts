@@ -1,13 +1,13 @@
-import Scanner from './src/parser/Scanner'
-import Executor from './src/parser/Executor'
+import Parser from './src/Parser'
+import * as executor from './src/executor'
 
 import Node from './src/node/Node'
 
 export function compile(code: string) {
-  const scanner = new Scanner(code)
-  return scanner.scanTernary(scanner.index)
+  const parser = new Parser(code)
+  return parser.scanTernary(parser.index)
 }
 
 export function execute(node: Node, getter?: (keypath: string, node: Node) => any, context?: any) {
-  return Executor(node, getter, context)
+  return executor.execute(node, getter, context)
 }
