@@ -6,7 +6,9 @@ import * as object from 'yox-common/util/object'
 
 it('literal', () => {
 
-  let ast = compile(' 1 ')
+  let ast: any
+
+  ast = compile(' 1 ')
 
   expect(ast != null).toBe(true)
   if (ast) {
@@ -22,12 +24,12 @@ it('literal', () => {
     expect(ast.raw).toBe('"str"')
   }
 
-  ast = compile(' "\'" ')
+  ast = compile('  "2\'2"  ')
 
   expect(ast != null).toBe(true)
   if (ast) {
-    expect(execute(ast)).toBe("'")
-    expect(ast.raw).toBe('"\'"')
+    expect(execute(ast)).toBe("2'2")
+    expect(ast.raw).toBe('"2\'2"')
   }
 
   ast = compile(' true ')
@@ -62,7 +64,7 @@ it('literal', () => {
     expect(ast.raw).toBe('null')
   }
 
-  ast = compile(' [1 , "2" , true]')
+  ast = compile(' [1 , "2" , true] ')
 
   expect(ast != null).toBe(true)
   if (ast) {
@@ -70,6 +72,13 @@ it('literal', () => {
     expect(execute(ast).length).toBe(3)
     expect(execute(ast) !== execute(ast)).toBe(true)
     expect(ast.raw).toBe('[1 , "2" , true]')
+  }
+
+  ast = compile(' [1 , "2" , true, ]  ')
+
+  expect(ast != null).toBe(true)
+  if (ast) {
+    expect(execute(ast).length).toBe(3)
   }
 
   ast = compile(' { name : "musicode", "age" : 100 }')
@@ -81,6 +90,9 @@ it('literal', () => {
     expect(execute(ast) !== execute(ast)).toBe(true)
     expect(ast.raw).toBe('{ name : "musicode", "age" : 100 }')
   }
+
+  ast = compile(' { name : "musicode", "age" : 100, }')
+  expect(ast != null).toBe(true)
 
   ast = compile(' ')
 
@@ -146,7 +158,6 @@ it('member', () => {
   expect(ast.raw).toBe('user.name')
 
   ast = compile('  this.user   ')
-  console.log(ast)
   // expect(execute(ast, get)).toBe(data.user)
   expect(ast.staticKeypath).toBe(`${env.KEYPATH_PRIVATE_CURRENT}.user`)
   expect(ast.raw).toBe('this.user')
@@ -192,9 +203,9 @@ it('unary', () => {
 
   let ast: any
 
-  ast = compile(' +true ')
+  ast = compile(' + true ')
   expect(execute(ast, get)).toBe(+true)
-  expect(ast.raw).toBe('+true')
+  expect(ast.raw).toBe('+ true')
 
   ast = compile(' + c ')
   expect(execute(ast, get)).toBe(+data.c)
@@ -216,9 +227,9 @@ it('unary', () => {
   expect(execute(ast, get)).toBe(true)
   expect(ast.raw).toBe('!a')
 
-  ast = compile(' !true ')
+  ast = compile(' ! true    ')
   expect(execute(ast, get)).toBe(!true)
-  expect(ast.raw).toBe('!true')
+  expect(ast.raw).toBe('! true')
 
   ast = compile(' !!c ')
   expect(execute(ast, get)).toBe(!!data.c)
