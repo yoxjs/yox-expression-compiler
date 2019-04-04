@@ -26,9 +26,9 @@ export default class Parser {
 
   end: number
 
-  index: number
-
   code: number
+
+  index: number
 
   content: string
 
@@ -211,7 +211,7 @@ export default class Parser {
           break loop
 
         case CODE_EOF:
-          error = 'Unterminated quote'
+          error = '到头了，字符串还没解析完呢？'
           break loop
 
       }
@@ -250,12 +250,12 @@ export default class Parser {
         case CODE_CBRACE:
           instance.go()
           if (keys[env.RAW_LENGTH] !== values[env.RAW_LENGTH]) {
-            error = 'keys 和 values 的长度不一致'
+            error = '对象的 keys 和 values 的长度不一致'
           }
           break loop
 
         case CODE_EOF:
-          error = 'scanObject 到头了还没解析完'
+          error = '到头了，对象还没解析完呢？'
           break loop
 
         // :
@@ -271,7 +271,7 @@ export default class Parser {
           break
 
         default:
-          // 解析 key 的时候，node 可以为空，如 { }
+          // 解析 key 的时候，node 可以为空，如 { } 或 { name: 'xx', }
           // 解析 value 的时候，node 不能为空
           node = instance.scanTernary(instance.index)
           if (scanKey) {
@@ -285,7 +285,7 @@ export default class Parser {
                 array.push(keys, (node as Literal).value)
               }
               else {
-                error = 'object key node type is not ok'
+                error = '对象的 key 类型不匹配'
                 break loop
               }
             }
@@ -296,7 +296,7 @@ export default class Parser {
             array.push(values, node)
           }
           else {
-            error = 'object value is not found'
+            error = '对象的值没找到'
             break loop
           }
       }
@@ -329,7 +329,7 @@ export default class Parser {
           break loop
 
         case CODE_EOF:
-          error = 'parse tuple 到头了还没解析完？'
+          error = '到头了，tuple 还没解析完呢？'
           break loop
 
         case CODE_COMMA:
@@ -407,7 +407,7 @@ export default class Parser {
         }
         else {
           // 类似 ./ 或 ../ 这样后面不跟标识符是想干嘛？报错可好？
-          error = 'path error'
+          error = 'path 写法错误'
           break
         }
 
