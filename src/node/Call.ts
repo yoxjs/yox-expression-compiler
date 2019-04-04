@@ -1,4 +1,3 @@
-
 import Node from './Node'
 
 /**

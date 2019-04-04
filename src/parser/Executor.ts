@@ -87,7 +87,7 @@ nodeExecutor[nodeType.MEMBER] = function (node: Member, getter?: (keypath: strin
 }
 
 nodeExecutor[nodeType.UNARY] = function (node: Unary, getter?: (keypath: string, node: Node) => any, context?: any): any {
-  return interpreter.unary[node.operator](
+  return interpreter.unary[node.operator].exec(
     execute(node.arg, getter, context)
   )
 }
