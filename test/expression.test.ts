@@ -1,5 +1,6 @@
 
 import { compile, execute } from '../index'
+import * as nodeType from '../src/nodeType'
 
 import * as env from 'yox-common/util/env'
 import * as object from 'yox-common/util/object'
@@ -14,6 +15,31 @@ it('literal', () => {
   if (ast) {
     expect(execute(ast)).toBe(1)
     expect(ast.raw).toBe('1')
+  }
+
+  ast = compile(' 1.01 ')
+
+  expect(ast != null).toBe(true)
+  if (ast) {
+    expect(execute(ast)).toBe(1.01)
+    expect(ast.raw).toBe('1.01')
+  }
+
+  ast = compile(' .01 ')
+
+  expect(ast != null).toBe(true)
+  if (ast) {
+    expect(execute(ast)).toBe(0.01)
+    expect(ast.raw).toBe('.01')
+  }
+
+  ast = compile(' -1 ')
+
+  expect(ast != null).toBe(true)
+  if (ast) {
+    expect(ast.type).toBe(nodeType.LITERAL)
+    expect(execute(ast)).toBe(-1)
+    expect(ast.raw).toBe('-1')
   }
 
   ast = compile(' "str" ')
@@ -118,7 +144,7 @@ it('identifier', () => {
 
 })
 
-it('prop, method', () => {
+it('prop', () => {
 
   let ast = compile('    "11".length    ')
 
