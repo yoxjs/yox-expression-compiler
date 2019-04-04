@@ -257,7 +257,7 @@ export default class Scanner {
 
         case CODE_CBRACE:
           instance.go()
-          if (keys.length !== values.length) {
+          if (keys[env.RAW_LENGTH] !== values[env.RAW_LENGTH]) {
             error = 'keys 和 values 的长度不一致'
           }
           break loop
@@ -279,7 +279,6 @@ export default class Scanner {
           break
 
         default:
-          console.log(instance.index, 'going')
           // 解析 key 的时候，node 可以为空，如 { }
           // 解析 value 的时候，node 不能为空
           node = instance.scanTernary(instance.index)
@@ -467,7 +466,7 @@ export default class Scanner {
           node = createMemberIfNeeded(raw, nodes)
 
           // 整理队列
-          nodes.length = 0
+          nodes[env.RAW_LENGTH] = 0
 
           array.push(
             nodes,
@@ -698,7 +697,7 @@ export default class Scanner {
         if (operator && (operatorInfo = interpreter.binary[operator])) {
 
           // 比较前一个运算符
-          lastOperatorIndex = output.length - 4
+          lastOperatorIndex = output[env.RAW_LENGTH] - 4
 
           // 如果前一个运算符的优先级 >= 现在这个，则新建 Binary
           // 如 a + b * c / d，当从左到右读取到 / 时，发现和前一个 * 优先级相同，则把 b * c 取出用于创建 Binary
@@ -707,12 +706,13 @@ export default class Scanner {
             && lastOperatorInfo.prec >= operatorInfo.prec
           ) {
             output.splice(
-              lastOperatorIndex - 3, 6,
+              lastOperatorIndex - 2,
+              5,
               createBinary(
                 output[lastOperatorIndex - 2],
                 lastOperator,
-                output[lastOperatorIndex + 3],
-                instance.pick(output[lastOperatorIndex - 3], output[lastOperatorIndex + 2])
+                output[lastOperatorIndex + 2],
+                instance.pick(output[lastOperatorIndex - 3], output[lastOperatorIndex + 3])
               )
             )
           }
@@ -733,13 +733,12 @@ export default class Scanner {
     // 类似 a + b * c 这种走到这会有 11 个
     // 此时需要从后往前遍历，因为确定后面的优先级肯定大于前面的
     while (env.TRUE) {
-      console.log(output)
       // 最少的情况是 a + b，它有 7 个元素
-      if (output.length >= 7) {
-        lastOperatorIndex = output.length - 4
-        console.log(lastOperatorIndex)
+      if (output[env.RAW_LENGTH] >= 7) {
+        lastOperatorIndex = output[env.RAW_LENGTH] - 4
         output.splice(
-          lastOperatorIndex - 2, 5,
+          lastOperatorIndex - 2,
+          5,
           createBinary(
             output[lastOperatorIndex - 2],
             output[lastOperatorIndex],
