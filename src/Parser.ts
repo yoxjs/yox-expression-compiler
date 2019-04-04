@@ -134,8 +134,6 @@ export default class Parser {
 
     }
 
-    let error = '毛都没匹配到'
-
     // 因为 scanOperator 会导致 index 发生变化，只能放在最后尝试
     const operator = instance.scanOperator(index)
     if (operator && interpreter.unary[operator]) {
@@ -147,11 +145,8 @@ export default class Parser {
           instance.pick(index)
         )
       }
-      error = '一元运算的表达式没找到'
+      instance.fatal(index, '一元运算的表达式没找到')
     }
-
-
-    instance.fatal(index, error)
 
   }
 
@@ -238,7 +233,7 @@ export default class Parser {
    */
   scanObject(startIndex: number): Node | never {
 
-    let instance = this, keys = [], values = [], scanKey = env.TRUE, error = char.CHAR_BLANK, node: Node | void
+    let instance = this, keys = [], values = [], isKey = env.TRUE, error = char.CHAR_BLANK, node: Node | void
 
     // 跳过 {
     instance.go()
@@ -261,20 +256,20 @@ export default class Parser {
         // :
         case CODE_COLON:
           instance.go()
-          scanKey = env.FALSE
+          isKey = env.FALSE
           break
 
         // ,
         case CODE_COMMA:
           instance.go()
-          scanKey = env.TRUE
+          isKey = env.TRUE
           break
 
         default:
           // 解析 key 的时候，node 可以为空，如 { } 或 { name: 'xx', }
           // 解析 value 的时候，node 不能为空
           node = instance.scanTernary(instance.index)
-          if (scanKey) {
+          if (isKey) {
             if (node) {
               // 处理 { key : value } key 后面的空格
               instance.skip()
@@ -439,7 +434,7 @@ export default class Parser {
      * a.b.c().length
      * a[b].c()()
      * a[b][c]()[d](e, f, g).length
-     *
+     * [].length
      */
 
     loop: while (env.TRUE) {
@@ -614,7 +609,7 @@ export default class Parser {
         }
         else {
           // 一个等号要报错
-          instance.fatal(startIndex, '不支持赋值')
+          instance.fatal(startIndex, '不支持一个等号这种赋值写法')
         }
         break
 
@@ -665,13 +660,13 @@ export default class Parser {
 
     token: Node | void,
 
+    index: number | void,
+
     operator: string | void,
 
     operatorInfo: any | void,
 
     lastOperator: string | void,
-
-    lastOperatorIndex: number | void,
 
     lastOperatorInfo: any | void
 
@@ -685,7 +680,10 @@ export default class Parser {
       if (token) {
 
         array.push(output, token)
-        array.push(output, instance.index)
+
+        // 这里记录当前 index
+        // 当无法匹配二元操作符时，退回来，让外部自己处理空格
+        array.push(output, index = instance.index)
 
         instance.skip()
 
@@ -695,22 +693,22 @@ export default class Parser {
         if (operator && (operatorInfo = interpreter.binary[operator])) {
 
           // 比较前一个运算符
-          lastOperatorIndex = output[env.RAW_LENGTH] - 4
+          index = output[env.RAW_LENGTH] - 4
 
           // 如果前一个运算符的优先级 >= 现在这个，则新建 Binary
           // 如 a + b * c / d，当从左到右读取到 / 时，发现和前一个 * 优先级相同，则把 b * c 取出用于创建 Binary
-          if ((lastOperator = output[lastOperatorIndex])
+          if ((lastOperator = output[index])
             && (lastOperatorInfo = interpreter.binary[lastOperator])
             && lastOperatorInfo.prec >= operatorInfo.prec
           ) {
             output.splice(
-              lastOperatorIndex - 2,
+              index - 2,
               5,
               createBinary(
-                output[lastOperatorIndex - 2],
+                output[index - 2],
                 lastOperator,
-                output[lastOperatorIndex + 2],
-                instance.pick(output[lastOperatorIndex - 3], output[lastOperatorIndex + 3])
+                output[index + 2],
+                instance.pick(output[index - 3], output[index + 3])
               )
             )
           }
@@ -719,6 +717,9 @@ export default class Parser {
 
           continue
 
+        }
+        else if (instance.index > index) {
+          instance.code = char.codeAt(instance.content, instance.index = index)
         }
 
       }
@@ -733,15 +734,15 @@ export default class Parser {
     while (env.TRUE) {
       // 最少的情况是 a + b，它有 7 个元素
       if (output[env.RAW_LENGTH] >= 7) {
-        lastOperatorIndex = output[env.RAW_LENGTH] - 4
+        index = output[env.RAW_LENGTH] - 4
         output.splice(
-          lastOperatorIndex - 2,
+          index - 2,
           5,
           createBinary(
-            output[lastOperatorIndex - 2],
-            output[lastOperatorIndex],
-            output[lastOperatorIndex + 2],
-            instance.pick(output[lastOperatorIndex - 3], output[lastOperatorIndex + 3])
+            output[index - 2],
+            output[index],
+            output[index + 2],
+            instance.pick(output[index - 3], output[index + 3])
           )
         )
       }
