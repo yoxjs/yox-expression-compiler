@@ -38,13 +38,13 @@ export default class Scanner {
     instance.end = length > 0 ? length - 1 : 0
     instance.code = CODE_EOF
     instance.content = content
-    instance.advance()
+    instance.go()
   }
 
   /**
    * 向前移动一个字符
    */
-  advance() {
+  go() {
     const instance = this
     if (instance.index <= instance.end) {
       instance.code = ++instance.index > instance.end
@@ -63,29 +63,27 @@ export default class Scanner {
   }
 
   /**
-   * 尝试解析下一个 token
-   *
-   * @param endCode
+   * 跳过空白符
    */
-  scanToken(endCode?: number): Node | void {
-
-    const instance = this
-
-    // 匹配第一个非空白符
-    while (isWhitespace(instance.code)) {
-      instance.advance()
+  skip() {
+    while (isWhitespace(this.code)) {
+      this.go()
     }
+  }
 
-    const { code, index } = instance
+  /**
+   * 尝试解析下一个 token
+   */
+  scanToken(): Node | void {
 
-    if (code === CODE_EOF || code === endCode) {
-      return
-    }
+    const instance = this, { code, index } = instance
 
     if (isIdentifierStart(code)) {
-      return instance.scanIdentifierTail(
+      return instance.scanTail(
         index,
-        [instance.scanIdentifier(index)]
+        [
+          instance.scanIdentifier(index)
+        ]
       )
     }
     if (isDigit(code)) {
@@ -94,14 +92,22 @@ export default class Scanner {
 
     switch (code) {
 
+      case CODE_EOF:
+        return
+
       // 'x' "x"
       case CODE_SQUOTE:
       case CODE_DQUOTE:
-        return instance.scanString(index, code)
+        return instance.scanTail(
+          index,
+          [
+            instance.scanString(index, code)
+          ]
+        )
 
       // .1  ./  ../
       case CODE_DOT:
-        instance.advance()
+        instance.go()
         return isDigit(instance.code)
           ? instance.scanNumber(index)
           : instance.scanPath(index)
@@ -112,9 +118,14 @@ export default class Scanner {
 
       // [xx, xx]
       case CODE_OBRACK:
-        return createArray(
-          instance.scanTuple(index, CODE_CBRACK),
-          instance.pick(index)
+        return instance.scanTail(
+          index,
+          [
+            createArray(
+              instance.scanTuple(index, CODE_CBRACK),
+              instance.pick(index)
+            )
+          ]
         )
 
       // { a: 'x', b: 'x' }
@@ -123,9 +134,8 @@ export default class Scanner {
 
     }
 
-    let error = 'scanToken 毛都没找到'
+    let error = '毛都没匹配到'
 
-    // 最后的垂死挣扎，实在没辙只能报错了
     // 因为 scanOperator 会导致 index 发生变化，只能放在最后尝试
     const operator = instance.scanOperator(index)
     if (operator && interpreter.unary[operator]) {
@@ -140,6 +150,7 @@ export default class Scanner {
       error = '一元运算的表达式没找到'
     }
 
+
     instance.fatal(index, error)
 
   }
@@ -151,9 +162,9 @@ export default class Scanner {
    * @return
    */
   cutString(match: (code: number) => boolean, startIndex = this.index): string {
-    this.advance()
+    this.go()
     while (match(this.code)) {
-      this.advance()
+      this.go()
     }
     return this.pick(startIndex)
   }
@@ -194,17 +205,17 @@ export default class Scanner {
       // 这句有两个作用：
       // 1. 跳过开始的引号
       // 2. 驱动 index 前进
-      instance.advance()
+      instance.go()
 
       switch (instance.code) {
 
         // \" \'
         case CODE_BACKSLASH:
-          instance.advance()
+          instance.go()
           break
 
         case endCode:
-          instance.advance()
+          instance.go()
           break loop
 
         case CODE_EOF:
@@ -238,14 +249,14 @@ export default class Scanner {
     let instance = this, keys = [], values = [], scanKey = env.TRUE, error = char.CHAR_BLANK, node: Node | void
 
     // 跳过 {
-    instance.advance()
+    instance.go()
 
     loop: while (env.TRUE) {
 
       switch (instance.code) {
 
         case CODE_CBRACE:
-          instance.advance()
+          instance.go()
           if (keys.length !== values.length) {
             error = 'keys 和 values 的长度不一致'
           }
@@ -257,22 +268,25 @@ export default class Scanner {
 
         // :
         case CODE_COLON:
-          instance.advance()
+          instance.go()
           scanKey = env.FALSE
           break
 
         // ,
         case CODE_COMMA:
-          instance.advance()
+          instance.go()
           scanKey = env.TRUE
           break
 
         default:
+          console.log(instance.index, 'going')
           // 解析 key 的时候，node 可以为空，如 { }
           // 解析 value 的时候，node 不能为空
           node = instance.scanTernary(instance.index)
           if (scanKey) {
             if (node) {
+              // 处理 { key : value } key 后面的空格
+              instance.skip()
               if (node.type === nodeType.IDENTIFIER) {
                 array.push(keys, (node as Identifier).name)
               }
@@ -286,6 +300,8 @@ export default class Scanner {
             }
           }
           else if (node) {
+            // 处理 { key : value } value 后面的空格
+            instance.skip()
             array.push(values, node)
           }
           else {
@@ -312,27 +328,33 @@ export default class Scanner {
     let instance = this, nodes: Node[] = [], error = char.CHAR_BLANK, node: Node | void
 
     // 跳过开始字符，如 [ 和 (
-    instance.advance()
+    instance.go()
 
     loop: while (env.TRUE) {
       switch (instance.code) {
 
         case endCode:
-        case CODE_COMMA:
-          instance.advance()
-          break
+          instance.go()
+          break loop
 
         case CODE_EOF:
-          error = 'parse tuple error'
+          error = 'parse tuple 到头了还没解析完？'
           break loop
+
+        case CODE_COMMA:
+          instance.go()
+          break
 
         default:
           // 1. ( )
           // 2. (1, 2, )
-          // 这两个例子都会出现 scanTernary 为空的情况
+          // 这三个例子都会出现 scanTernary 为空的情况
           // 但是不用报错
           node = instance.scanTernary(instance.index)
           if (node) {
+            // 为了解决 1 , 2 , 3 这样的写法
+            // 当解析出值后，先跳过后面的空格
+            instance.skip()
             array.push(nodes, node)
           }
       }
@@ -366,7 +388,7 @@ export default class Scanner {
 
       // ../
       if (instance.code === CODE_DOT) {
-        instance.advance()
+        instance.go()
         name = env.KEYPATH_PUBLIC_PARENT
       }
 
@@ -377,7 +399,7 @@ export default class Scanner {
 
       // 如果以 / 结尾，则命中 ./ 或 ../
       if (instance.code === CODE_SLASH) {
-        instance.advance()
+        instance.go()
 
         // 没写错，这里不必强调 isIdentifierStart，数字开头也可以吧
         if (isIdentifierPart(instance.code)) {
@@ -385,11 +407,11 @@ export default class Scanner {
             nodes,
             instance.scanIdentifier(instance.index, env.TRUE)
           )
-          return instance.scanIdentifierTail(startIndex, nodes)
+          return instance.scanTail(startIndex, nodes)
         }
         else if (instance.code === CODE_DOT) {
           // 先跳过第一个 .
-          instance.advance()
+          instance.go()
           // 继续循环
         }
         else {
@@ -416,7 +438,7 @@ export default class Scanner {
    * 扫描变量
    *
    */
-  scanIdentifierTail(startIndex: number, nodes: Node[]): Node | never {
+  scanTail(startIndex: number, nodes: Node[]): Node | never {
 
     let instance = this, error = char.CHAR_BLANK, node: Node | void, raw: string | void
 
@@ -455,7 +477,7 @@ export default class Scanner {
 
         // a.x
         case CODE_DOT:
-          instance.advance()
+          instance.go()
 
           // 接下来的字符，可能是数字，也可能是标识符，如果不是就报错
           if (isIdentifierPart(instance.code)) {
@@ -475,6 +497,7 @@ export default class Scanner {
         case CODE_OBRACK:
 
           node = instance.scanTernary(instance.index, CODE_CBRACK)
+
           if (node) {
             array.push(nodes, node)
             break
@@ -483,6 +506,9 @@ export default class Scanner {
             error = '[] 内部不能为空'
             break loop
           }
+
+        default:
+          break loop
 
       }
 
@@ -528,66 +554,66 @@ export default class Scanner {
       case CODE_MODULO:
       case CODE_WAVE:
       case CODE_XOR:
-        instance.advance()
+        instance.go()
         break;
 
       // *、**
       case CODE_MULTIPLY:
-        instance.advance()
+        instance.go()
         if (instance.code === CODE_MULTIPLY) {
-          instance.advance()
+          instance.go()
         }
         break
 
       // -、->
       case CODE_MINUS:
-        instance.advance()
+        instance.go()
         if (instance.code === CODE_GREAT) {
-          instance.advance()
+          instance.go()
         }
         break
 
       // !、!!、!=、!==
       case CODE_NOT:
-        instance.advance()
+        instance.go()
         if (instance.code === CODE_NOT) {
-          instance.advance()
+          instance.go()
         }
         else if (instance.code === CODE_EQUAL) {
-          instance.advance()
+          instance.go()
           if (instance.code === CODE_EQUAL) {
-            instance.advance()
+            instance.go()
           }
         }
         break
 
       // &、&&
       case CODE_AND:
-        instance.advance()
+        instance.go()
         if (instance.code === CODE_AND) {
-          instance.advance()
+          instance.go()
         }
         break
 
       // |、||
       case CODE_OR:
-        instance.advance()
+        instance.go()
         if (instance.code === CODE_OR) {
-          instance.advance()
+          instance.go()
         }
         break
 
       // ==、===、=>
       case CODE_EQUAL:
-        instance.advance()
+        instance.go()
         if (instance.code === CODE_EQUAL) {
-          instance.advance()
+          instance.go()
           if (instance.code === CODE_EQUAL) {
-            instance.advance()
+            instance.go()
           }
         }
         else if (instance.code === CODE_GREAT) {
-          instance.advance()
+          instance.go()
         }
         else {
           // 一个等号要报错
@@ -597,24 +623,24 @@ export default class Scanner {
 
       // <、<=、<<
       case CODE_LESS:
-        instance.advance()
+        instance.go()
         if (instance.code === CODE_EQUAL
           || instance.code === CODE_LESS
         ) {
-          instance.advance()
+          instance.go()
         }
         break
 
       // >、>=、>>、>>>
       case CODE_GREAT:
-        instance.advance()
+        instance.go()
         if (instance.code === CODE_EQUAL) {
-          instance.advance()
+          instance.go()
         }
         else if (instance.code === CODE_GREAT) {
-          instance.advance()
+          instance.go()
           if (instance.code === CODE_GREAT) {
-            instance.advance()
+            instance.go()
           }
         }
         break
@@ -654,14 +680,18 @@ export default class Scanner {
 
     while (env.TRUE) {
 
+      instance.skip()
+
       array.push(output, instance.index)
       token = instance.scanToken()
 
       if (token) {
 
         array.push(output, token)
-
         array.push(output, instance.index)
+
+        instance.skip()
+
         operator = instance.scanOperator(instance.index)
 
         // 必须是二元运算符，一元不行
@@ -700,9 +730,28 @@ export default class Scanner {
 
     }
 
-    return output.length === 3
-      ? createBinary(output[0], output[1], output[2], instance.pick(startIndex))
-      : output[0]
+    // 类似 a + b * c 这种走到这会有 11 个
+    // 此时需要从后往前遍历，因为确定后面的优先级肯定大于前面的
+    while (env.TRUE) {
+      console.log(output)
+      // 最少的情况是 a + b，它有 7 个元素
+      if (output.length >= 7) {
+        lastOperatorIndex = output.length - 4
+        console.log(lastOperatorIndex)
+        output.splice(
+          lastOperatorIndex - 2, 5,
+          createBinary(
+            output[lastOperatorIndex - 2],
+            output[lastOperatorIndex],
+            output[lastOperatorIndex + 2],
+            instance.pick(output[lastOperatorIndex - 3], output[lastOperatorIndex + 3])
+          )
+        )
+      }
+      else {
+        return output[1]
+      }
+    }
 
   }
 
@@ -724,7 +773,7 @@ export default class Scanner {
     const instance = this
 
     if (endCode) {
-      instance.advance()
+      instance.go()
     }
 
     let test = instance.scanBinary(startIndex),
@@ -753,7 +802,10 @@ export default class Scanner {
 
     // 过掉结束字符
     if (endCode) {
-      instance.scanToken(endCode)
+      instance.skip()
+      if (instance.code === endCode) {
+        instance.go()
+      }
     }
 
     return test
@@ -974,7 +1026,9 @@ function createIdentifier(raw: string, name: string, isProp = env.FALSE): Identi
  */
 function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Member {
 
-  let firstNode = nodes[0], length = nodes[env.RAW_LENGTH], lookup = env.TRUE, staticKeypath: string | void
+  // lookup 要求第一位元素是 Identifier 或 nodeType.MEMBER，且它的 lookup 是 true，才为 true
+  // 其他情况都为 false，如 "11".length 第一位元素是 Literal，不存在向上寻找的需求
+  let firstNode = nodes[0], length = nodes[env.RAW_LENGTH], lookup = env.FALSE, staticKeypath: string | void
 
   if (firstNode.type === nodeType.IDENTIFIER
     || firstNode.type === nodeType.MEMBER
@@ -1006,7 +1060,7 @@ function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Member {
         raw,
         lookup,
         staticKeypath,
-        props: nodes
+        props: object.copy(nodes)
       }
     : firstNode
 }

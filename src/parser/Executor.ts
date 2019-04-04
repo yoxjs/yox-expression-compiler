@@ -1,7 +1,9 @@
+import isDef from 'yox-common/function/isDef'
 import executeFunction from 'yox-common/function/execute'
 
-import * as char from 'yox-common/util/char'
+import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
+import * as object from 'yox-common/util/object'
 import * as keypathUtil from 'yox-common/util/keypath'
 
 import * as nodeType from '../nodeType'
@@ -25,56 +27,85 @@ nodeExecutor[nodeType.LITERAL] = function (node: Literal) {
   return node.value
 }
 
-nodeExecutor[nodeType.IDENTIFIER] = function (node: Identifier, getter: (keypath: string, node: Node) => any): any {
+nodeExecutor[nodeType.IDENTIFIER] = function (node: Identifier, getter?: (keypath: string, node: Node) => any): any {
   return getter(node.name, node)
 }
 
-nodeExecutor[nodeType.MEMBER] = function (node: Member, getter: (keypath: string, node: Node) => any, context: any): any {
-  let keypath = node.staticKeypath
-  if (!keypath) {
-    keypath = char.CHAR_BLANK
-    array.each(
-      node.props,
-      function (node: Node, index: number) {
-        let type = node.type, next = char.CHAR_BLANK
-        if (type !== nodeType.LITERAL) {
-          if (index > 0) {
-            next = execute(node, getter, context)
-          }
-          else if (type === nodeType.IDENTIFIER) {
-            next = (node as Identifier).name
-          }
-        }
-        else {
-          next = (node as Literal).value
-        }
-        keypath = keypathUtil.join(keypath as string, next)
-      }
-    )
+nodeExecutor[nodeType.MEMBER] = function (node: Member, getter?: (keypath: string, node: Node) => any, context?: any): any {
+
+  /**
+   * 先说第一种奇葩情况：
+   *
+   * 'xx'.length
+   *
+   * 没有变量数据，直接执行字面量，这里用不上 getter
+   *
+   * 第二种：
+   *
+   * a.b.c
+   *
+   * 这是常规操作
+   *
+   * 第三种：
+   *
+   * 'xx'[name]
+   *
+   * 以字面量开头，后面会用到变量
+   *
+   */
+
+  let { props, staticKeypath } = node, first: any, data: any
+
+  if (!staticKeypath) {
+
+    // props 至少两个，否则无法创建 Member
+    first = props[0]
+
+    if (first.type === nodeType.IDENTIFIER) {
+      staticKeypath = (first as Identifier).name
+    }
+    else {
+      data = execute(first, getter, context)
+    }
+
+    for (let i = 1, len = props.length; i < len; i++) {
+      staticKeypath = keypathUtil.join(
+        staticKeypath,
+        execute(props[i], getter, context)
+      )
+    }
+
   }
-  return getter(keypath, node)
+
+  if (isDef(data)) {
+    data = object.get(data, staticKeypath as string)
+    return data ? data.value : env.UNDEFINED
+  }
+
+  return getter(staticKeypath as string, node)
+
 }
 
-nodeExecutor[nodeType.UNARY] = function (node: Unary, getter: (keypath: string, node: Node) => any, context: any): any {
+nodeExecutor[nodeType.UNARY] = function (node: Unary, getter?: (keypath: string, node: Node) => any, context?: any): any {
   return interpreter.unary[node.operator](
     execute(node.arg, getter, context)
   )
 }
 
-nodeExecutor[nodeType.BINARY] = function (node: Binary, getter: (keypath: string, node: Node) => any, context: any): any {
+nodeExecutor[nodeType.BINARY] = function (node: Binary, getter?: (keypath: string, node: Node) => any, context?: any): any {
   return interpreter.binary[node.operator].exec(
     execute(node.left, getter, context),
     execute(node.right, getter, context)
   )
 }
 
-nodeExecutor[nodeType.TERNARY] = function (node: Ternary, getter: (keypath: string, node: Node) => any, context: any): any {
+nodeExecutor[nodeType.TERNARY] = function (node: Ternary, getter?: (keypath: string, node: Node) => any, context?: any): any {
   return execute(node.test, getter, context)
     ? execute(node.yes, getter, context)
     : execute(node.no, getter, context)
 }
 
-nodeExecutor[nodeType.ARRAY] = function (node: ArrayNode, getter: (keypath: string, node: Node) => any, context: any): any {
+nodeExecutor[nodeType.ARRAY] = function (node: ArrayNode, getter?: (keypath: string, node: Node) => any, context?: any): any {
   return node.elements.map(
     function (node) {
       return execute(node, getter, context)
@@ -82,7 +113,7 @@ nodeExecutor[nodeType.ARRAY] = function (node: ArrayNode, getter: (keypath: stri
   )
 }
 
-nodeExecutor[nodeType.OBJECT] = function (node: ObjectNode, getter: (keypath: string, node: Node) => any, context: any): any {
+nodeExecutor[nodeType.OBJECT] = function (node: ObjectNode, getter?: (keypath: string, node: Node) => any, context?: any): any {
   let result = {}
   array.each(
     node.keys,
@@ -93,7 +124,7 @@ nodeExecutor[nodeType.OBJECT] = function (node: ObjectNode, getter: (keypath: st
   return result
 }
 
-nodeExecutor[nodeType.CALL] = function (node: Call, getter: (keypath: string, node: Node) => any, context: any): any {
+nodeExecutor[nodeType.CALL] = function (node: Call, getter?: (keypath: string, node: Node) => any, context?: any): any {
   return executeFunction(
     execute(node.callee, getter, context),
     context,
@@ -105,6 +136,6 @@ nodeExecutor[nodeType.CALL] = function (node: Call, getter: (keypath: string, no
   )
 }
 
-export function execute(node: Node, getter: (keypath: string, node: Node) => any, context: any): any {
+export default function execute(node: Node, getter?: (keypath: string, node: Node) => any, context?: any): any {
   return nodeExecutor[node.type](node, getter, context)
 }
