@@ -1025,20 +1025,21 @@ function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Member {
 
   // lookup 要求第一位元素是 Identifier 或 nodeType.MEMBER，且它的 lookup 是 true，才为 true
   // 其他情况都为 false，如 "11".length 第一位元素是 Literal，不存在向上寻找的需求
-  let firstNode = nodes[0], length = nodes[env.RAW_LENGTH], lookup = env.FALSE, staticKeypath: string | void
+  let first = nodes[0], length = nodes[env.RAW_LENGTH], lookup = env.FALSE, staticKeypath: string | void, value: any
 
-  if (firstNode.type === nodeType.IDENTIFIER
-    || firstNode.type === nodeType.MEMBER
+  if (first.type === nodeType.IDENTIFIER
+    || first.type === nodeType.MEMBER
   ) {
-    lookup = (firstNode as Identifier).lookup
-    staticKeypath = (firstNode as Identifier).staticKeypath
+    lookup = (first as Identifier).lookup
+    staticKeypath = (first as Identifier).staticKeypath
   }
 
   // 算出 staticKeypath 的唯一方式是，第一位元素是 Identifier，后面都是 Literal
   // 否则就表示中间包含动态元素，这会导致无法计算静态路径
   // 如 a.b.c 可以算出 staticKeypath，而 a[b].c 则不行，因为 b 是动态的
+  // 这段属于性能优化，避免在运行时反复计算 Member 的 keypath
   if (is.string(staticKeypath)) {
-    for (let i = 1, value: any; i < length; i++) {
+    for (let i = 1; i < length; i++) {
       if (nodes[i].type === nodeType.LITERAL) {
         value = (nodes[i] as Literal).value
         if (is.string(value) || is.number(value)) {
@@ -1059,5 +1060,5 @@ function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Member {
         staticKeypath,
         props: object.copy(nodes)
       }
-    : firstNode
+    : first
 }
