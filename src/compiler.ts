@@ -14,9 +14,14 @@ import Node from './node/Node'
 import Identifier from './node/Identifier'
 import Literal from './node/Literal'
 
-export function compile(content: string) {
-  const parser = new Parser(content)
-  return parser.scanTernary(parser.index)
+const cache = { }
+
+export function compile(content: string): Node | void {
+  if (!cache[content]) {
+    const parser = new Parser(content)
+    cache[content] = parser.scanTernary(parser.index)
+  }
+  return cache[content]
 }
 
 export class Parser {

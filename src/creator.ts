@@ -33,24 +33,6 @@ export function createArray(elements: Node[], raw: string): ArrayNode {
   }
 }
 
-export function createObject(keys: string[], values: Node[], raw: string): ObjectNode {
-  return {
-    type: nodeType.OBJECT,
-    raw,
-    keys,
-    values,
-  }
-}
-
-export function createUnary(operator: string, arg: Node, raw: string): Unary {
-  return {
-    type: nodeType.UNARY,
-    raw,
-    operator,
-    arg
-  }
-}
-
 export function createBinary(left: Node, operator: string, right: Node, raw: string): Binary {
   return {
     type: nodeType.BINARY,
@@ -61,30 +43,12 @@ export function createBinary(left: Node, operator: string, right: Node, raw: str
   }
 }
 
-export function createTernary(test: Node, yes: Node, no: Node, raw: string): Ternary {
-  return {
-    type: nodeType.TERNARY,
-    raw,
-    test,
-    yes,
-    no
-  }
-}
-
 export function createCall(callee: Node, args: Node[], raw: string): Call {
   return {
     type: nodeType.CALL,
     raw,
     callee,
     args,
-  }
-}
-
-export function createLiteral(value: any, raw: string): Literal {
-  return {
-    type: nodeType.LITERAL,
-    raw,
-    value,
   }
 }
 
@@ -105,13 +69,49 @@ export function createIdentifier(raw: string, name: string, isProp = env.FALSE):
   return isProp
     ? createLiteral(name, raw)
     : {
-        type: nodeType.IDENTIFIER,
-        raw,
-        name,
-        lookup,
-        staticKeypath: name
-      }
+      type: nodeType.IDENTIFIER,
+      raw,
+      name,
+      lookup,
+      staticKeypath: name
+    }
 
+}
+
+export function createLiteral(value: any, raw: string): Literal {
+  return {
+    type: nodeType.LITERAL,
+    raw,
+    value,
+  }
+}
+
+export function createObject(keys: string[], values: Node[], raw: string): ObjectNode {
+  return {
+    type: nodeType.OBJECT,
+    raw,
+    keys,
+    values,
+  }
+}
+
+export function createTernary(test: Node, yes: Node, no: Node, raw: string): Ternary {
+  return {
+    type: nodeType.TERNARY,
+    raw,
+    test,
+    yes,
+    no
+  }
+}
+
+export function createUnary(operator: string, arg: Node, raw: string): Unary {
+  return {
+    type: nodeType.UNARY,
+    raw,
+    operator,
+    arg
+  }
 }
 
 /**
