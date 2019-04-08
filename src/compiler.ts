@@ -5,24 +5,21 @@ import * as array from 'yox-common/util/array'
 import * as string from 'yox-common/util/string'
 import * as object from 'yox-common/util/object'
 import * as logger from 'yox-common/util/logger'
-import * as keypathUtil from 'yox-common/util/keypath'
 
+import * as creator from './creator'
 import * as nodeType from './nodeType'
 import * as interpreter from './interpreter'
 
 import Node from './node/Node'
 import Identifier from './node/Identifier'
 import Literal from './node/Literal'
-import Member from './node/Member'
-import Ternary from './node/Ternary'
-import Binary from './node/Binary'
-import Unary from './node/Unary'
-import Call from './node/Call'
 
-import ArrayNode from './node/Array'
-import ObjectNode from './node/Object'
+export function compile(content: string) {
+  const parser = new Parser(content)
+  return parser.scanTernary(parser.index)
+}
 
-export default class Parser {
+export class Parser {
 
   end: number
 
@@ -121,7 +118,7 @@ export default class Parser {
         return instance.scanTail(
           index,
           [
-            createArray(
+            creator.createArray(
               instance.scanTuple(index, CODE_CBRACK),
               instance.pick(index)
             )
@@ -142,13 +139,13 @@ export default class Parser {
         if (node.type === nodeType.LITERAL) {
           const value = (node as Literal).value
           if (is.number(value)) {
-            return createLiteral(
+            return creator.createLiteral(
               - value,
               instance.pick(index)
             )
           }
         }
-        return createUnary(
+        return creator.createUnary(
           operator,
           node,
           instance.pick(index)
@@ -179,7 +176,7 @@ export default class Parser {
 
     // 尝试转型，如果转型失败，则确定是个错误的数字
     return is.numeric(raw)
-      ? createLiteral(+raw, raw)
+      ? creator.createLiteral(+raw, raw)
       : instance.fatal(startIndex, `Invalid number literal when parsing ${raw}`)
 
   }
@@ -228,7 +225,7 @@ export default class Parser {
 
     // new Function 处理字符转义
     const raw = instance.pick(startIndex)
-    return createLiteral(
+    return creator.createLiteral(
       new Function(`return ${raw}`)(),
       raw
     )
@@ -308,7 +305,7 @@ export default class Parser {
 
     return error
       ? instance.fatal(startIndex, error)
-      : createObject(keys, values, instance.pick(startIndex))
+      : creator.createObject(keys, values, instance.pick(startIndex))
 
   }
 
@@ -389,7 +386,7 @@ export default class Parser {
 
       array.push(
         nodes,
-        createIdentifier(name, name, nodes[env.RAW_LENGTH] > 0)
+        creator.createIdentifier(name, name, nodes[env.RAW_LENGTH] > 0)
       )
 
       // 如果以 / 结尾，则命中 ./ 或 ../
@@ -459,14 +456,14 @@ export default class Parser {
           const args = instance.scanTuple(instance.index, CODE_CPAREN)
 
           // 函数名
-          node = createMemberIfNeeded(raw, nodes)
+          node = creator.createMemberIfNeeded(raw, nodes)
 
           // 整理队列
           nodes[env.RAW_LENGTH] = 0
 
           array.push(
             nodes,
-            createCall(node, args, instance.pick(startIndex))
+            creator.createCall(node, args, instance.pick(startIndex))
           )
           break
 
@@ -511,7 +508,7 @@ export default class Parser {
 
     return error
       ? instance.fatal(startIndex, error)
-      : createMemberIfNeeded(instance.pick(startIndex), nodes)
+      : creator.createMemberIfNeeded(instance.pick(startIndex), nodes)
 
   }
 
@@ -533,8 +530,8 @@ export default class Parser {
     const raw = instance.pick(startIndex)
 
     return !isProp && object.has(keywordLiterals, raw)
-      ? createLiteral(keywordLiterals[raw], raw)
-      : createIdentifier(raw, raw, isProp)
+      ? creator.createLiteral(keywordLiterals[raw], raw)
+      : creator.createIdentifier(raw, raw, isProp)
 
   }
 
@@ -713,7 +710,7 @@ export default class Parser {
             output.splice(
               index - 2,
               5,
-              createBinary(
+              creator.createBinary(
                 output[index - 2],
                 lastOperator,
                 output[index + 2],
@@ -747,7 +744,7 @@ export default class Parser {
         output.splice(
           index - 2,
           5,
-          createBinary(
+          creator.createBinary(
             output[index - 2],
             output[index],
             output[index + 2],
@@ -797,7 +794,7 @@ export default class Parser {
       }
 
       if (test && yes && no) {
-        test = createTernary(
+        test = creator.createTernary(
           test, yes, no,
           instance.pick(startIndex)
         )
@@ -868,14 +865,6 @@ keywordLiterals[env.RAW_NULL] = env.NULL
 keywordLiterals[env.RAW_UNDEFINED] = env.UNDEFINED
 
 /**
- * 对外和对内的路径表示法不同
- */
-const keypathNames = {}
-
-keypathNames[env.KEYPATH_PUBLIC_CURRENT] = env.KEYPATH_PRIVATE_CURRENT
-keypathNames[env.KEYPATH_PUBLIC_PARENT] = env.KEYPATH_PRIVATE_PARENT
-
-/**
  * 是否是空白符，用下面的代码在浏览器测试一下
  *
  * ```
@@ -922,153 +911,4 @@ function isIdentifierStart(code: number): boolean {
  */
 function isIdentifierPart(code: number): boolean {
   return isIdentifierStart(code) || isDigit(code)
-}
-
-
-function createArray(elements: Node[], raw: string): ArrayNode {
-  return {
-    type: nodeType.ARRAY,
-    raw,
-    elements,
-  }
-}
-
-function createObject(keys: string[], values: Node[], raw: string): ObjectNode {
-  return {
-    type: nodeType.OBJECT,
-    raw,
-    keys,
-    values,
-  }
-}
-
-function createUnary(operator: string, arg: Node, raw: string): Unary {
-  return {
-    type: nodeType.UNARY,
-    raw,
-    operator,
-    arg
-  }
-}
-
-function createBinary(left: Node, operator: string, right: Node, raw: string): Binary {
-  return {
-    type: nodeType.BINARY,
-    raw,
-    left,
-    operator,
-    right
-  }
-}
-
-function createTernary(test: Node, yes: Node, no: Node, raw: string): Ternary {
-  return {
-    type: nodeType.TERNARY,
-    raw,
-    test,
-    yes,
-    no
-  }
-}
-
-function createCall(callee: Node, args: Node[], raw: string): Call {
-  return {
-    type: nodeType.CALL,
-    raw,
-    callee,
-    args,
-  }
-}
-
-function createLiteral(value: any, raw: string): Literal {
-  return {
-    type: nodeType.LITERAL,
-    raw,
-    value,
-  }
-}
-
-/**
- * 把创建 Identifier 的转换逻辑从构造函数里抽出来，保持数据类的纯粹性
- *
- * @param raw
- * @param name
- * @param isProp 是否是对象的属性
- */
-function createIdentifier(raw: string, name: string, isProp = env.FALSE): Identifier | Literal {
-
-  let lookup = env.TRUE
-
-  // public -> private
-  if (object.has(keypathNames, name)) {
-    name = keypathNames[name]
-    lookup = env.FALSE
-  }
-
-  // 对象属性需要区分 a.b 和 a[b]
-  // 如果不借用 Literal 无法实现这个判断
-  // 同理，如果用了这种方式，就无法区分 a.b 和 a['b']，但是无所谓，这两种表示法本就一个意思
-
-  return isProp
-    ? createLiteral(name, raw)
-    : {
-        type: nodeType.IDENTIFIER,
-        raw,
-        name,
-        lookup,
-        staticKeypath: name
-      }
-
-}
-
-/**
- * 通过判断 nodes 来决定是否需要创建 Member
- *
- * 创建 Member 至少需要 nodes 有两个元素
- *
- * nodes 元素类型没有限制，可以是 Identifier、Literal、Call，或是别的完整表达式
- *
- * @param raw
- * @param nodes
- */
-function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Member {
-
-  // lookup 要求第一位元素是 Identifier 或 nodeType.MEMBER，且它的 lookup 是 true，才为 true
-  // 其他情况都为 false，如 "11".length 第一位元素是 Literal，不存在向上寻找的需求
-  let first = nodes[0], length = nodes[env.RAW_LENGTH], lookup = env.FALSE, staticKeypath: string | void, value: any
-
-  if (first.type === nodeType.IDENTIFIER
-    || first.type === nodeType.MEMBER
-  ) {
-    lookup = (first as Identifier).lookup
-    staticKeypath = (first as Identifier).staticKeypath
-  }
-
-  // 算出 staticKeypath 的唯一方式是，第一位元素是 Identifier，后面都是 Literal
-  // 否则就表示中间包含动态元素，这会导致无法计算静态路径
-  // 如 a.b.c 可以算出 staticKeypath，而 a[b].c 则不行，因为 b 是动态的
-  // 这段属于性能优化，避免在运行时反复计算 Member 的 keypath
-  if (is.string(staticKeypath)) {
-    for (let i = 1; i < length; i++) {
-      if (nodes[i].type === nodeType.LITERAL) {
-        value = (nodes[i] as Literal).value
-        if (is.string(value) || is.number(value)) {
-          staticKeypath = keypathUtil.join(staticKeypath as string, value)
-          continue
-        }
-      }
-      staticKeypath = env.UNDEFINED
-      break
-    }
-  }
-
-  return length > 1
-    ? {
-        type: nodeType.MEMBER,
-        raw,
-        lookup,
-        staticKeypath,
-        props: object.copy(nodes)
-      }
-    : first
 }

@@ -1,5 +1,5 @@
 import isDef from 'yox-common/function/isDef'
-import executeFunction from 'yox-common/function/execute'
+import invoke from 'yox-common/function/execute'
 
 import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
@@ -127,7 +127,7 @@ nodeExecutor[nodeType.OBJECT] = function (node: ObjectNode, getter?: (keypath: s
 }
 
 nodeExecutor[nodeType.CALL] = function (node: Call, getter?: (keypath: string, node: Node) => any, context?: any): any {
-  return executeFunction(
+  return invoke(
     execute(node.callee, getter, context),
     context,
     node.args.map(
