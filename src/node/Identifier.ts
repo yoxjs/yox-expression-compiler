@@ -1,14 +1,10 @@
-import Node from './Node'
+import Keypath from './Keypath'
 
 /**
  * Identifier 节点
  */
-export default interface Identifier extends Node {
+export default interface Identifier extends Keypath {
 
   name: string
-
-  lookup: boolean
-
-  staticKeypath: string | void
 
 }

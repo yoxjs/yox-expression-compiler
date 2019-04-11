@@ -1,14 +1,11 @@
 import Node from './Node'
+import Keypath from './Keypath'
 
 /**
  * Member 节点
  */
-export default interface Member extends Node {
+export default interface Member extends Keypath {
 
   props: Node[]
-
-  lookup: boolean
-
-  staticKeypath: string | void
 
 }

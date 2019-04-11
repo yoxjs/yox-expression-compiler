@@ -6,6 +6,7 @@ import * as keypathUtil from 'yox-common/util/keypath'
 import * as nodeType from './nodeType'
 
 import Node from './node/Node'
+import Keypath from './node/Keypath'
 import Identifier from './node/Identifier'
 import Literal from './node/Literal'
 import Member from './node/Member'
@@ -73,7 +74,8 @@ export function createIdentifier(raw: string, name: string, isProp = env.FALSE):
       raw,
       name,
       lookup,
-      staticKeypath: name
+      staticKeypath: name,
+      absoluteKeypath: env.UNDEFINED,
     }
 
 }
@@ -128,13 +130,13 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Member 
 
   // lookup 要求第一位元素是 Identifier 或 nodeType.MEMBER，且它的 lookup 是 true，才为 true
   // 其他情况都为 false，如 "11".length 第一位元素是 Literal，不存在向上寻找的需求
-  let first = nodes[0], length = nodes[env.RAW_LENGTH], lookup = env.FALSE, staticKeypath: string | void, value: any
+  let first = nodes[0], length = nodes.length, lookup = env.FALSE, staticKeypath: string | void, value: any
 
   if (first.type === nodeType.IDENTIFIER
     || first.type === nodeType.MEMBER
   ) {
-    lookup = (first as Identifier).lookup
-    staticKeypath = (first as Identifier).staticKeypath
+    lookup = (first as Keypath).lookup
+    staticKeypath = (first as Keypath).staticKeypath
   }
 
   // 算出 staticKeypath 的唯一方式是，第一位元素是 Identifier，后面都是 Literal
@@ -161,6 +163,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Member 
         raw,
         lookup,
         staticKeypath,
+        absoluteKeypath: env.UNDEFINED,
         props: object.copy(nodes)
       }
     : first

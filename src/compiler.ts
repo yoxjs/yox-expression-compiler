@@ -35,7 +35,7 @@ export class Parser {
   content: string
 
   constructor(content: string) {
-    const instance = this, length = content[env.RAW_LENGTH]
+    const instance = this, length = content.length
     instance.index = -1
     instance.end = length > 0 ? length - 1 : 0
     instance.code = CODE_EOF
@@ -255,7 +255,7 @@ export class Parser {
 
         case CODE_CBRACE:
           instance.go()
-          if (keys[env.RAW_LENGTH] !== values[env.RAW_LENGTH]) {
+          if (keys.length !== values.length) {
             error = '对象的 keys 和 values 的长度不一致'
           }
           break loop
@@ -391,7 +391,7 @@ export class Parser {
 
       array.push(
         nodes,
-        creator.createIdentifier(name, name, nodes[env.RAW_LENGTH] > 0)
+        creator.createIdentifier(name, name, nodes.length > 0)
       )
 
       // 如果以 / 结尾，则命中 ./ 或 ../
@@ -464,7 +464,7 @@ export class Parser {
           node = creator.createMemberIfNeeded(raw, nodes)
 
           // 整理队列
-          nodes[env.RAW_LENGTH] = 0
+          nodes.length = 0
 
           array.push(
             nodes,
@@ -704,7 +704,7 @@ export class Parser {
         if (operator && (operatorInfo = interpreter.binary[operator])) {
 
           // 比较前一个运算符
-          index = output[env.RAW_LENGTH] - 4
+          index = output.length - 4
 
           // 如果前一个运算符的优先级 >= 现在这个，则新建 Binary
           // 如 a + b * c / d，当从左到右读取到 / 时，发现和前一个 * 优先级相同，则把 b * c 取出用于创建 Binary
@@ -744,8 +744,8 @@ export class Parser {
     // 此时需要从后往前遍历，因为确定后面的优先级肯定大于前面的
     while (env.TRUE) {
       // 最少的情况是 a + b，它有 7 个元素
-      if (output[env.RAW_LENGTH] >= 7) {
-        index = output[env.RAW_LENGTH] - 4
+      if (output.length >= 7) {
+        index = output.length - 4
         output.splice(
           index - 2,
           5,
