@@ -1,3 +1,5 @@
+import isDef from 'yox-common/function/isDef'
+
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
 import * as array from 'yox-common/util/array'
@@ -13,12 +15,13 @@ import Node from './node/Node'
 import Identifier from './node/Identifier'
 import Literal from './node/Literal'
 
+
 const cache = { }
 
 export function compile(content: string): Node | void {
   if (!cache[content]) {
     const parser = new Parser(content)
-    cache[content] = parser.scanTernary(parser.index)
+    cache[content] = parser.scanTernary(parser.index, CODE_EOF)
   }
   return cache[content]
 }
@@ -115,6 +118,7 @@ export class Parser {
 
       // (xx)
       case CODE_OPAREN:
+        instance.go()
         return instance.scanTernary(index, CODE_CPAREN)
 
       // [xx, xx]
@@ -155,7 +159,7 @@ export class Parser {
           instance.pick(index)
         )
       }
-      instance.fatal(index, '一元运算的表达式没找到')
+      instance.fatal(index, '一元运算只有操作符没有表达式？')
     }
 
   }
@@ -181,7 +185,7 @@ export class Parser {
     // 尝试转型，如果转型失败，则确定是个错误的数字
     return is.numeric(raw)
       ? creator.createLiteral(+raw, raw)
-      : instance.fatal(startIndex, `Invalid number literal when parsing ${raw}`)
+      : instance.fatal(startIndex, `数字写错了知道吗？`)
 
   }
 
@@ -435,7 +439,7 @@ export class Parser {
    */
   scanTail(startIndex: number, nodes: Node[]): Node | never {
 
-    let instance = this, error = env.EMPTY_STRING, node: Node | void, raw: string | void
+    let instance = this, error = env.EMPTY_STRING, node: Node | void, raw: string | void, index: number | void
 
     /**
      * 标识符后面紧着的字符，可以是 ( . [，此外还存在各种组合，感受一下：
@@ -491,7 +495,12 @@ export class Parser {
         // a[]
         case CODE_OBRACK:
 
-          node = instance.scanTernary(instance.index, CODE_CBRACK)
+          index = instance.index
+
+          // 过掉 [
+          instance.go()
+
+          node = instance.scanTernary(index, CODE_CBRACK)
 
           if (node) {
             array.push(nodes, node)
@@ -779,10 +788,6 @@ export class Parser {
 
     const instance = this
 
-    if (endCode) {
-      instance.go()
-    }
-
     let test = instance.scanBinary(startIndex),
 
     yes: Node | void,
@@ -803,15 +808,19 @@ export class Parser {
         )
       }
       else {
-        instance.fatal(startIndex, 'are you kidding me?')
+        instance.fatal(startIndex, '三元表达式谁教你这样写的？')
       }
     }
 
     // 过掉结束字符
-    if (endCode) {
+    if (isDef(endCode)) {
       instance.skip()
       if (instance.code === endCode) {
         instance.go()
+      }
+      // 没匹配到结束字符要报错
+      else {
+        instance.fatal(startIndex, '大兄弟，我怀疑你表达式写错了吧？')
       }
     }
 
