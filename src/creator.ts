@@ -164,7 +164,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Member 
         lookup,
         staticKeypath,
         absoluteKeypath: env.UNDEFINED,
-        props: object.copy(nodes)
+        props: nodes
       }
     : first
 }

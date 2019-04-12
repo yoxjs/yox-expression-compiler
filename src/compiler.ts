@@ -439,7 +439,7 @@ export class Parser {
    */
   scanTail(startIndex: number, nodes: Node[]): Node | never {
 
-    let instance = this, error = env.EMPTY_STRING, node: Node | void, raw: string | void, index: number | void
+    let instance = this, error = env.EMPTY_STRING, index: number | void, node: Node | void
 
     /**
      * 标识符后面紧着的字符，可以是 ( . [，此外还存在各种组合，感受一下：
@@ -456,22 +456,13 @@ export class Parser {
 
         // a(x)
         case CODE_OPAREN:
-
-          raw = instance.pick(startIndex)
-
-          // 参数列表
-          const args = instance.scanTuple(instance.index, CODE_CPAREN)
-
-          // 函数名
-          node = creator.createMemberIfNeeded(raw, nodes)
-
-          // 整理队列
-          nodes.length = 0
-
-          array.push(
-            nodes,
-            creator.createCall(node, args, instance.pick(startIndex))
-          )
+          nodes = [
+            creator.createCall(
+              creator.createMemberIfNeeded(instance.pick(startIndex), nodes),
+              instance.scanTuple(instance.index, CODE_CPAREN),
+              instance.pick(startIndex)
+            )
+          ]
           break
 
         // a.x
