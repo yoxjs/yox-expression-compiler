@@ -17,3 +17,8 @@ let value = expressionCompiler.execute(
   context
 )
 ``
+
+
+报错信息不全
+
+如 on-click="open())" 后面多打了一个 ) 没提示

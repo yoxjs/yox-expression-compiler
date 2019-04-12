@@ -1,6 +1,5 @@
 import * as is from 'yox-common/util/is'
 import * as env from 'yox-common/util/env'
-import * as char from 'yox-common/util/char'
 import * as array from 'yox-common/util/array'
 import * as string from 'yox-common/util/string'
 import * as object from 'yox-common/util/object'
@@ -51,7 +50,7 @@ export class Parser {
     if (instance.index <= instance.end) {
       instance.code = ++instance.index > instance.end
         ? CODE_EOF
-        : char.codeAt(instance.content, instance.index)
+        : string.codeAt(instance.content, instance.index)
     }
   }
 
@@ -196,7 +195,7 @@ export class Parser {
    */
   scanString(startIndex: number, endCode: number): Literal | never {
 
-    let instance = this, error = char.CHAR_BLANK
+    let instance = this, error = env.EMPTY_STRING
 
     loop: while (env.TRUE) {
 
@@ -244,7 +243,7 @@ export class Parser {
    */
   scanObject(startIndex: number): Node | never {
 
-    let instance = this, keys = [], values = [], isKey = env.TRUE, error = char.CHAR_BLANK, node: Node | void
+    let instance = this, keys = [], values = [], isKey = env.TRUE, error = env.EMPTY_STRING, node: Node | void
 
     // 跳过 {
     instance.go()
@@ -322,7 +321,7 @@ export class Parser {
    */
   scanTuple(startIndex: number, endCode: number): Node[] | never {
 
-    let instance = this, nodes: Node[] = [], error = char.CHAR_BLANK, node: Node | void
+    let instance = this, nodes: Node[] = [], error = env.EMPTY_STRING, node: Node | void
 
     // 跳过开始字符，如 [ 和 (
     instance.go()
@@ -373,7 +372,7 @@ export class Parser {
    */
   scanPath(startIndex: number): Node | never {
 
-    let instance = this, nodes: Node[] = [], error = char.CHAR_BLANK, name: string | void
+    let instance = this, nodes: Node[] = [], error = env.EMPTY_STRING, name: string | void
 
     // 进入此函数时，已确定前一个 code 是 CODE_DOT
     // 此时只需判断接下来是 ./ 还是 / 就行了
@@ -433,11 +432,10 @@ export class Parser {
 
   /**
    * 扫描变量
-   *
    */
   scanTail(startIndex: number, nodes: Node[]): Node | never {
 
-    let instance = this, error = char.CHAR_BLANK, node: Node | void, raw: string | void
+    let instance = this, error = env.EMPTY_STRING, node: Node | void, raw: string | void
 
     /**
      * 标识符后面紧着的字符，可以是 ( . [，此外还存在各种组合，感受一下：
@@ -730,7 +728,7 @@ export class Parser {
 
         }
         else if (instance.index > index) {
-          instance.code = char.codeAt(instance.content, instance.index = index)
+          instance.code = string.codeAt(instance.content, instance.index = index)
         }
 
       }
