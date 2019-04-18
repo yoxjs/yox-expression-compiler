@@ -8,7 +8,6 @@ export const unary = {
 
 // 参考 https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
 export const binary = {
-  '**': { prec: 15, exec(a: any, b: any) { return a ** b } },
   '*': { prec: 14, exec(a: any, b: any) { return a * b } },
   '/': { prec: 14, exec(a: any, b: any) { return a / b } },
   '%': { prec: 14, exec(a: any, b: any) { return a % b } },

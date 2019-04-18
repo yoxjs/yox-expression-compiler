@@ -284,10 +284,6 @@ it('binary', () => {
 
   let ast: any
 
-  ast = compile('   b ** c  ')
-  expect(execute(ast, get)).toBe(data.b ** data.c)
-  expect(ast.raw).toBe('b ** c')
-
   ast = compile(' b * c ')
   expect(execute(ast, get)).toBe(data.b * data.c)
   expect(ast.raw).toBe('b * c')

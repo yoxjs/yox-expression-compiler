@@ -558,12 +558,9 @@ export class Parser {
         instance.go()
         break;
 
-      // *、**
+      // *
       case CODE_MULTIPLY:
         instance.go()
-        if (instance.code === CODE_MULTIPLY) {
-          instance.go()
-        }
         break
 
       // -、->
