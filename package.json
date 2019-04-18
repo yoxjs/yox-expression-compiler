@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/yoxjs/yox-expression-compiler#readme",
   "dependencies": {
-    "yox-common": "0.18.2"
+    "yox-common": "0.18.3"
   },
   "devDependencies": {
     "@babel/core": "^7.4.3",

@@ -7,8 +7,8 @@ export default interface Keypath extends Node {
 
   lookup: boolean
 
-  staticKeypath: string | void
+  staticKeypath?: string
 
-  absoluteKeypath: string | void
+  absoluteKeypath?: string
 
 }

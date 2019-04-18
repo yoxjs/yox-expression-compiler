@@ -75,7 +75,6 @@ export function createIdentifier(raw: string, name: string, isProp = env.FALSE):
       name,
       lookup,
       staticKeypath: name,
-      absoluteKeypath: env.UNDEFINED,
     }
 
 }
@@ -163,7 +162,6 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Member 
         raw,
         lookup,
         staticKeypath,
-        absoluteKeypath: env.UNDEFINED,
         props: nodes
       }
     : first
