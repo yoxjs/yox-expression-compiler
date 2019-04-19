@@ -15,9 +15,6 @@ import Node from './node/Node'
 import Identifier from './node/Identifier'
 import Literal from './node/Literal'
 
-
-const cache = { }
-
 export function compile(content: string): Node | void {
   if (!cache[content]) {
     const parser = new Parser(content)
@@ -822,42 +819,44 @@ export class Parser {
 
 }
 
-const CODE_EOF = 0        //
-const CODE_DOT = 46       // .
-const CODE_COMMA = 44     // ,
-const CODE_SLASH = 47     // /
-const CODE_BACKSLASH = 92 // \
-const CODE_SQUOTE = 39    // '
-const CODE_DQUOTE = 34    // "
-const CODE_OPAREN = 40    // (
-const CODE_CPAREN = 41    // )
-const CODE_OBRACK = 91    // [
-const CODE_CBRACK = 93    // ]
-const CODE_OBRACE = 123   // {
-const CODE_CBRACE = 125   // }
-const CODE_QUESTION = 63  // ?
-const CODE_COLON = 58     // :
+const cache = {},
 
-const CODE_PLUS = 43      // +
-const CODE_MINUS = 45     // -
-const CODE_MULTIPLY = 42  // *
-const CODE_DIVIDE = 47    // /
-const CODE_MODULO = 37    // %
-const CODE_WAVE = 126     // ~
-const CODE_AND = 38       // &
-const CODE_OR = 124       // |
-const CODE_XOR = 94       // ^
-const CODE_NOT = 33       // !
-const CODE_LESS = 60      // <
-const CODE_EQUAL = 61     // =
-const CODE_GREAT = 62     // >
+CODE_EOF = 0,        //
+CODE_DOT = 46,       // .
+CODE_COMMA = 44,     // ,
+CODE_SLASH = 47,     // /
+CODE_BACKSLASH = 92, // \
+CODE_SQUOTE = 39,    // '
+CODE_DQUOTE = 34,    // "
+CODE_OPAREN = 40,    // (
+CODE_CPAREN = 41,    // )
+CODE_OBRACK = 91,    // [
+CODE_CBRACK = 93,    // ]
+CODE_OBRACE = 123,   // {
+CODE_CBRACE = 125,   // }
+CODE_QUESTION = 63,  // ?
+CODE_COLON = 58,     // :
+
+CODE_PLUS = 43,      // +
+CODE_MINUS = 45,     // -
+CODE_MULTIPLY = 42,  // *
+CODE_DIVIDE = 47,    // /
+CODE_MODULO = 37,    // %
+CODE_WAVE = 126,     // ~
+CODE_AND = 38,       // &
+CODE_OR = 124,       // |
+CODE_XOR = 94,       // ^
+CODE_NOT = 33,       // !
+CODE_LESS = 60,      // <
+CODE_EQUAL = 61,     // =
+CODE_GREAT = 62,     // >
 
 /**
  * 区分关键字和普通变量
  * 举个例子：a === true
  * 从解析器的角度来说，a 和 true 是一样的 token
  */
-const keywordLiterals = {}
+keywordLiterals = {}
 
 keywordLiterals[env.RAW_TRUE] = env.TRUE
 keywordLiterals[env.RAW_FALSE] = env.FALSE
