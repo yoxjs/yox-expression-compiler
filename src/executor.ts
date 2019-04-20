@@ -1,10 +1,10 @@
-import isDef from 'yox-common/function/isDef'
-import invoke from 'yox-common/function/execute'
+import isDef from 'yox-common/src/function/isDef'
+import invoke from 'yox-common/src/function/execute'
 
-import * as env from 'yox-common/util/env'
-import * as array from 'yox-common/util/array'
-import * as object from 'yox-common/util/object'
-import * as keypathUtil from 'yox-common/util/keypath'
+import * as env from 'yox-common/src/util/env'
+import * as array from 'yox-common/src/util/array'
+import * as object from 'yox-common/src/util/object'
+import * as keypathUtil from 'yox-common/src/util/keypath'
 
 import * as nodeType from './nodeType'
 import * as interpreter from './interpreter'
