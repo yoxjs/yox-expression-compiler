@@ -4,7 +4,7 @@
   "description": "Expression compiler for Yox.js",
   "main": "index.js",
   "directories": {
-    "example": "example",
+    "src": "src",
     "test": "test"
   },
   "scripts": {
