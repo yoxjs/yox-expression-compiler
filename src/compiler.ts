@@ -55,6 +55,13 @@ export class Parser {
   }
 
   /**
+   * 判断当前字符
+   */
+  is(code: number): boolean {
+    return this.code === code
+  }
+
+  /**
    * 截取一段字符串
    *
    * @param startIndex
@@ -384,7 +391,7 @@ export class Parser {
       name = env.KEYPATH_PUBLIC_CURRENT
 
       // ../
-      if (instance.code === CODE_DOT) {
+      if (instance.is(CODE_DOT)) {
         instance.go()
         name = env.KEYPATH_PUBLIC_PARENT
       }
@@ -395,7 +402,7 @@ export class Parser {
       )
 
       // 如果以 / 结尾，则命中 ./ 或 ../
-      if (instance.code === CODE_SLASH) {
+      if (instance.is(CODE_SLASH)) {
         instance.go()
 
         // 没写错，这里不必强调 isIdentifierStart，数字开头也可以吧
@@ -406,7 +413,7 @@ export class Parser {
           )
           return instance.scanTail(startIndex, nodes)
         }
-        else if (instance.code === CODE_DOT) {
+        else if (instance.is(CODE_DOT)) {
           // 先跳过第一个 .
           instance.go()
           // 继续循环
@@ -519,7 +526,7 @@ export class Parser {
    * @param isProp 是否是对象的属性
    * @return
    */
-  scanIdentifier(startIndex: number, isProp = env.FALSE): Identifier | Literal {
+  scanIdentifier(startIndex: number, isProp?: boolean): Identifier | Literal {
 
     const instance = this
 
@@ -563,7 +570,7 @@ export class Parser {
       // -、->
       case CODE_MINUS:
         instance.go()
-        if (instance.code === CODE_GREAT) {
+        if (instance.is(CODE_GREAT)) {
           instance.go()
         }
         break
@@ -571,12 +578,12 @@ export class Parser {
       // !、!!、!=、!==
       case CODE_NOT:
         instance.go()
-        if (instance.code === CODE_NOT) {
+        if (instance.is(CODE_NOT)) {
           instance.go()
         }
-        else if (instance.code === CODE_EQUAL) {
+        else if (instance.is(CODE_EQUAL)) {
           instance.go()
-          if (instance.code === CODE_EQUAL) {
+          if (instance.is(CODE_EQUAL)) {
             instance.go()
           }
         }
@@ -585,7 +592,7 @@ export class Parser {
       // &、&&
       case CODE_AND:
         instance.go()
-        if (instance.code === CODE_AND) {
+        if (instance.is(CODE_AND)) {
           instance.go()
         }
         break
@@ -593,7 +600,7 @@ export class Parser {
       // |、||
       case CODE_OR:
         instance.go()
-        if (instance.code === CODE_OR) {
+        if (instance.is(CODE_OR)) {
           instance.go()
         }
         break
@@ -601,13 +608,13 @@ export class Parser {
       // ==、===、=>
       case CODE_EQUAL:
         instance.go()
-        if (instance.code === CODE_EQUAL) {
+        if (instance.is(CODE_EQUAL)) {
           instance.go()
-          if (instance.code === CODE_EQUAL) {
+          if (instance.is(CODE_EQUAL)) {
             instance.go()
           }
         }
-        else if (instance.code === CODE_GREAT) {
+        else if (instance.is(CODE_GREAT)) {
           instance.go()
         }
         else {
@@ -619,8 +626,8 @@ export class Parser {
       // <、<=、<<
       case CODE_LESS:
         instance.go()
-        if (instance.code === CODE_EQUAL
-          || instance.code === CODE_LESS
+        if (instance.is(CODE_EQUAL)
+          || instance.is(CODE_LESS)
         ) {
           instance.go()
         }
@@ -629,12 +636,12 @@ export class Parser {
       // >、>=、>>、>>>
       case CODE_GREAT:
         instance.go()
-        if (instance.code === CODE_EQUAL) {
+        if (instance.is(CODE_EQUAL)) {
           instance.go()
         }
-        else if (instance.code === CODE_GREAT) {
+        else if (instance.is(CODE_GREAT)) {
           instance.go()
-          if (instance.code === CODE_GREAT) {
+          if (instance.is(CODE_GREAT)) {
             instance.go()
           }
         }
@@ -779,10 +786,10 @@ export class Parser {
 
     no: Node | void
 
-    if (instance.code === CODE_QUESTION) {
+    if (instance.is(CODE_QUESTION)) {
       yes = instance.scanBinary(instance.index)
 
-      if (instance.code === CODE_COLON) {
+      if (instance.is(CODE_COLON)) {
         no = instance.scanBinary(instance.index)
       }
 
@@ -800,7 +807,7 @@ export class Parser {
     // 过掉结束字符
     if (isDef(endCode)) {
       instance.skip()
-      if (instance.code === endCode) {
+      if (instance.is(endCode as number)) {
         instance.go()
       }
       // 没匹配到结束字符要报错
