@@ -1,6 +1,6 @@
 {
   "name": "yox-expression-compiler",
-  "version": "0.16.9",
+  "version": "0.16.10",
   "description": "Expression compiler for Yox.js",
   "main": "index.js",
   "directories": {
