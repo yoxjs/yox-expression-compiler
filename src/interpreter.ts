@@ -35,12 +35,12 @@ export const binary = {
     exec(a: any, b: any) {
       return a > b
         ? function (callback: (index: number, counter: number) => void) {
-          for (let i = a, index = 0; i >= b; i--) {
+          for (let i = a, index = 0; i > b; i--) {
             callback(i, index++)
           }
         }
         : function (callback: (index: number, counter: number) => void) {
-          for (let i = a, index = 0; i <= b; i++) {
+          for (let i = a, index = 0; i < b; i++) {
             callback(i, index++)
           }
         }
@@ -51,12 +51,12 @@ export const binary = {
     exec(a: any, b: any) {
       return a > b
         ? function (callback: (index: number, counter: number) => void) {
-          for (let i = a, index = 0; i > b; i--) {
+          for (let i = a, index = 0; i >= b; i--) {
             callback(i, index++)
           }
         }
         : function (callback: (index: number, counter: number) => void) {
-          for (let i = a, index = 0; i < b; i++) {
+          for (let i = a, index = 0; i <= b; i++) {
             callback(i, index++)
           }
         }
