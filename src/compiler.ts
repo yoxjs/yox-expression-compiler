@@ -388,12 +388,12 @@ export class Parser {
     while (env.TRUE) {
 
       // 要么是 current 要么是 parent
-      name = env.KEYPATH_PUBLIC_CURRENT
+      name = env.KEYPATH_CURRENT
 
       // ../
       if (instance.is(CODE_DOT)) {
         instance.go()
-        name = env.KEYPATH_PUBLIC_PARENT
+        name = env.KEYPATH_PARENT
       }
 
       array.push(

@@ -11,4 +11,6 @@ export default interface Keypath extends Node {
 
   absoluteKeypath?: string
 
+  offset: number
+
 }
