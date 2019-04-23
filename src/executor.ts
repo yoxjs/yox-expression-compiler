@@ -24,7 +24,7 @@ import ObjectNode from './node/Object'
 
 const nodeExecutor = {}
 
-nodeExecutor[nodeType.LITERAL] = function (node: Literal) {
+nodeExecutor[nodeType.LITERAL] = function (node: Literal): any {
   return node.value
 }
 

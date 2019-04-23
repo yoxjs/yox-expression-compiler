@@ -32,7 +32,7 @@ export const binary = {
 
   '->': {
     prec: 0,
-    exec(a: any, b: any) {
+    exec(a: number, b: number) {
       return a > b
         ? function (callback: (index: number, counter: number) => void) {
           for (let i = a, index = 0; i > b; i--) {
@@ -48,7 +48,7 @@ export const binary = {
   },
   '=>': {
     prec: 0,
-    exec(a: any, b: any) {
+    exec(a: number, b: number) {
       return a > b
         ? function (callback: (index: number, counter: number) => void) {
           for (let i = a, index = 0; i >= b; i--) {
