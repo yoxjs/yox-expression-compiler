@@ -18,7 +18,7 @@ import Literal from './node/Literal'
 export function compile(content: string): Node | void {
   if (!cache[content]) {
     const parser = new Parser(content)
-    cache[content] = parser.scanTernary(parser.index, CODE_EOF)
+    cache[content] = parser.scanTernary(CODE_EOF)
   }
   return cache[content]
 }
@@ -36,22 +36,56 @@ export class Parser {
   constructor(content: string) {
     const { length } = content
     this.index = -1
-    this.end = length > 0 ? length - 1 : 0
+    this.end = length
     this.code = CODE_EOF
     this.content = content
     this.go()
   }
 
   /**
-   * 向前移动一个字符
+   * 移动一个字符
    */
-  go() {
-    const instance = this
-    if (instance.index <= instance.end) {
-      instance.code = ++instance.index > instance.end
-        ? CODE_EOF
-        : string.codeAt(instance.content, instance.index)
+  go(step?: number) {
+
+    let instance = this, { index, end } = instance
+
+    index += step || 1
+
+    if (index >= 0 && index < end) {
+      instance.code = string.codeAt(instance.content, index)
+      instance.index = index
     }
+    else {
+      instance.code = CODE_EOF
+      instance.index = index < 0 ? -1 : end
+    }
+
+  }
+
+  /**
+   * 跳过空白符
+   */
+  skip(step?: number) {
+
+    // 走一步
+    if (this.code === CODE_EOF) {
+      this.go(step)
+    }
+
+    // 如果是正向的，停在第一个非空白符左侧
+    // 如果是逆向的，停在第一个非空白符右侧
+    while (env.TRUE) {
+      if (isWhitespace(this.code)) {
+        this.go(step)
+      }
+      else {
+        if (step && step < 0) {
+          this.go()
+        }
+        break
+      }
+    }
+
   }
 
   /**
@@ -68,15 +102,6 @@ export class Parser {
    */
   pick(startIndex: number, endIndex = this.index): string {
     return string.slice(this.content, startIndex, endIndex)
-  }
-
-  /**
-   * 跳过空白符
-   */
-  skip() {
-    while (isWhitespace(this.code)) {
-      this.go()
-    }
   }
 
   /**
@@ -123,7 +148,7 @@ export class Parser {
       // (xx)
       case CODE_OPAREN:
         instance.go()
-        return instance.scanTernary(index, CODE_CPAREN)
+        return instance.scanTernary(CODE_CPAREN)
 
       // [xx, xx]
       case CODE_OBRACK:
@@ -146,17 +171,21 @@ export class Parser {
     // 因为 scanOperator 会导致 index 发生变化，只能放在最后尝试
     const operator = instance.scanOperator(index)
     if (operator && interpreter.unary[operator]) {
-      const node = instance.scanTernary(instance.index)
+      const node = instance.scanTernary()
       if (node) {
         if (node.type === nodeType.LITERAL) {
           const value = (node as Literal).value
           if (is.number(value)) {
+            // 类似 ' -1 ' 这样的右侧有空格，需要撤回来
+            instance.skip(-1)
             return creator.createLiteral(
               - value,
               instance.pick(index)
             )
           }
         }
+        // 类似 ' -a ' 这样的右侧有空格，需要撤回来
+        instance.skip(-1)
         return creator.createUnary(
           operator,
           node,
@@ -286,7 +315,7 @@ export class Parser {
         default:
           // 解析 key 的时候，node 可以为空，如 { } 或 { name: 'xx', }
           // 解析 value 的时候，node 不能为空
-          node = instance.scanTernary(instance.index)
+          node = instance.scanTernary()
           if (isKey) {
             if (node) {
               // 处理 { key : value } key 后面的空格
@@ -354,7 +383,7 @@ export class Parser {
           // 2. (1, 2, )
           // 这三个例子都会出现 scanTernary 为空的情况
           // 但是不用报错
-          node = instance.scanTernary(instance.index)
+          node = instance.scanTernary()
           if (node) {
             // 为了解决 1 , 2 , 3 这样的写法
             // 当解析出值后，先跳过后面的空格
@@ -495,7 +524,7 @@ export class Parser {
           // 过掉 [
           instance.go()
 
-          node = instance.scanTernary(index, CODE_CBRACK)
+          node = instance.scanTernary(CODE_CBRACK)
 
           if (node) {
             array.push(nodes, node)
@@ -656,10 +685,8 @@ export class Parser {
 
   /**
    * 扫描二元运算
-   *
-   * @param startIndex
    */
-  scanBinary(startIndex: number): Node | void {
+  scanBinary(): Node | void {
 
     // 二元运算，如 a + b * c / d，这里涉及运算符的优先级
     // 算法参考 https://en.wikipedia.org/wiki/Shunting-yard_algorithm
@@ -691,9 +718,7 @@ export class Parser {
 
         array.push(output, token)
 
-        // 这里记录当前 index
-        // 当无法匹配二元操作符时，退回来，让外部自己处理空格
-        array.push(output, index = instance.index)
+        array.push(output, instance.index)
 
         instance.skip()
 
@@ -727,9 +752,6 @@ export class Parser {
 
           continue
 
-        }
-        else if (instance.index > index) {
-          instance.code = string.codeAt(instance.content, instance.index = index)
         }
 
       }
@@ -766,10 +788,9 @@ export class Parser {
   /**
    * 扫描三元运算
    *
-   * @param startIndex
    * @param endCode
    */
-  scanTernary(startIndex: number, endCode?: number): Node | void {
+  scanTernary(endCode?: number): Node | void {
 
     /**
      * https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
@@ -780,27 +801,37 @@ export class Parser {
 
     const instance = this
 
-    let test = instance.scanBinary(startIndex),
+    instance.skip()
+
+    let index = instance.index,
+
+    test = instance.scanBinary(),
 
     yes: Node | void,
 
     no: Node | void
 
     if (instance.is(CODE_QUESTION)) {
-      yes = instance.scanBinary(instance.index)
+      // 跳过 ?
+      instance.go()
+      yes = instance.scanBinary()
 
       if (instance.is(CODE_COLON)) {
-        no = instance.scanBinary(instance.index)
+        // 跳过 :
+        instance.go()
+        no = instance.scanBinary()
       }
 
       if (test && yes && no) {
+        // 类似 ' a ? 1 : 0 ' 这样的右侧有空格，需要撤回来
+        instance.skip(-1)
         test = creator.createTernary(
           test, yes, no,
-          instance.pick(startIndex)
+          instance.pick(index)
         )
       }
       else {
-        instance.fatal(startIndex, '三元表达式谁教你这样写的？')
+        instance.fatal(index, '三元表达式谁教你这样写的？')
       }
     }
 
@@ -812,7 +843,7 @@ export class Parser {
       }
       // 没匹配到结束字符要报错
       else {
-        instance.fatal(startIndex, '大兄弟，我怀疑你表达式写错了吧？')
+        instance.fatal(index, '大兄弟，我怀疑你表达式写错了吧？')
       }
     }
 
