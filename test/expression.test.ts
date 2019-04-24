@@ -197,22 +197,41 @@ it('path', () => {
   expect(ast.type).toBe(nodeType.MEMBER)
   expect(ast.raw).toBe('this.a[x].b')
   expect(ast.lookup).toBe(false)
-  expect(ast.offset).toBe(0)
+  expect(ast.offset).toBe(undefined)
   expect(ast.staticKeypath).toBe(undefined)
   expect(ast.props[0].type).toBe(nodeType.IDENTIFIER)
   expect(ast.props[0].name).toBe('a')
   expect(ast.props[0].lookup).toBe(false)
-  expect(ast.props[0].offset).toBe(0)
+  expect(ast.props[0].offset).toBe(undefined)
   expect(ast.props[0].staticKeypath).toBe('a')
 
   expect(ast.props[1].type).toBe(nodeType.IDENTIFIER)
   expect(ast.props[1].name).toBe('x')
-  expect(ast.props[1].lookup).toBe(true)
-  expect(ast.props[1].offset).toBe(0)
+  expect(ast.props[1].lookup).toBe(undefined)
+  expect(ast.props[1].offset).toBe(undefined)
   expect(ast.props[1].staticKeypath).toBe('x')
 
   expect(ast.props[2].type).toBe(nodeType.LITERAL)
   expect(ast.props[2].value).toBe('b')
+
+  ast = compile(' this.a[this.b] ')
+  console.log(ast)
+  expect(ast.type).toBe(nodeType.MEMBER)
+  expect(ast.raw).toBe('this.a[this.b]')
+  expect(ast.lookup).toBe(false)
+  expect(ast.offset).toBe(undefined)
+  expect(ast.staticKeypath).toBe(undefined)
+  expect(ast.props[0].type).toBe(nodeType.IDENTIFIER)
+  expect(ast.props[0].name).toBe('a')
+  expect(ast.props[0].lookup).toBe(false)
+  expect(ast.props[0].offset).toBe(undefined)
+  expect(ast.props[0].staticKeypath).toBe('a')
+
+  expect(ast.props[1].type).toBe(nodeType.IDENTIFIER)
+  expect(ast.props[1].name).toBe('b')
+  expect(ast.props[1].lookup).toBe(false)
+  expect(ast.props[1].offset).toBe(undefined)
+  expect(ast.props[1].staticKeypath).toBe('b')
 
 })
 
@@ -258,7 +277,7 @@ it('member', () => {
   ast = compile('  this.user   ')
   // expect(execute(ast, get)).toBe(data.user)
   expect(ast.lookup).toBe(false)
-  expect(ast.offset).toBe(0)
+  expect(ast.offset).toBe(undefined)
   expect(ast.staticKeypath).toBe(`user`)
   expect(ast.raw).toBe('this.user')
 
@@ -291,6 +310,8 @@ it('member', () => {
   expect(execute(ast, get)).toBe(data.user.name)
   expect(ast.staticKeypath).toBe(undefined)
   expect(ast.raw).toBe('user[    which ]')
+
+
 
 })
 

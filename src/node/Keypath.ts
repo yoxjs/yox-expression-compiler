@@ -5,12 +5,14 @@ import Node from './Node'
  */
 export default interface Keypath extends Node {
 
-  lookup: boolean
+  // 默认为 true，节省序列化的字符长度
+  lookup: boolean | void
+
+  // 默认为 0，节省序列化的字符长度
+  offset: number | void
 
   staticKeypath?: string
 
   absoluteKeypath?: string
-
-  offset: number
 
 }

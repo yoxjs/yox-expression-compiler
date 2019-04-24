@@ -1,13 +1,12 @@
-import * as is from 'yox-common/src/util/is'
+import isDef from 'yox-common/src/function/isDef'
+
 import * as env from 'yox-common/src/util/env'
 import * as array from 'yox-common/src/util/array'
-import * as object from 'yox-common/src/util/object'
 import * as keypathUtil from 'yox-common/src/util/keypath'
 
 import * as nodeType from './nodeType'
 
 import Node from './node/Node'
-import Keypath from './node/Keypath'
 import Identifier from './node/Identifier'
 import Literal from './node/Literal'
 import Member from './node/Member'
@@ -18,14 +17,6 @@ import Call from './node/Call'
 
 import ArrayNode from './node/Array'
 import ObjectNode from './node/Object'
-
-/**
- * 对外和对内的路径表示法不同
- */
-const keypathOffsets = {}
-
-keypathOffsets[env.KEYPATH_CURRENT] = 0
-keypathOffsets[env.KEYPATH_PARENT] = 1
 
 export function createArray(elements: Node[], raw: string): ArrayNode {
   return {
@@ -54,14 +45,39 @@ export function createCall(callee: Node, args: Node[], raw: string): Call {
   }
 }
 
+function createIdentifierInner(raw: string, name: string, lookup: boolean | void, offset: number | void, staticKeypath: string | void): Identifier {
+  return {
+    type: nodeType.IDENTIFIER,
+    raw,
+    name,
+    lookup: lookup === env.FALSE ? lookup : env.UNDEFINED,
+    offset: offset > 0 ? offset : env.UNDEFINED,
+    staticKeypath: isDef(staticKeypath) ? staticKeypath as string : name,
+  }
+}
+
+function createMemberInner(raw: string, props: Node[], lookup: boolean | void, offset: number, staticKeypath: string | void) {
+  return {
+    type: nodeType.MEMBER,
+    raw,
+    props,
+    lookup: lookup === env.FALSE ? lookup : env.UNDEFINED,
+    offset: offset > 0 ? offset : env.UNDEFINED,
+    staticKeypath,
+  }
+}
+
 export function createIdentifier(raw: string, name: string, isProp?: boolean): Identifier | Literal {
 
-  let lookup = env.TRUE, offset = 0
+  let lookup: boolean | void, offset: number | void
 
-  // public -> private
-  if (object.has(keypathOffsets, name)) {
+  if (name === env.KEYPATH_CURRENT
+    || name === env.KEYPATH_PARENT
+  ) {
     lookup = env.FALSE
-    offset = keypathOffsets[name]
+    if (name === env.KEYPATH_PARENT) {
+      offset = 1
+    }
     name = env.EMPTY_STRING
   }
 
@@ -71,14 +87,7 @@ export function createIdentifier(raw: string, name: string, isProp?: boolean): I
 
   return isProp
     ? createLiteral(name, raw)
-    : {
-        type: nodeType.IDENTIFIER,
-        raw,
-        name,
-        lookup,
-        offset,
-        staticKeypath: name,
-      }
+    : createIdentifierInner(raw, name, lookup, offset)
 
 }
 
@@ -138,39 +147,40 @@ function getLiteralNode(nodes: Node[], index: number): Literal | void {
  */
 export function createMemberIfNeeded(raw: string, nodes: (Node | Identifier | Literal)[]): Node | Identifier | Member {
 
-  let first = nodes[0],
+  let { length } = nodes,
 
-  { length } = nodes,
-
-  lookup = env.FALSE,
+  lookup: boolean | void,
 
   offset = 0,
 
-  name = env.EMPTY_STRING,
-
   staticKeypath: string | void,
+
+  name = env.EMPTY_STRING,
 
   list: (Node | Identifier | Literal)[] = [],
 
-  literal: Literal | void
+  literal: Literal | void,
+
+  identifier: Identifier
 
   if (length > 1) {
 
-    // lookup 要求第一位元素是 Identifier 或 nodeType.MEMBER，且它的 lookup 是 true 才为 true
+    // lookup 要求第一位元素是 Identifier，且它的 lookup 是 true 才为 true
     // 其他情况都为 false，如 "11".length 第一位元素是 Literal，不存在向上寻找的需求
-    if (first.type === nodeType.IDENTIFIER
-      || first.type === nodeType.MEMBER
-    ) {
+    if (nodes[0].type === nodeType.IDENTIFIER) {
 
-      lookup = (first as Keypath).lookup
+      identifier = nodes[0] as Identifier
 
-      if (object.has(keypathOffsets, first.raw)) {
-        staticKeypath = env.EMPTY_STRING
-        offset += (first as Keypath).offset
+      name = identifier.name
+      lookup = identifier.lookup
+      staticKeypath = identifier.staticKeypath
+
+      if (identifier.offset > 0) {
+        offset += identifier.offset as number
       }
-      else {
-        staticKeypath = (first as Keypath).staticKeypath
-        array.push(list, first)
+
+      if (name) {
+        array.push(list, identifier)
       }
 
       // 优化 1：计算 staticKeypath
@@ -184,25 +194,23 @@ export function createMemberIfNeeded(raw: string, nodes: (Node | Identifier | Li
       //
       // 比如 ../../xx 这样的表达式，应优化成 offset = 2，并转成 Identifier
 
-      if (is.string(staticKeypath)) {
-
-        for (let i = 1; i < length; i++) {
-          literal = getLiteralNode(nodes, i)
-          if (literal) {
-            if (object.has(keypathOffsets, literal.raw)) {
-              offset += keypathOffsets[literal.raw]
-              continue
-            }
-            if (is.string(staticKeypath)) {
-              staticKeypath = keypathUtil.join(staticKeypath as string, literal.value)
-            }
+      for (let i = 1; i < length; i++) {
+        literal = getLiteralNode(nodes, i)
+        if (literal) {
+          if (literal.raw === env.KEYPATH_PARENT) {
+            offset += 1
+            continue
           }
-          else {
-            staticKeypath = env.UNDEFINED
+          if (isDef(staticKeypath)
+            && literal.raw !== env.KEYPATH_CURRENT
+          ) {
+            staticKeypath = keypathUtil.join(staticKeypath as string, literal.value)
           }
-          array.push(list, nodes[i])
         }
-
+        else {
+          staticKeypath = env.UNDEFINED
+        }
+        array.push(list, nodes[i])
       }
 
       // 表示 nodes 中包含路径，并且路径节点被干掉了
@@ -212,14 +220,7 @@ export function createMemberIfNeeded(raw: string, nodes: (Node | Identifier | Li
         literal = getLiteralNode(nodes, 0)
         if (literal) {
           name = literal.value
-          nodes[0] = {
-            type: nodeType.IDENTIFIER,
-            raw: literal.raw,
-            name,
-            lookup,
-            offset,
-            staticKeypath: name,
-          }
+          nodes[0] = createIdentifierInner(literal.raw, name, lookup, offset)
         }
       }
 
@@ -228,25 +229,11 @@ export function createMemberIfNeeded(raw: string, nodes: (Node | Identifier | Li
     // 如果全是路径节点，如 ../../this，nodes 为空数组
     // 如果剩下一个节点，则可转成标识符
     return nodes.length < 2
-      ? {
-          type: nodeType.IDENTIFIER,
-          raw,
-          name,
-          lookup,
-          offset,
-          staticKeypath,
-        }
-      : {
-          type: nodeType.MEMBER,
-          raw,
-          lookup,
-          offset,
-          staticKeypath,
-          props: nodes,
-        }
+      ? createIdentifierInner(raw, name, lookup, offset, staticKeypath)
+      : createMemberInner(raw, nodes, lookup, offset, staticKeypath)
 
   }
 
-  return first
+  return nodes[0]
 
 }
