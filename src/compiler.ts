@@ -67,20 +67,22 @@ export class Parser {
    */
   skip(step?: number) {
 
+    const instance = this
+
     // 走一步
-    if (this.code === CODE_EOF) {
-      this.go(step)
+    if (instance.code === CODE_EOF) {
+      instance.go(step)
     }
 
     // 如果是正向的，停在第一个非空白符左侧
     // 如果是逆向的，停在第一个非空白符右侧
     while (env.TRUE) {
-      if (isWhitespace(this.code)) {
-        this.go(step)
+      if (isWhitespace(instance.code)) {
+        instance.go(step)
       }
       else {
         if (step && step < 0) {
-          this.go()
+          instance.go()
         }
         break
       }
@@ -100,8 +102,8 @@ export class Parser {
    *
    * @param startIndex
    */
-  pick(startIndex: number, endIndex = this.index): string {
-    return string.slice(this.content, startIndex, endIndex)
+  pick(startIndex: number, endIndex?: number): string {
+    return string.slice(this.content, startIndex, isDef(endIndex) ? endIndex : this.index)
   }
 
   /**
