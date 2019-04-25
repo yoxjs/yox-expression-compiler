@@ -194,7 +194,9 @@ export class Parser {
           instance.pick(index)
         )
       }
-      instance.fatal(index, '一元运算只有操作符没有表达式？')
+      if (process.env.NODE_ENV === 'dev') {
+        instance.fatal(index, `一元运算只有操作符没有表达式？`)
+      }
     }
 
   }
@@ -207,7 +209,7 @@ export class Parser {
    * @param startIndex
    * @return
    */
-  scanNumber(startIndex: number): Literal | never {
+  scanNumber(startIndex: number): Literal | void {
 
     const instance = this
 
@@ -218,9 +220,13 @@ export class Parser {
     const raw = instance.pick(startIndex)
 
     // 尝试转型，如果转型失败，则确定是个错误的数字
-    return is.numeric(raw)
-      ? creator.createLiteral(+raw, raw)
-      : instance.fatal(startIndex, `数字写错了知道吗？`)
+    if (is.numeric(raw)) {
+      return creator.createLiteral(+raw, raw)
+    }
+
+    if (process.env.NODE_ENV === 'dev') {
+      instance.fatal(startIndex, `数字写错了知道吗？`)
+    }
 
   }
 
@@ -232,9 +238,9 @@ export class Parser {
    * @param startIndex
    * @param endCode
    */
-  scanString(startIndex: number, endCode: number): Literal | never {
+  scanString(startIndex: number, endCode: number): Literal {
 
-    let instance = this, error = env.EMPTY_STRING
+    const instance = this
 
     loop: while (env.TRUE) {
 
@@ -255,15 +261,13 @@ export class Parser {
           break loop
 
         case CODE_EOF:
-          error = '到头了，字符串还没解析完呢？'
+          if (process.env.NODE_ENV === 'dev') {
+            instance.fatal(startIndex, `到头了，字符串还没解析完呢？`)
+          }
           break loop
 
       }
 
-    }
-
-    if (error) {
-      return instance.fatal(startIndex, error)
     }
 
     // new Function 处理字符转义
@@ -280,9 +284,9 @@ export class Parser {
    *
    * @param startIndex
    */
-  scanObject(startIndex: number): Node | never {
+  scanObject(startIndex: number): Node {
 
-    let instance = this, keys = [], values = [], isKey = env.TRUE, error = env.EMPTY_STRING, node: Node | void
+    let instance = this, keys = [], values = [], isKey = env.TRUE, node: Node | void
 
     // 跳过 {
     instance.go()
@@ -293,13 +297,17 @@ export class Parser {
 
         case CODE_CBRACE:
           instance.go()
-          if (keys.length !== values.length) {
-            error = '对象的 keys 和 values 的长度不一致'
+          if (process.env.NODE_ENV === 'dev') {
+            if (keys.length !== values.length) {
+              instance.fatal(startIndex, `对象的 keys 和 values 的长度不一致`)
+            }
           }
           break loop
 
         case CODE_EOF:
-          error = '到头了，对象还没解析完呢？'
+          if (process.env.NODE_ENV === 'dev') {
+            instance.fatal(startIndex, `到头了，对象还没解析完呢？`)
+          }
           break loop
 
         // :
@@ -329,7 +337,9 @@ export class Parser {
                 array.push(keys, (node as Literal).value)
               }
               else {
-                error = '对象的 key 类型不匹配'
+                if (process.env.NODE_ENV === 'dev') {
+                  instance.fatal(startIndex, `对象的 key 必须是字面量或标识符`)
+                }
                 break loop
               }
             }
@@ -340,15 +350,15 @@ export class Parser {
             array.push(values, node)
           }
           else {
-            error = '对象的值没找到'
+            if (process.env.NODE_ENV === 'dev') {
+              instance.fatal(startIndex, `对象的值没找到`)
+            }
             break loop
           }
       }
     }
 
-    return error
-      ? instance.fatal(startIndex, error)
-      : creator.createObject(keys, values, instance.pick(startIndex))
+    return creator.createObject(keys, values, instance.pick(startIndex))
 
   }
 
@@ -358,9 +368,9 @@ export class Parser {
    * @param startIndex
    * @param endCode 元组的结束字符编码
    */
-  scanTuple(startIndex: number, endCode: number): Node[] | never {
+  scanTuple(startIndex: number, endCode: number): Node[] {
 
-    let instance = this, nodes: Node[] = [], error = env.EMPTY_STRING, node: Node | void
+    let instance = this, nodes: Node[] = [], node: Node | void
 
     // 跳过开始字符，如 [ 和 (
     instance.go()
@@ -373,7 +383,9 @@ export class Parser {
           break loop
 
         case CODE_EOF:
-          error = '到头了，tuple 还没解析完呢？'
+          if (process.env.NODE_ENV === 'dev') {
+            instance.fatal(startIndex, `到头了，tuple 还没解析完呢？`)
+          }
           break loop
 
         case CODE_COMMA:
@@ -395,9 +407,7 @@ export class Parser {
       }
     }
 
-    return error
-      ? instance.fatal(startIndex, error)
-      : nodes
+    return nodes
 
   }
 
@@ -409,9 +419,9 @@ export class Parser {
    * @param startIndex
    * @param prevNode
    */
-  scanPath(startIndex: number): Node | never {
+  scanPath(startIndex: number): Node | void {
 
-    let instance = this, nodes: Node[] = [], error = env.EMPTY_STRING, name: string | void
+    let instance = this, nodes: Node[] = [], name: string | void
 
     // 进入此函数时，已确定前一个 code 是 CODE_DOT
     // 此时只需判断接下来是 ./ 还是 / 就行了
@@ -451,7 +461,9 @@ export class Parser {
         }
         else {
           // 类似 ./ 或 ../ 这样后面不跟标识符是想干嘛？报错可好？
-          error = 'path 写法错误'
+          if (process.env.NODE_ENV === 'dev') {
+            instance.fatal(startIndex, `path 写法错误`)
+          }
           break
         }
 
@@ -465,8 +477,6 @@ export class Parser {
       }
     }
 
-    return instance.fatal(startIndex, error)
-
   }
 
   /**
@@ -474,7 +484,7 @@ export class Parser {
    */
   scanTail(startIndex: number, nodes: Node[]): Node | never {
 
-    let instance = this, error = env.EMPTY_STRING, index: number | void, node: Node | void
+    let instance = this, node: Node | void
 
     /**
      * 标识符后面紧着的字符，可以是 ( . [，此外还存在各种组合，感受一下：
@@ -514,14 +524,14 @@ export class Parser {
             break
           }
           else {
-            error = '. 后面跟的都是啥玩意啊'
+            if (process.env.NODE_ENV === 'dev') {
+              instance.fatal(startIndex, `. 后面跟的都是啥玩意啊`)
+            }
             break loop
           }
 
         // a[]
         case CODE_OBRACK:
-
-          index = instance.index
 
           // 过掉 [
           instance.go()
@@ -533,7 +543,9 @@ export class Parser {
             break
           }
           else {
-            error = '[] 内部不能为空'
+            if (process.env.NODE_ENV === 'dev') {
+              instance.fatal(startIndex, `[] 内部不能为空`)
+            }
             break loop
           }
 
@@ -544,9 +556,7 @@ export class Parser {
 
     }
 
-    return error
-      ? instance.fatal(startIndex, error)
-      : creator.createMemberIfNeeded(instance.pick(startIndex), nodes)
+    return creator.createMemberIfNeeded(instance.pick(startIndex), nodes)
 
   }
 
@@ -650,7 +660,9 @@ export class Parser {
         }
         else {
           // 一个等号要报错
-          instance.fatal(startIndex, '不支持一个等号这种赋值写法')
+          if (process.env.NODE_ENV === 'dev') {
+            instance.fatal(startIndex, `不支持一个等号这种赋值写法`)
+          }
         }
         break
 
@@ -833,7 +845,9 @@ export class Parser {
         )
       }
       else {
-        instance.fatal(index, '三元表达式谁教你这样写的？')
+        if (process.env.NODE_ENV === 'dev') {
+          instance.fatal(index, `三元表达式谁教你这样写的？`)
+        }
       }
     }
 
@@ -845,7 +859,9 @@ export class Parser {
       }
       // 没匹配到结束字符要报错
       else {
-        instance.fatal(index, '大兄弟，我怀疑你表达式写错了吧？')
+        if (process.env.NODE_ENV === 'dev') {
+          instance.fatal(index, `大兄弟，我怀疑你表达式写错了吧？`)
+        }
       }
     }
 
@@ -853,8 +869,10 @@ export class Parser {
 
   }
 
-  fatal(start: number, message: string): never {
-    return logger.fatal(`Error compiling expression:\n${this.content}\n- ${message}`)
+  fatal(start: number, message: string) {
+    if (process.env.NODE_ENV === 'dev') {
+      logger.fatal(`Error compiling expression:\n${this.content}\n- ${message}`)
+    }
   }
 
 }
