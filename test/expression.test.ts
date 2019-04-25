@@ -265,6 +265,9 @@ it('member', () => {
     list: [ 1, [ 2 ] ]
   }
   let get = function (keypath) {
+    if (keypath === '') {
+      return data
+    }
     return object.get(data, keypath).value
   }
   let ast: any
@@ -275,11 +278,19 @@ it('member', () => {
   expect(ast.raw).toBe('user.name')
 
   ast = compile('  this.user   ')
-  // expect(execute(ast, get)).toBe(data.user)
+  expect(execute(ast, get)).toBe(data.user)
   expect(ast.lookup).toBe(false)
   expect(ast.offset).toBe(undefined)
   expect(ast.staticKeypath).toBe(`user`)
   expect(ast.raw).toBe('this.user')
+
+  // 语法上没有错，虽然不这么写
+  ast = compile('  this.this   ')
+  expect(execute(ast, get)).toBe(data)
+  expect(ast.lookup).toBe(false)
+  expect(ast.offset).toBe(undefined)
+  expect(ast.staticKeypath).toBe(``)
+  expect(ast.raw).toBe('this.this')
 
   ast = compile('   list.0')
   expect(execute(ast, get)).toBe(data.list[ 0 ])

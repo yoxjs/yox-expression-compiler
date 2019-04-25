@@ -1,4 +1,5 @@
 import isDef from 'yox-common/src/function/isDef'
+import isUndef from 'yox-common/src/function/isUndef'
 import invoke from 'yox-common/src/function/execute'
 
 import * as env from 'yox-common/src/util/env'
@@ -57,7 +58,7 @@ nodeExecutor[nodeType.MEMBER] = function (node: Member, getter?: (keypath: strin
 
   let { props, staticKeypath } = node, first: any, data: any
 
-  if (!staticKeypath) {
+  if (isUndef(staticKeypath)) {
 
     // props 至少两个，否则无法创建 Member
     first = props[0]
