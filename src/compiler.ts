@@ -854,7 +854,7 @@ export class Parser {
   }
 
   fatal(start: number, message: string): never {
-    return logger.fatal(message)
+    return logger.fatal(`Error compiling expression:\n${this.content}\n- ${message}`)
   }
 
 }
