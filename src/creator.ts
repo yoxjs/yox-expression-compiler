@@ -1,4 +1,5 @@
 import isDef from 'yox-common/src/function/isDef'
+import toString from 'yox-common/src/function/toString'
 
 import * as env from 'yox-common/src/util/env'
 import * as array from 'yox-common/src/util/array'
@@ -204,7 +205,7 @@ export function createMemberIfNeeded(raw: string, nodes: (Node | Identifier | Li
           if (isDef(staticKeypath)
             && literal.raw !== env.KEYPATH_CURRENT
           ) {
-            staticKeypath = keypathUtil.join(staticKeypath as string, literal.value)
+            staticKeypath = keypathUtil.join(staticKeypath as string, toString(literal.value))
           }
         }
         else {

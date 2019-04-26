@@ -67,6 +67,7 @@ nodeExecutor[nodeType.MEMBER] = function (node: Member, getter?: (keypath: strin
       staticKeypath = (first as Identifier).name
     }
     else {
+      staticKeypath = env.EMPTY_STRING
       data = execute(first, getter, context)
     }
 
