@@ -846,7 +846,7 @@ export class Parser {
       }
       else {
         if (process.env.NODE_ENV === 'dev') {
-          instance.fatal(index, `三元表达式谁教你这样写的？`)
+          instance.fatal(index, `三元表达式写法错误`)
         }
       }
     }
@@ -860,7 +860,10 @@ export class Parser {
       // 没匹配到结束字符要报错
       else {
         if (process.env.NODE_ENV === 'dev') {
-          instance.fatal(index, `大兄弟，我怀疑你表达式写错了吧？`)
+          instance.fatal(
+            index,
+            `结束字符匹配错误，期待[${String.fromCharCode(endCode as number)}]，却发现[${String.fromCharCode(instance.code)}]`
+          )
         }
       }
     }
