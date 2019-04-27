@@ -5,7 +5,7 @@ import Node from './Node'
  */
 export default interface Unary extends Node {
 
-  operator: string
+  op: string
 
   arg: Node
 

@@ -19,20 +19,20 @@ import Call from './node/Call'
 import ArrayNode from './node/Array'
 import ObjectNode from './node/Object'
 
-export function createArray(elements: Node[], raw: string): ArrayNode {
+export function createArray(nodes: Node[], raw: string): ArrayNode {
   return {
     type: nodeType.ARRAY,
     raw,
-    elements,
+    nodes,
   }
 }
 
-export function createBinary(left: Node, operator: string, right: Node, raw: string): Binary {
+export function createBinary(left: Node, op: string, right: Node, raw: string): Binary {
   return {
     type: nodeType.BINARY,
     raw,
     left,
-    operator,
+    op,
     right,
   }
 }
@@ -119,11 +119,11 @@ export function createTernary(test: Node, yes: Node, no: Node, raw: string): Ter
   }
 }
 
-export function createUnary(operator: string, arg: Node, raw: string): Unary {
+export function createUnary(op: string, arg: Node, raw: string): Unary {
   return {
     type: nodeType.UNARY,
     raw,
-    operator,
+    op,
     arg,
   }
 }

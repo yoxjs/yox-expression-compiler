@@ -7,7 +7,7 @@ export default interface Binary extends Node {
 
   left: Node
 
-  operator: string
+  op: string
 
   right: Node
 

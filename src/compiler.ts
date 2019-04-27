@@ -658,11 +658,9 @@ export class Parser {
         else if (instance.is(CODE_GREAT)) {
           instance.go()
         }
-        else {
-          // 一个等号要报错
-          if (process.env.NODE_ENV === 'dev') {
-            instance.fatal(startIndex, `不支持一个等号这种赋值写法`)
-          }
+        // 一个等号要报错
+        else if (process.env.NODE_ENV === 'dev') {
+          instance.fatal(startIndex, `不支持一个等号这种赋值写法`)
         }
         break
 
@@ -844,10 +842,8 @@ export class Parser {
           instance.pick(index)
         )
       }
-      else {
-        if (process.env.NODE_ENV === 'dev') {
-          instance.fatal(index, `三元表达式写法错误`)
-        }
+      else if (process.env.NODE_ENV === 'dev') {
+        instance.fatal(index, `三元表达式写法错误`)
       }
     }
 
@@ -858,13 +854,11 @@ export class Parser {
         instance.go()
       }
       // 没匹配到结束字符要报错
-      else {
-        if (process.env.NODE_ENV === 'dev') {
-          instance.fatal(
-            index,
-            `结束字符匹配错误，期待[${String.fromCharCode(endCode as number)}]，却发现[${String.fromCharCode(instance.code)}]`
-          )
-        }
+      else if (process.env.NODE_ENV === 'dev') {
+        instance.fatal(
+          index,
+          `结束字符匹配错误，期待[${String.fromCharCode(endCode as number)}]，却发现[${String.fromCharCode(instance.code)}]`
+        )
       }
     }
 
