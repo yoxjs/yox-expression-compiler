@@ -5,10 +5,10 @@ import Node from './Node'
  */
 export default interface Binary extends Node {
 
-  left: Node
+  a: Node
 
   op: string
 
-  right: Node
+  b: Node
 
 }

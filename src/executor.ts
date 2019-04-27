@@ -93,14 +93,14 @@ nodeExecutor[nodeType.MEMBER] = function (node: Member, getter?: (keypath: strin
 
 nodeExecutor[nodeType.UNARY] = function (node: Unary, getter?: (keypath: string, node: Keypath) => any, context?: any): any {
   return interpreter.unary[node.op].exec(
-    execute(node.arg, getter, context)
+    execute(node.a, getter, context)
   )
 }
 
 nodeExecutor[nodeType.BINARY] = function (node: Binary, getter?: (keypath: string, node: Keypath) => any, context?: any): any {
   return interpreter.binary[node.op].exec(
-    execute(node.left, getter, context),
-    execute(node.right, getter, context)
+    execute(node.a, getter, context),
+    execute(node.b, getter, context)
   )
 }
 
@@ -131,7 +131,7 @@ nodeExecutor[nodeType.OBJECT] = function (node: ObjectNode, getter?: (keypath: s
 
 nodeExecutor[nodeType.CALL] = function (node: Call, getter?: (keypath: string, node: Keypath) => any, context?: any): any {
   return invoke(
-    execute(node.callee, getter, context),
+    execute(node.name, getter, context),
     context,
     node.args.map(
       function (node) {

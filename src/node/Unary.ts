@@ -7,6 +7,6 @@ export default interface Unary extends Node {
 
   op: string
 
-  arg: Node
+  a: Node
 
 }

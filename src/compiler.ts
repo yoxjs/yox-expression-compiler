@@ -594,8 +594,7 @@ export class Parser {
 
     switch (instance.code) {
 
-      // +、/、%、~、^
-      case CODE_PLUS:
+      // /、%、~、^
       case CODE_DIVIDE:
       case CODE_MODULO:
       case CODE_WAVE:
@@ -608,11 +607,28 @@ export class Parser {
         instance.go()
         break
 
+      // +
+      case CODE_PLUS:
+        instance.go()
+        if (process.env.NODE_ENV === 'dev') {
+          // ++
+          if (instance.is(CODE_PLUS)) {
+            instance.fatal(startIndex, `不支持该语法`)
+          }
+        }
+        break
+
       // -、->
       case CODE_MINUS:
         instance.go()
         if (instance.is(CODE_GREAT)) {
           instance.go()
+        }
+        else if (process.env.NODE_ENV === 'dev') {
+          // --
+          if (instance.is(CODE_MINUS)) {
+            instance.fatal(startIndex, `不支持该语法`)
+          }
         }
         break
 
@@ -698,7 +714,7 @@ export class Parser {
   /**
    * 扫描二元运算
    */
-  scanBinary(): Node | void {
+  scanBinary(startIndex: number): Node | void {
 
     // 二元运算，如 a + b * c / d，这里涉及运算符的优先级
     // 算法参考 https://en.wikipedia.org/wiki/Shunting-yard_algorithm
@@ -724,6 +740,7 @@ export class Parser {
       instance.skip()
 
       array.push(output, instance.index)
+
       token = instance.scanToken()
 
       if (token) {
@@ -765,7 +782,16 @@ export class Parser {
           continue
 
         }
+        else {
+          operator = env.UNDEFINED
+        }
 
+      }
+      // 比如不支持的表达式，a++ 之类的
+      else if (process.env.NODE_ENV === 'dev') {
+        if (operator) {
+          instance.fatal(startIndex, '表达式错误')
+        }
       }
 
       // 没匹配到 token 或 operator 则跳出循环
@@ -817,7 +843,7 @@ export class Parser {
 
     let index = instance.index,
 
-    test = instance.scanBinary(),
+    test = instance.scanBinary(index),
 
     yes: Node | void,
 
@@ -826,12 +852,12 @@ export class Parser {
     if (instance.is(CODE_QUESTION)) {
       // 跳过 ?
       instance.go()
-      yes = instance.scanBinary()
+      yes = instance.scanBinary(index)
 
       if (instance.is(CODE_COLON)) {
         // 跳过 :
         instance.go()
-        no = instance.scanBinary()
+        no = instance.scanBinary(index)
       }
 
       if (test && yes && no) {

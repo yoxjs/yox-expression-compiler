@@ -514,6 +514,50 @@ it('object', () => {
 
 })
 
+it('不支持的表达式', () => {
+
+  let hasError = false
+
+  try {
+    compile('a--')
+  }
+  catch {
+    hasError = true
+  }
+  expect(hasError).toBe(true)
+
+  hasError = false
+
+  try {
+    compile('a++')
+  }
+  catch {
+    hasError = true
+  }
+  expect(hasError).toBe(true)
+
+  hasError = false
+
+  try {
+    compile('--a')
+  }
+  catch {
+    hasError = true
+  }
+  expect(hasError).toBe(true)
+
+  hasError = false
+
+  try {
+    compile('--a')
+  }
+  catch {
+    hasError = true
+  }
+  expect(hasError).toBe(true)
+
+})
+
 it('demo1', () => {
 
   let ast = compile('a.b["u" + "ser"].d + 2')

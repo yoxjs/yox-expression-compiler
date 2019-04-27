@@ -5,7 +5,7 @@ import Node from './Node'
  */
 export default interface Call extends Node {
 
-  callee: Node
+  name: Node
 
   args: Node[]
 

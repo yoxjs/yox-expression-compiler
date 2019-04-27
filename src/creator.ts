@@ -27,21 +27,21 @@ export function createArray(nodes: Node[], raw: string): ArrayNode {
   }
 }
 
-export function createBinary(left: Node, op: string, right: Node, raw: string): Binary {
+export function createBinary(a: Node, op: string, b: Node, raw: string): Binary {
   return {
     type: nodeType.BINARY,
     raw,
-    left,
+    a,
     op,
-    right,
+    b,
   }
 }
 
-export function createCall(callee: Node, args: Node[], raw: string): Call {
+export function createCall(name: Node, args: Node[], raw: string): Call {
   return {
     type: nodeType.CALL,
     raw,
-    callee,
+    name,
     args,
   }
 }
@@ -119,12 +119,12 @@ export function createTernary(test: Node, yes: Node, no: Node, raw: string): Ter
   }
 }
 
-export function createUnary(op: string, arg: Node, raw: string): Unary {
+export function createUnary(op: string, a: Node, raw: string): Unary {
   return {
     type: nodeType.UNARY,
     raw,
     op,
-    arg,
+    a,
   }
 }
 
