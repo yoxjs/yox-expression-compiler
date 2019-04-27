@@ -56,7 +56,7 @@ nodeExecutor[nodeType.MEMBER] = function (node: Member, getter?: (keypath: strin
    *
    */
 
-  let { props, staticKeypath } = node, first: any, data: any
+  let staticKeypath = node.sk, props = node.props, first: any, data: any
 
   if (isUndef(staticKeypath)) {
 

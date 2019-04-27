@@ -46,25 +46,25 @@ export function createCall(name: Node, args: Node[], raw: string): Call {
   }
 }
 
-function createIdentifierInner(raw: string, name: string, lookup: boolean | void, offset: number | void, staticKeypath: string | void): Identifier {
+function createIdentifierInner(raw: string, name: string, lookup: boolean | void, offset: number | void, sk: string | void): Identifier {
   return {
     type: nodeType.IDENTIFIER,
     raw,
     name,
     lookup: lookup === env.FALSE ? lookup : env.UNDEFINED,
     offset: offset > 0 ? offset : env.UNDEFINED,
-    staticKeypath: isDef(staticKeypath) ? staticKeypath as string : name,
+    sk: isDef(sk) ? sk as string : name,
   }
 }
 
-function createMemberInner(raw: string, props: Node[], lookup: boolean | void, offset: number, staticKeypath: string | void) {
+function createMemberInner(raw: string, props: Node[], lookup: boolean | void, offset: number, sk: string | void) {
   return {
     type: nodeType.MEMBER,
     raw,
     props,
     lookup: lookup === env.FALSE ? lookup : env.UNDEFINED,
     offset: offset > 0 ? offset : env.UNDEFINED,
-    staticKeypath,
+    sk,
   }
 }
 
@@ -174,7 +174,7 @@ export function createMemberIfNeeded(raw: string, nodes: (Node | Identifier | Li
 
       name = identifier.name
       lookup = identifier.lookup
-      staticKeypath = identifier.staticKeypath
+      staticKeypath = identifier.sk
 
       if (identifier.offset > 0) {
         offset += identifier.offset as number

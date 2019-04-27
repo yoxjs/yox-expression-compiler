@@ -150,7 +150,7 @@ it('identifier', () => {
     }
 
     expect(execute(ast, get)).toBe(data.name)
-    expect(ast.staticKeypath).toBe('name')
+    expect(ast.sk).toBe('name')
     expect(ast.raw).toBe('name')
   }
 
@@ -165,7 +165,7 @@ it('path', () => {
   expect(ast.lookup).toBe(false)
   expect(ast.offset).toBe(2)
   expect(ast.name).toBe('')
-  expect(ast.staticKeypath).toBe('')
+  expect(ast.sk).toBe('')
 
   ast = compile(' ../../a ')
 
@@ -174,7 +174,7 @@ it('path', () => {
   expect(ast.lookup).toBe(false)
   expect(ast.offset).toBe(2)
   expect(ast.name).toBe('a')
-  expect(ast.staticKeypath).toBe('a')
+  expect(ast.sk).toBe('a')
 
   ast = compile(' ../../a.b ')
 
@@ -182,13 +182,13 @@ it('path', () => {
   expect(ast.raw).toBe('../../a.b')
   expect(ast.lookup).toBe(false)
   expect(ast.offset).toBe(2)
-  expect(ast.staticKeypath).toBe('a.b')
+  expect(ast.sk).toBe('a.b')
   expect(ast.props[0].type).toBe(nodeType.IDENTIFIER)
   expect(ast.props[0].raw).toBe('a')
   expect(ast.props[0].name).toBe('a')
   expect(ast.props[0].lookup).toBe(false)
   expect(ast.props[0].offset).toBe(2)
-  expect(ast.props[0].staticKeypath).toBe('a')
+  expect(ast.props[0].sk).toBe('a')
 
   expect(ast.props[1].type).toBe(nodeType.LITERAL)
   expect(ast.props[1].value).toBe('b')
@@ -198,18 +198,18 @@ it('path', () => {
   expect(ast.raw).toBe('this.a[x].b')
   expect(ast.lookup).toBe(false)
   expect(ast.offset).toBe(undefined)
-  expect(ast.staticKeypath).toBe(undefined)
+  expect(ast.sk).toBe(undefined)
   expect(ast.props[0].type).toBe(nodeType.IDENTIFIER)
   expect(ast.props[0].name).toBe('a')
   expect(ast.props[0].lookup).toBe(false)
   expect(ast.props[0].offset).toBe(undefined)
-  expect(ast.props[0].staticKeypath).toBe('a')
+  expect(ast.props[0].sk).toBe('a')
 
   expect(ast.props[1].type).toBe(nodeType.IDENTIFIER)
   expect(ast.props[1].name).toBe('x')
   expect(ast.props[1].lookup).toBe(undefined)
   expect(ast.props[1].offset).toBe(undefined)
-  expect(ast.props[1].staticKeypath).toBe('x')
+  expect(ast.props[1].sk).toBe('x')
 
   expect(ast.props[2].type).toBe(nodeType.LITERAL)
   expect(ast.props[2].value).toBe('b')
@@ -220,18 +220,18 @@ it('path', () => {
   expect(ast.raw).toBe('this.a[this.b]')
   expect(ast.lookup).toBe(false)
   expect(ast.offset).toBe(undefined)
-  expect(ast.staticKeypath).toBe(undefined)
+  expect(ast.sk).toBe(undefined)
   expect(ast.props[0].type).toBe(nodeType.IDENTIFIER)
   expect(ast.props[0].name).toBe('a')
   expect(ast.props[0].lookup).toBe(false)
   expect(ast.props[0].offset).toBe(undefined)
-  expect(ast.props[0].staticKeypath).toBe('a')
+  expect(ast.props[0].sk).toBe('a')
 
   expect(ast.props[1].type).toBe(nodeType.IDENTIFIER)
   expect(ast.props[1].name).toBe('b')
   expect(ast.props[1].lookup).toBe(false)
   expect(ast.props[1].offset).toBe(undefined)
-  expect(ast.props[1].staticKeypath).toBe('b')
+  expect(ast.props[1].sk).toBe('b')
 
 })
 
@@ -274,14 +274,14 @@ it('member', () => {
 
   ast = compile('  user.name   ')
   expect(execute(ast, get)).toBe(data.user.name)
-  expect(ast.staticKeypath).toBe('user.name')
+  expect(ast.sk).toBe('user.name')
   expect(ast.raw).toBe('user.name')
 
   ast = compile('  this.user   ')
   expect(execute(ast, get)).toBe(data.user)
   expect(ast.lookup).toBe(false)
   expect(ast.offset).toBe(undefined)
-  expect(ast.staticKeypath).toBe(`user`)
+  expect(ast.sk).toBe(`user`)
   expect(ast.raw).toBe('this.user')
 
   // 语法上没有错，虽然不这么写
@@ -289,37 +289,37 @@ it('member', () => {
   expect(execute(ast, get)).toBe(data)
   expect(ast.lookup).toBe(false)
   expect(ast.offset).toBe(undefined)
-  expect(ast.staticKeypath).toBe(``)
+  expect(ast.sk).toBe(``)
   expect(ast.raw).toBe('this.this')
 
   ast = compile('   list.0')
   expect(execute(ast, get)).toBe(data.list[ 0 ])
-  expect(ast.staticKeypath).toBe('list.0')
+  expect(ast.sk).toBe('list.0')
   expect(ast.raw).toBe('list.0')
 
   ast = compile('list.1.0   ')
   expect(execute(ast, get)).toBe(data.list[ 1 ][ 0 ])
-  expect(ast.staticKeypath).toBe('list.1.0')
+  expect(ast.sk).toBe('list.1.0')
   expect(ast.raw).toBe('list.1.0')
 
   ast = compile('  list[ 0 ]  ')
   expect(execute(ast, get)).toBe(data.list[ 0 ])
-  expect(ast.staticKeypath).toBe('list.0')
+  expect(ast.sk).toBe('list.0')
   expect(ast.raw).toBe('list[ 0 ]')
 
   ast = compile('  list[ 1 ][ 0 ]  ')
   expect(execute(ast, get)).toBe(data.list[ 1 ][ 0 ])
-  expect(ast.staticKeypath).toBe('list.1.0')
+  expect(ast.sk).toBe('list.1.0')
   expect(ast.raw).toBe('list[ 1 ][ 0 ]')
 
   ast = compile('  list[ "1"    ][ "0"    ]  ')
   expect(execute(ast, get)).toBe(data.list[ 1 ][ 0 ])
-  expect(ast.staticKeypath).toBe('list.1.0')
+  expect(ast.sk).toBe('list.1.0')
   expect(ast.raw).toBe('list[ "1"    ][ "0"    ]')
 
   ast = compile(' user[    which ] ')
   expect(execute(ast, get)).toBe(data.user.name)
-  expect(ast.staticKeypath).toBe(undefined)
+  expect(ast.sk).toBe(undefined)
   expect(ast.raw).toBe('user[    which ]')
 
 
