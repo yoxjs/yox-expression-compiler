@@ -122,7 +122,7 @@ nodeExecutor[nodeType.OBJECT] = function (node: ObjectNode, getter?: (keypath: s
   let result = {}
   array.each(
     node.keys,
-    function (key, index) {
+    function (key: string, index: number) {
       result[key] = execute(node.values[index], getter, context)
     }
   )
