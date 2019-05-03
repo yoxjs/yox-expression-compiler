@@ -34,7 +34,7 @@ export const TERNARY = 6
 export const ARRAY = 7
 
 /**
- * 对象表达式
+ * 对象表达式，如 { name: 'yox' }
  */
 export const OBJECT = 8
 

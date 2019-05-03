@@ -288,7 +288,7 @@ export class Parser {
    */
   scanObject(startIndex: number): Node {
 
-    let instance = this, keys = [], values = [], isKey = env.TRUE, node: Node | void
+    let instance = this, keys: string[] = [], values: Node[] = [], isKey = env.TRUE, node: Node | void
 
     // 跳过 {
     instance.go()
