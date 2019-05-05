@@ -1,9 +1,9 @@
 test
 node_modules
+dist
 .babelrc
 .gitignore
 .npmignore
-dist
 package-lock.json
 yarn.lock
 jest.config.js

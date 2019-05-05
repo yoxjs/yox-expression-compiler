@@ -36,12 +36,12 @@ export class Parser {
   content: string
 
   constructor(content: string) {
-    const { length } = content
-    this.index = -1
-    this.end = length
-    this.code = CODE_EOF
-    this.content = content
-    this.go()
+    const instance = this, { length } = content
+    instance.index = -1
+    instance.end = length
+    instance.code = CODE_EOF
+    instance.content = content
+    instance.go()
   }
 
   /**
