@@ -1,10 +1,9 @@
 
-import { compile } from '../src/compiler'
-import { execute } from '../src/executor'
-import * as nodeType from '../src/nodeType'
+var compile = require('../dist/compiler').compile
+var execute = require('../dist/executor').execute
+var nodeType = require('../dist/nodeType')
 
-import * as env from 'yox-common/src/util/env'
-import * as object from 'yox-common/src/util/object'
+var object = require('yox-common/dist/util/object')
 
 it('报错', () => {
   let hasError = false
@@ -19,7 +18,7 @@ it('报错', () => {
 
 it('literal', () => {
 
-  let ast: any
+  let ast
 
   ast = compile(' 1 ')
 
@@ -145,7 +144,7 @@ it('identifier', () => {
   expect(ast != null).toBe(true)
   if (ast) {
     let data = { name: 'yox' }
-    let get = function (keypath: string) {
+    let get = function (keypath) {
       return object.get(data, keypath).value
     }
 
@@ -270,7 +269,7 @@ it('member', () => {
     }
     return object.get(data, keypath).value
   }
-  let ast: any
+  let ast
 
   ast = compile('  user.name   ')
   expect(execute(ast, get)).toBe(data.user.name)
@@ -333,7 +332,7 @@ it('unary', () => {
     return object.get(data, keypath).value
   }
 
-  let ast: any
+  let ast
 
   ast = compile(' + true ')
   expect(execute(ast, get)).toBe(+true)
@@ -376,7 +375,7 @@ it('binary', () => {
     return object.get(data, keypath).value
   }
 
-  let ast: any
+  let ast
 
   ast = compile(' b * c ')
   expect(execute(ast, get)).toBe(data.b * data.c)

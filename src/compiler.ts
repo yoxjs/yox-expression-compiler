@@ -15,7 +15,7 @@ import Node from './node/Node'
 import Identifier from './node/Identifier'
 import Literal from './node/Literal'
 
-import ValueHolder from 'yox-type/src/ValueHolder'
+import ValueHolder from 'yox-type/src/interface/ValueHolder'
 
 export function compile(content: string): Node | void {
   if (!cache[content]) {

@@ -1,8 +1,7 @@
 {
   "name": "yox-expression-compiler",
-  "version": "0.16.38",
+  "version": "0.16.39",
   "description": "Expression compiler for Yox.js",
-  "main": "index.js",
   "directories": {
     "src": "src",
     "test": "test"
@@ -22,14 +21,10 @@
   },
   "homepage": "https://github.com/yoxjs/yox-expression-compiler#readme",
   "dependencies": {
-    "yox-common": "^0.18.43"
+    "yox-common": "^0.18.45"
   },
   "devDependencies": {
-    "@babel/core": "^7.4.3",
-    "@babel/preset-env": "^7.4.3",
-    "@babel/preset-typescript": "^7.3.3",
     "@types/node": "^11.13.7",
-    "babel-jest": "^24.7.0",
     "jest": "^24.5.0"
   }
 }
