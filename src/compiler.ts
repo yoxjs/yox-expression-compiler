@@ -423,7 +423,7 @@ export class Parser {
    */
   scanPath(startIndex: number): Node | void {
 
-    let instance = this, nodes: Node[] = [], name: string | void
+    let instance = this, nodes: Node[] = [], name: string
 
     // 进入此函数时，已确定前一个 code 是 CODE_DOT
     // 此时只需判断接下来是 ./ 还是 / 就行了
