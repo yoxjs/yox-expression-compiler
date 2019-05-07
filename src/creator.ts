@@ -1,9 +1,9 @@
-import isDef from '../../yox-common/src/function/isDef'
-import toString from '../../yox-common/src/function/toString'
+import isDef from 'yox-common/src/function/isDef'
+import toString from 'yox-common/src/function/toString'
 
-import * as env from '../../yox-common/src/util/env'
-import * as array from '../../yox-common/src/util/array'
-import * as keypathUtil from '../../yox-common/src/util/keypath'
+import * as env from 'yox-common/src/util/env'
+import * as array from 'yox-common/src/util/array'
+import * as keypathUtil from 'yox-common/src/util/keypath'
 
 import * as nodeType from './nodeType'
 
