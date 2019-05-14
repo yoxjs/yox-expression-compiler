@@ -69,11 +69,24 @@ export class Parser {
    */
   skip(step?: number) {
 
-    const instance = this
+    const instance = this, reversed = step && step < 0
 
-    // 走一步
+    // 如果表达式是 "   xyz   "，到达结尾后，如果希望 skip(-1) 回到最后一个非空白符
+    // 必须先判断最后一个字符是空白符，否则碰到 "xyz" 这样结尾不是空白符的，其实不应该回退
     if (instance.code === CODE_EOF) {
+      const oldIndex = instance.index
       instance.go(step)
+      // 如果跳一位之后不是空白符，还原，然后返回
+      if (!isWhitespace(instance.code)) {
+        instance.go(oldIndex - instance.index)
+        return
+      }
+    }
+    // 逆向时，只有位置真的发生过变化才需要在停止时正向移动一位
+    // 比如 (a) 如果调用 skip 前位于 )，调用 skip(-1) ，结果应该是原地不动
+    // 为了解决这个问题，应该首先判断当前是不是空白符，如果不是，直接返回
+    else if (!isWhitespace(instance.code)) {
+      return
     }
 
     // 如果是正向的，停在第一个非空白符左侧
@@ -83,7 +96,7 @@ export class Parser {
         instance.go(step)
       }
       else {
-        if (step && step < 0) {
+        if (reversed) {
           instance.go()
         }
         break
@@ -707,7 +720,7 @@ export class Parser {
         break
     }
 
-    if (instance.code > startIndex) {
+    if (instance.index > startIndex) {
       return instance.pick(startIndex)
     }
 
