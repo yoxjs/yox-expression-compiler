@@ -37,7 +37,7 @@ export class Parser {
 
   constructor(content: string) {
     const instance = this, { length } = content
-    instance.index = -1
+    instance.index = env.RAW_MINUS_ONE
     instance.end = length
     instance.code = CODE_EOF
     instance.content = content
@@ -59,7 +59,7 @@ export class Parser {
     }
     else {
       instance.code = CODE_EOF
-      instance.index = index < 0 ? -1 : end
+      instance.index = index < 0 ? env.RAW_MINUS_ONE : end
     }
 
   }
@@ -194,7 +194,7 @@ export class Parser {
           const value = (node as Literal).value
           if (is.number(value)) {
             // 类似 ' -1 ' 这样的右侧有空格，需要撤回来
-            instance.skip(-1)
+            instance.skip(env.RAW_MINUS_ONE)
             return creator.createLiteral(
               - value,
               instance.pick(index)
@@ -202,7 +202,7 @@ export class Parser {
           }
         }
         // 类似 ' -a ' 这样的右侧有空格，需要撤回来
-        instance.skip(-1)
+        instance.skip(env.RAW_MINUS_ONE)
         return creator.createUnary(
           operator,
           node,
@@ -877,7 +877,7 @@ export class Parser {
 
       if (test && yes && no) {
         // 类似 ' a ? 1 : 0 ' 这样的右侧有空格，需要撤回来
-        instance.skip(-1)
+        instance.skip(env.RAW_MINUS_ONE)
         test = creator.createTernary(
           test, yes, no,
           instance.pick(index)
