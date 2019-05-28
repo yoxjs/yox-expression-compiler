@@ -633,13 +633,10 @@ export class Parser {
         }
         break
 
-      // -、->
+      // -
       case CODE_MINUS:
         instance.go()
-        if (instance.is(CODE_GREAT)) {
-          instance.go()
-        }
-        else if (process.env.NODE_ENV === 'dev') {
+        if (process.env.NODE_ENV === 'dev') {
           // --
           if (instance.is(CODE_MINUS)) {
             instance.fatal(startIndex, `不支持该语法`)
@@ -677,7 +674,7 @@ export class Parser {
         }
         break
 
-      // ==、===、=>
+      // ==、===
       case CODE_EQUAL:
         instance.go()
         if (instance.is(CODE_EQUAL)) {
@@ -685,9 +682,6 @@ export class Parser {
           if (instance.is(CODE_EQUAL)) {
             instance.go()
           }
-        }
-        else if (instance.is(CODE_GREAT)) {
-          instance.go()
         }
         // 一个等号要报错
         else if (process.env.NODE_ENV === 'dev') {

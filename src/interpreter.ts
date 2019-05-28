@@ -29,37 +29,4 @@ export const binary = {
   '|': { prec: 7, exec(a: any, b: any) { return a | b } },
   '&&': { prec: 6, exec(a: any, b: any) { return a && b } },
   '||': { prec: 5, exec(a: any, b: any) { return a || b } },
-
-  '->': {
-    prec: 0,
-    exec(a: number, b: number) {
-      return a > b
-        ? function (callback: (index: number, counter: number) => void) {
-          for (let i = a, index = 0; i > b; i--) {
-            callback(i, index++)
-          }
-        }
-        : function (callback: (index: number, counter: number) => void) {
-          for (let i = a, index = 0; i < b; i++) {
-            callback(i, index++)
-          }
-        }
-    }
-  },
-  '=>': {
-    prec: 0,
-    exec(a: number, b: number) {
-      return a > b
-        ? function (callback: (index: number, counter: number) => void) {
-          for (let i = a, index = 0; i >= b; i--) {
-            callback(i, index++)
-          }
-        }
-        : function (callback: (index: number, counter: number) => void) {
-          for (let i = a, index = 0; i <= b; i++) {
-            callback(i, index++)
-          }
-        }
-    }
-  }
 }
