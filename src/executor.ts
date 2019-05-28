@@ -23,17 +23,11 @@ import Call from './node/Call'
 import ArrayNode from './node/Array'
 import ObjectNode from './node/Object'
 
+type Getter = (keypath: string, node: Keypath) => any
+
 const nodeExecutor = {}
 
-nodeExecutor[nodeType.LITERAL] = function (node: Literal): any {
-  return node.value
-}
-
-nodeExecutor[nodeType.IDENTIFIER] = function (node: Identifier, getter: (keypath: string, node: Keypath) => any): any {
-  return getter(node.name, node)
-}
-
-nodeExecutor[nodeType.MEMBER] = function (node: Member, getter?: (keypath: string, node: Keypath) => any, context?: any): any {
+nodeExecutor[nodeType.MEMBER] = function (node: Member, getter?: Getter, context?: any): any {
 
   /**
    * 先说第一种奇葩情况：
@@ -91,26 +85,26 @@ nodeExecutor[nodeType.MEMBER] = function (node: Member, getter?: (keypath: strin
 
 }
 
-nodeExecutor[nodeType.UNARY] = function (node: Unary, getter?: (keypath: string, node: Keypath) => any, context?: any): any {
+nodeExecutor[nodeType.UNARY] = function (node: Unary, getter?: Getter, context?: any): any {
   return interpreter.unary[node.op].exec(
     execute(node.a, getter, context)
   )
 }
 
-nodeExecutor[nodeType.BINARY] = function (node: Binary, getter?: (keypath: string, node: Keypath) => any, context?: any): any {
+nodeExecutor[nodeType.BINARY] = function (node: Binary, getter?: Getter, context?: any): any {
   return interpreter.binary[node.op].exec(
     execute(node.a, getter, context),
     execute(node.b, getter, context)
   )
 }
 
-nodeExecutor[nodeType.TERNARY] = function (node: Ternary, getter?: (keypath: string, node: Keypath) => any, context?: any): any {
+nodeExecutor[nodeType.TERNARY] = function (node: Ternary, getter?: Getter, context?: any): any {
   return execute(node.test, getter, context)
     ? execute(node.yes, getter, context)
     : execute(node.no, getter, context)
 }
 
-nodeExecutor[nodeType.ARRAY] = function (node: ArrayNode, getter?: (keypath: string, node: Keypath) => any, context?: any): any {
+nodeExecutor[nodeType.ARRAY] = function (node: ArrayNode, getter?: Getter, context?: any): any {
   return node.nodes.map(
     function (node) {
       return execute(node, getter, context)
@@ -118,7 +112,7 @@ nodeExecutor[nodeType.ARRAY] = function (node: ArrayNode, getter?: (keypath: str
   )
 }
 
-nodeExecutor[nodeType.OBJECT] = function (node: ObjectNode, getter?: (keypath: string, node: Keypath) => any, context?: any): any {
+nodeExecutor[nodeType.OBJECT] = function (node: ObjectNode, getter?: Getter, context?: any): any {
   let result = {}
   array.each(
     node.keys,
@@ -129,7 +123,7 @@ nodeExecutor[nodeType.OBJECT] = function (node: ObjectNode, getter?: (keypath: s
   return result
 }
 
-nodeExecutor[nodeType.CALL] = function (node: Call, getter?: (keypath: string, node: Keypath) => any, context?: any): any {
+nodeExecutor[nodeType.CALL] = function (node: Call, getter?: Getter, context?: any): any {
   return invoke(
     execute(node.name, getter, context),
     context,
@@ -141,6 +135,11 @@ nodeExecutor[nodeType.CALL] = function (node: Call, getter?: (keypath: string, n
   )
 }
 
-export function execute(node: Node, getter?: (keypath: string, node: Keypath) => any, context?: any): any {
-  return nodeExecutor[node.type](node, getter, context)
+export function execute(node: Node, getter?: Getter, context?: any): any {
+  // LITERAL 和 IDENTIFIER 避免再一次的函数调用
+  return node.type === nodeType.LITERAL
+    ? (node as Literal).value
+    : node.type === nodeType.IDENTIFIER
+      ? (getter as Getter)((node as Identifier).name, (node as Identifier))
+      : nodeExecutor[node.type](node, getter, context)
 }
