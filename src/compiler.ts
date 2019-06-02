@@ -209,7 +209,7 @@ export class Parser {
           instance.pick(index)
         )
       }
-      if (process.env.NODE_ENV === 'dev') {
+      if (process.env.NODE_ENV === 'development') {
         instance.fatal(index, `一元运算只有操作符没有表达式？`)
       }
     }
@@ -239,7 +239,7 @@ export class Parser {
       return creator.createLiteral(+raw, raw)
     }
 
-    if (process.env.NODE_ENV === 'dev') {
+    if (process.env.NODE_ENV === 'development') {
       instance.fatal(startIndex, `数字写错了知道吗？`)
     }
 
@@ -276,7 +276,7 @@ export class Parser {
           break loop
 
         case CODE_EOF:
-          if (process.env.NODE_ENV === 'dev') {
+          if (process.env.NODE_ENV === 'development') {
             instance.fatal(startIndex, `到头了，字符串还没解析完呢？`)
           }
           break loop
@@ -312,7 +312,7 @@ export class Parser {
 
         case CODE_CBRACE:
           instance.go()
-          if (process.env.NODE_ENV === 'dev') {
+          if (process.env.NODE_ENV === 'development') {
             if (keys.length !== values.length) {
               instance.fatal(startIndex, `对象的 keys 和 values 的长度不一致`)
             }
@@ -320,7 +320,7 @@ export class Parser {
           break loop
 
         case CODE_EOF:
-          if (process.env.NODE_ENV === 'dev') {
+          if (process.env.NODE_ENV === 'development') {
             instance.fatal(startIndex, `到头了，对象还没解析完呢？`)
           }
           break loop
@@ -352,7 +352,7 @@ export class Parser {
                 array.push(keys, (node as Literal).value)
               }
               else {
-                if (process.env.NODE_ENV === 'dev') {
+                if (process.env.NODE_ENV === 'development') {
                   instance.fatal(startIndex, `对象的 key 必须是字面量或标识符`)
                 }
                 break loop
@@ -365,7 +365,7 @@ export class Parser {
             array.push(values, node)
           }
           else {
-            if (process.env.NODE_ENV === 'dev') {
+            if (process.env.NODE_ENV === 'development') {
               instance.fatal(startIndex, `对象的值没找到`)
             }
             break loop
@@ -398,7 +398,7 @@ export class Parser {
           break loop
 
         case CODE_EOF:
-          if (process.env.NODE_ENV === 'dev') {
+          if (process.env.NODE_ENV === 'development') {
             instance.fatal(startIndex, `到头了，tuple 还没解析完呢？`)
           }
           break loop
@@ -476,7 +476,7 @@ export class Parser {
         }
         else {
           // 类似 ./ 或 ../ 这样后面不跟标识符是想干嘛？报错可好？
-          if (process.env.NODE_ENV === 'dev') {
+          if (process.env.NODE_ENV === 'development') {
             instance.fatal(startIndex, `path 写法错误`)
           }
           break
@@ -539,7 +539,7 @@ export class Parser {
             break
           }
           else {
-            if (process.env.NODE_ENV === 'dev') {
+            if (process.env.NODE_ENV === 'development') {
               instance.fatal(startIndex, `. 后面跟的都是啥玩意啊`)
             }
             break loop
@@ -558,7 +558,7 @@ export class Parser {
             break
           }
           else {
-            if (process.env.NODE_ENV === 'dev') {
+            if (process.env.NODE_ENV === 'development') {
               instance.fatal(startIndex, `[] 内部不能为空`)
             }
             break loop
@@ -625,7 +625,7 @@ export class Parser {
       // +
       case CODE_PLUS:
         instance.go()
-        if (process.env.NODE_ENV === 'dev') {
+        if (process.env.NODE_ENV === 'development') {
           // ++
           if (instance.is(CODE_PLUS)) {
             instance.fatal(startIndex, `不支持该语法`)
@@ -636,7 +636,7 @@ export class Parser {
       // -
       case CODE_MINUS:
         instance.go()
-        if (process.env.NODE_ENV === 'dev') {
+        if (process.env.NODE_ENV === 'development') {
           // --
           if (instance.is(CODE_MINUS)) {
             instance.fatal(startIndex, `不支持该语法`)
@@ -684,7 +684,7 @@ export class Parser {
           }
         }
         // 一个等号要报错
-        else if (process.env.NODE_ENV === 'dev') {
+        else if (process.env.NODE_ENV === 'development') {
           instance.fatal(startIndex, `不支持一个等号这种赋值写法`)
         }
         break
@@ -797,7 +797,7 @@ export class Parser {
 
       }
       // 比如不支持的表达式，a++ 之类的
-      else if (process.env.NODE_ENV === 'dev') {
+      else if (process.env.NODE_ENV === 'development') {
         if (operator) {
           instance.fatal(startIndex, '表达式错误')
         }
@@ -877,7 +877,7 @@ export class Parser {
           instance.pick(index)
         )
       }
-      else if (process.env.NODE_ENV === 'dev') {
+      else if (process.env.NODE_ENV === 'development') {
         instance.fatal(index, `三元表达式写法错误`)
       }
     }
@@ -889,7 +889,7 @@ export class Parser {
         instance.go()
       }
       // 没匹配到结束字符要报错
-      else if (process.env.NODE_ENV === 'dev') {
+      else if (process.env.NODE_ENV === 'development') {
         instance.fatal(
           index,
           `结束字符匹配错误，期待[${String.fromCharCode(endCode as number)}]，却发现[${String.fromCharCode(instance.code)}]`
@@ -902,7 +902,7 @@ export class Parser {
   }
 
   fatal(start: number, message: string) {
-    if (process.env.NODE_ENV === 'dev') {
+    if (process.env.NODE_ENV === 'development') {
       logger.fatal(`Error compiling expression:\n${this.content}\n- ${message}`)
     }
   }
