@@ -36,12 +36,12 @@ export function execute(node: Node, getter?: Getter, context?: any): any {
       return (getter as Getter)((node as Identifier).name, (node as Identifier))
 
     case nodeType.UNARY:
-      return interpreter.unary[(node as Unary).op].exec(
+      return interpreter.unary[(node as Unary).op].x(
         execute((node as Unary).a, getter, context)
       )
 
     case nodeType.BINARY:
-      return interpreter.binary[(node as Binary).op].exec(
+      return interpreter.binary[(node as Binary).op].x(
         execute((node as Binary).a, getter, context),
         execute((node as Binary).b, getter, context)
       )
@@ -59,7 +59,7 @@ export function execute(node: Node, getter?: Getter, context?: any): any {
       )
 
     case nodeType.OBJECT:
-      let result = {}
+      const result = {}
       array.each(
         (node as ObjectNode).keys,
         function (key: string, index: number) {

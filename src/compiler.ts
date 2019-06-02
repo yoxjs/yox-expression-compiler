@@ -772,7 +772,7 @@ export class Parser {
           // 如 a + b * c / d，当从左到右读取到 / 时，发现和前一个 * 优先级相同，则把 b * c 取出用于创建 Binary
           if ((lastOperator = output[index])
             && (lastOperatorInfo = interpreter.binary[lastOperator])
-            && lastOperatorInfo.prec >= operatorInfo.prec
+            && lastOperatorInfo.p >= operatorInfo.p
           ) {
             output.splice(
               index - 2,
