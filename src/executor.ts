@@ -56,9 +56,10 @@ export function execute(node: Node, getter?: Getter, context?: any): ValueHolder
       break
 
     case nodeType.TERNARY:
-      return execute((node as Ternary).test, getter, context).value
-        ? execute((node as Ternary).yes, getter, context)
-        : execute((node as Ternary).no, getter, context)
+      holder.value = execute((node as Ternary).test, getter, context).value
+        ? execute((node as Ternary).yes, getter, context).value
+        : execute((node as Ternary).no, getter, context).value
+      break
 
     case nodeType.ARRAY:
       holder.value = (node as ArrayNode).nodes.map(
