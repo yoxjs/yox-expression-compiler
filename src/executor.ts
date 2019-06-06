@@ -7,6 +7,8 @@ import * as array from '../../yox-common/src/util/array'
 import * as object from '../../yox-common/src/util/object'
 import * as keypathUtil from '../../yox-common/src/util/keypath'
 
+import ValueHolder from '../../yox-type/src/interface/ValueHolder'
+
 import * as nodeType from './nodeType'
 import * as interpreter from './interpreter'
 
@@ -23,61 +25,71 @@ import Call from './node/Call'
 import ArrayNode from './node/Array'
 import ObjectNode from './node/Object'
 
-type Getter = (keypath: string, node: Keypath) => any
+type Getter = (keypath: string, node: Keypath) => ValueHolder
 
-export function execute(node: Node, getter?: Getter, context?: any): any {
+export function execute(node: Node, getter?: Getter, context?: any): ValueHolder {
+
+  let holder = env.VALUE_HOLDER
+
+  holder.keypath = env.UNDEFINED
 
   switch (node.type) {
 
     case nodeType.LITERAL:
-      return (node as Literal).value
+      holder.value = (node as Literal).value
+      break
 
     case nodeType.IDENTIFIER:
       return (getter as Getter)((node as Identifier).name, (node as Identifier))
 
     case nodeType.UNARY:
-      return interpreter.unary[(node as Unary).op].x(
-        execute((node as Unary).a, getter, context)
+      holder.value = interpreter.unary[(node as Unary).op].x(
+        execute((node as Unary).a, getter, context).value
       )
+      break
 
     case nodeType.BINARY:
-      return interpreter.binary[(node as Binary).op].x(
-        execute((node as Binary).a, getter, context),
-        execute((node as Binary).b, getter, context)
+      holder.value = interpreter.binary[(node as Binary).op].x(
+        execute((node as Binary).a, getter, context).value,
+        execute((node as Binary).b, getter, context).value
       )
+      break
 
     case nodeType.TERNARY:
-      return execute((node as Ternary).test, getter, context)
+      return execute((node as Ternary).test, getter, context).value
         ? execute((node as Ternary).yes, getter, context)
         : execute((node as Ternary).no, getter, context)
 
     case nodeType.ARRAY:
-      return (node as ArrayNode).nodes.map(
+      holder.value = (node as ArrayNode).nodes.map(
         function (node) {
-          return execute(node, getter, context)
+          return execute(node, getter, context).value
         }
       )
+      break
 
     case nodeType.OBJECT:
       const result = {}
       array.each(
         (node as ObjectNode).keys,
         function (key: string, index: number) {
-          result[key] = execute((node as ObjectNode).values[index], getter, context)
+          result[key] = execute((node as ObjectNode).values[index], getter, context).value
         }
       )
-      return result
+      holder.value = result
+      break
 
     case nodeType.CALL:
-      return invoke(
-        execute((node as Call).name, getter, context),
+      holder.value = invoke(
+        execute((node as Call).name, getter, context).value,
         context,
         (node as Call).args.map(
           function (node) {
-            return execute(node, getter, context)
+            return execute(node, getter, context).value
           }
         )
       )
+      break
 
     case nodeType.MEMBER:
 
@@ -114,13 +126,13 @@ export function execute(node: Node, getter?: Getter, context?: any): any {
         }
         else {
           staticKeypath = env.EMPTY_STRING
-          data = execute(first, getter, context)
+          data = execute(first, getter, context).value
         }
 
         for (let i = 1, len = props.length; i < len; i++) {
           staticKeypath = keypathUtil.join(
             staticKeypath,
-            execute(props[i], getter, context)
+            execute(props[i], getter, context).value
           )
         }
 
@@ -128,12 +140,14 @@ export function execute(node: Node, getter?: Getter, context?: any): any {
 
       if (isDef(data)) {
         data = object.get(data, staticKeypath as string)
-        return data ? data.value : env.UNDEFINED
+        holder.value = data ? data.value : env.UNDEFINED
       }
-
-      if (getter) {
-        return getter(staticKeypath as string, (node as Member))
+      else if (getter) {
+        holder = getter(staticKeypath as string, (node as Member))
       }
+      break
   }
+
+  return holder
 
 }

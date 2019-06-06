@@ -14,7 +14,4 @@ export default interface Keypath extends Node {
   // static keypath，缩写节省序列化的字符长度
   sk?: string
 
-  // absolute keypath，缩写节省序列化的字符长度
-  ak?: string
-
 }
