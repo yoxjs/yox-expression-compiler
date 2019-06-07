@@ -91,6 +91,7 @@ export function stringify(
         renderIdentifier,
         [
           toJSON(identifier.name),
+          holder ? stringifier.TRUE : env.UNDEFINED,
           depIgnore ? stringifier.TRUE : env.UNDEFINED,
           identifier.lookup ? stringifier.TRUE : env.UNDEFINED,
           identifier.offset > 0 ? toJSON(identifier.offset) : env.UNDEFINED
@@ -112,6 +113,7 @@ export function stringify(
           [
             toJSON((lead as Identifier).name),
             stringifier.toArray(stringifyNodes),
+            holder ? stringifier.TRUE : env.UNDEFINED,
             depIgnore ? stringifier.TRUE : env.UNDEFINED,
             lookup ? stringifier.TRUE : env.UNDEFINED,
             offset > 0 ? toJSON(offset) : env.UNDEFINED
@@ -126,7 +128,8 @@ export function stringify(
           [
             stringifyChildNode(lead),
             env.UNDEFINED,
-            stringifier.toArray(stringifyNodes)
+            stringifier.toArray(stringifyNodes),
+            holder ? stringifier.TRUE : env.UNDEFINED
           ]
         )
       }
@@ -137,7 +140,9 @@ export function stringify(
           renderMemberLiteral,
           [
             stringifyChildNode(lead),
-            toJSON(keypath)
+            toJSON(keypath),
+            env.UNDEFINED,
+            holder ? stringifier.TRUE : env.UNDEFINED,
           ]
         )
       }
@@ -161,12 +166,10 @@ export function stringify(
 
   // 内部的临时值，不需要 value holder
   if (inner || !holder) {
-    return isSpecialNode
-      ? value + '.value'
-      : value
+    return value
   }
 
-  // 最外层的值，需要 value holder
+  // 最外层的值，且需要 value holder
   return isSpecialNode
     ? value
     : stringifier.toObject([`value:${value}`])
