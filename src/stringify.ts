@@ -160,14 +160,15 @@ export function stringify(
 
     default:
       isSpecialNode = env.TRUE
-      const args = (node as Call).args
+      const { args } = node as Call
       value = stringifier.toCall(
         renderCall,
         [
           stringifyChildNode((node as Call).name),
           args.length
             ? stringifier.toArray(args.map(stringifyChildNode))
-            : env.UNDEFINED
+            : env.UNDEFINED,
+          holder ? stringifier.TRUE : env.UNDEFINED
         ]
       )
       break
@@ -181,13 +182,13 @@ export function stringify(
   // 内部的临时值，且 holder 为 true
   if (inner) {
     return isSpecialNode
-      ? value + '.value'
+      ? value + '.' + env.RAW_VALUE
       : value
   }
 
   // 最外层的值，且 holder 为 true
   return isSpecialNode
     ? value
-    : stringifier.toObject([`value:${value}`])
+    : stringifier.toObject([env.RAW_VALUE + ':' + value])
 
 }
