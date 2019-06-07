@@ -26,6 +26,7 @@ export function stringify(
   renderCall: string,
   holder?: boolean,
   depIgnore?: boolean,
+  stack?: string,
   inner?: boolean
 ) {
 
@@ -42,6 +43,7 @@ export function stringify(
       renderCall,
       holder,
       depIgnore,
+      stack,
       env.TRUE
     )
   }
@@ -103,7 +105,8 @@ export function stringify(
           identifier.lookup === env.FALSE ? stringifier.FALSE : env.UNDEFINED,
           identifier.offset > 0 ? toJSON(identifier.offset) : env.UNDEFINED,
           holder ? stringifier.TRUE : env.UNDEFINED,
-          depIgnore ? stringifier.TRUE : env.UNDEFINED
+          depIgnore ? stringifier.TRUE : env.UNDEFINED,
+          stack ? stack : env.UNDEFINED
         ]
       )
       break
@@ -130,7 +133,8 @@ export function stringify(
             lookup === env.FALSE ? stringifier.FALSE : env.UNDEFINED,
             offset > 0 ? toJSON(offset) : env.UNDEFINED,
             holder ? stringifier.TRUE : env.UNDEFINED,
-            depIgnore ? stringifier.TRUE : env.UNDEFINED
+            depIgnore ? stringifier.TRUE : env.UNDEFINED,
+            stack ? stack : env.UNDEFINED
           ]
         )
       }
