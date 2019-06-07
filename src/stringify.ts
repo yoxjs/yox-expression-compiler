@@ -102,7 +102,7 @@ export function stringify(
         renderIdentifier,
         [
           toJSON(identifier.name),
-          identifier.lookup === env.FALSE ? stringifier.FALSE : env.UNDEFINED,
+          identifier.lookup ? stringifier.TRUE : env.UNDEFINED,
           identifier.offset > 0 ? toJSON(identifier.offset) : env.UNDEFINED,
           holder ? stringifier.TRUE : env.UNDEFINED,
           depIgnore ? stringifier.TRUE : env.UNDEFINED,
@@ -130,7 +130,7 @@ export function stringify(
                 stringifier.toArray(stringifyNodes)
               ]
             ),
-            lookup === env.FALSE ? stringifier.FALSE : env.UNDEFINED,
+            lookup ? stringifier.TRUE : env.UNDEFINED,
             offset > 0 ? toJSON(offset) : env.UNDEFINED,
             holder ? stringifier.TRUE : env.UNDEFINED,
             depIgnore ? stringifier.TRUE : env.UNDEFINED,

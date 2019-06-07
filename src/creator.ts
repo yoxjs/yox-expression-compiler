@@ -209,7 +209,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
       lookup = identifier.lookup
       offset += identifier.offset
 
-      const name = identifier.name
+      let name = identifier.name
 
       // 不是 KEYPATH_THIS 或 KEYPATH_PARENT
       if (name) {
