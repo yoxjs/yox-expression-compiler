@@ -21,7 +21,7 @@ import ObjectNode from './node/Object'
 export function stringify(
   node: Node,
   renderIdentifier: string,
-  renderMemberIdentifier: string,
+  renderMemberKeypath: string,
   renderMemberLiteral: string,
   renderCall: string,
   holder?: boolean,
@@ -37,7 +37,7 @@ export function stringify(
     return stringify(
       node,
       renderIdentifier,
-      renderMemberIdentifier,
+      renderMemberKeypath,
       renderMemberLiteral,
       renderCall,
       holder,
@@ -118,10 +118,15 @@ export function stringify(
       if (lead.type === nodeType.IDENTIFIER) {
         // 只能是 a[b] 的形式，因为 a.b 已经在解析时转换成 Identifier 了
         value = stringifier.toCall(
-          renderMemberIdentifier,
+          renderIdentifier,
           [
-            toJSON((lead as Identifier).name),
-            stringifier.toArray(stringifyNodes),
+            stringifier.toCall(
+              renderMemberKeypath,
+              [
+                toJSON((lead as Identifier).name),
+                stringifier.toArray(stringifyNodes)
+              ]
+            ),
             lookup === env.FALSE ? stringifier.FALSE : env.UNDEFINED,
             offset > 0 ? toJSON(offset) : env.UNDEFINED,
             holder ? stringifier.TRUE : env.UNDEFINED,
