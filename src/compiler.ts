@@ -738,11 +738,11 @@ export class Parser {
 
     operator: string | void,
 
-    operatorInfo: any | void,
+    operatorPrecedence: number | void,
 
     lastOperator: string | void,
 
-    lastOperatorInfo: any | void
+    lastOperatorPrecedence: number | void
 
     while (env.TRUE) {
 
@@ -763,7 +763,7 @@ export class Parser {
         operator = instance.scanOperator(instance.index)
 
         // 必须是二元运算符，一元不行
-        if (operator && (operatorInfo = interpreter.binary[operator])) {
+        if (operator && (operatorPrecedence = interpreter.binary[operator])) {
 
           // 比较前一个运算符
           index = output.length - 4
@@ -771,8 +771,8 @@ export class Parser {
           // 如果前一个运算符的优先级 >= 现在这个，则新建 Binary
           // 如 a + b * c / d，当从左到右读取到 / 时，发现和前一个 * 优先级相同，则把 b * c 取出用于创建 Binary
           if ((lastOperator = output[index])
-            && (lastOperatorInfo = interpreter.binary[lastOperator])
-            && lastOperatorInfo.p >= operatorInfo.p
+            && (lastOperatorPrecedence = interpreter.binary[lastOperator])
+            && lastOperatorPrecedence >= operatorPrecedence
           ) {
             output.splice(
               index - 2,
