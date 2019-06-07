@@ -1,4 +1,3 @@
-import isDef from '../../yox-common/src/function/isDef'
 import toString from '../../yox-common/src/function/toString'
 
 import * as env from '../../yox-common/src/util/env'
@@ -46,25 +45,25 @@ export function createCall(name: Node, args: Node[], raw: string): Call {
   }
 }
 
-function createIdentifierInner(raw: string, name: string, lookup: boolean, offset: number, keypath: string | void): Identifier {
+function createIdentifierInner(raw: string, name: string, lookup: boolean, offset: number): Identifier {
   return {
     type: nodeType.IDENTIFIER,
     raw,
     name,
     lookup,
     offset,
-    keypath: isDef(keypath) ? keypath as string : name,
   }
 }
 
-function createMemberInner(raw: string, props: Node[], lookup: boolean, offset: number, keypath: string | void) {
+function createMemberInner(raw: string, lead: Node, keypath: string | void, nodes: Node[] | void, lookup: boolean, offset: number): Member {
   return {
     type: nodeType.MEMBER,
     raw,
-    props,
+    lead,
+    keypath,
+    nodes,
     lookup,
     offset,
-    keypath,
   }
 }
 
@@ -128,14 +127,6 @@ export function createUnary(operator: string, node: Node, raw: string): Unary {
   }
 }
 
-function getLiteralNode(nodes: Node[], index: number): Literal | void {
-  if (nodes[index]
-    && nodes[index].type === nodeType.LITERAL
-  ) {
-    return nodes[index] as Literal
-  }
-}
-
 /**
  * 通过判断 nodes 来决定是否需要创建 Member
  *
@@ -148,89 +139,120 @@ function getLiteralNode(nodes: Node[], index: number): Literal | void {
  */
 export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identifier | Member {
 
-  let { length } = nodes,
+  let firstNode = nodes.shift() as Node,
 
-  firstNode = nodes[0],
-
-  name = env.EMPTY_STRING,
+  { length } = nodes,
 
   lookup = env.TRUE,
 
-  offset = 0,
+  offset = 0
 
-  keypath: string | void,
+  // member 要求至少两个节点
+  if (length > 0) {
 
-  list: (Node | Identifier | Literal)[] = [],
+    // 处理剩下的 nodes
+    // 这里要做两手准备：
+    // 1. 如果全是 literal 节点，则编译时 join
+    // 2. 如果不全是 literal 节点，则运行时 join
 
-  literal: Literal | void,
+    let isLiteral = env.TRUE, staticNodes: string[] = [], runtimeNodes: Node[] = []
 
-  identifier: Identifier
+    array.each(
+      nodes,
+      function (node) {
+        if (node.type === nodeType.LITERAL) {
 
-  if (length > 1) {
+          const literal = node as Literal
+
+          if (literal.raw === env.KEYPATH_PARENT) {
+            offset += 1
+            return
+          }
+
+          if (literal.raw !== env.KEYPATH_CURRENT) {
+            array.push(
+              staticNodes,
+              toString(literal.value)
+            )
+          }
+
+        }
+        else {
+          isLiteral = env.FALSE
+        }
+
+        array.push(
+          runtimeNodes,
+          node
+        )
+      }
+    )
 
     // lookup 要求第一位元素是 Identifier，且它的 lookup 是 true 才为 true
     // 其他情况都为 false，如 "11".length 第一位元素是 Literal，不存在向上寻找的需求
+
+    // 优化 1：计算 keypath
+    //
+    // 计算 keypath 的唯一方式是，第一位元素是 Identifier，后面都是 Literal
+    // 否则就表示中间包含动态元素，这会导致无法计算静态路径
+    // 如 a.b.c 可以算出 staticKeypath，而 a[b].c 则不行，因为 b 是动态的
+
+    // 优化 2：计算 offset 并智能转成 Identifier
+    //
+    // 比如 ../../xx 这样的表达式，应优化成 offset = 2，并转成 Identifier
+
+    // 处理第一个节点
     if (firstNode.type === nodeType.IDENTIFIER) {
 
-      identifier = firstNode as Identifier
+      const identifier = firstNode as Identifier
 
-      name = identifier.name
       lookup = identifier.lookup
-      offset = identifier.offset
-      keypath = identifier.keypath
+      offset += identifier.offset
 
+      const name = identifier.name
 
+      // 不是 KEYPATH_THIS 或 KEYPATH_PARENT
       if (name) {
-        array.push(list, identifier)
+        array.unshift(staticNodes, name)
       }
 
-      // 优化 1：计算 keypath
-      //
-      // 计算 keypath 的唯一方式是，第一位元素是 Identifier，后面都是 Literal
-      // 否则就表示中间包含动态元素，这会导致无法计算静态路径
-      // 如 a.b.c 可以算出 staticKeypath，而 a[b].c 则不行，因为 b 是动态的
-
-      // 优化 2：计算 offset 并智能转成 Identifier
-      //
-      // 比如 ../../xx 这样的表达式，应优化成 offset = 2，并转成 Identifier
-
-      for (let i = 1; i < length; i++) {
-        literal = getLiteralNode(nodes, i)
-        if (literal) {
-          if (literal.raw === env.KEYPATH_PARENT) {
-            offset += 1
-            continue
-          }
-          if (isDef(keypath)
-            && literal.raw !== env.KEYPATH_CURRENT
-          ) {
-            keypath = keypathUtil.join(keypath as string, toString(literal.value))
-          }
-        }
-        else {
-          keypath = env.UNDEFINED
-        }
-        array.push(list, nodes[i])
+      // a.b.c
+      if (isLiteral) {
+        // 转成 Identifier
+        name = array.join(staticNodes, keypathUtil.separator)
+        firstNode = createIdentifierInner(name, name, lookup, offset)
       }
-
-      // 表示 nodes 中包含路径，并且路径节点被干掉了
-      if (list.length < length) {
-        nodes = list
-        // 剩下的节点，第一个如果是 Literal，把它转成 Identifier
-        literal = getLiteralNode(nodes, 0)
-        if (literal) {
-          name = literal.value
-          firstNode = createIdentifierInner(literal.raw, name, lookup, offset)
-        }
+      // a[b]
+      else {
+        firstNode = createMemberInner(raw, firstNode, env.UNDEFINED, runtimeNodes, lookup, offset)
       }
-
     }
-
-    // 如果全是路径节点，如 ../../this，nodes 为空数组
-    // 如果剩下一个节点，则可转成标识符
-    return nodes.length < 2
-      ? createIdentifierInner(raw, name, lookup, offset, keypath)
-      : createMemberInner(raw, nodes, lookup, offset, keypath)
+    else {
+      // "xxx".length
+      // format().a.b
+      if (isLiteral) {
+        firstNode = createMemberInner(
+          raw,
+          firstNode,
+          array.join(staticNodes, keypathUtil.separator),
+          env.UNDEFINED,
+          lookup,
+          offset
+        )
+      }
+      // "xxx"[length]
+      // format()[a]
+      else {
+        firstNode = createMemberInner(
+          raw,
+          firstNode,
+          env.UNDEFINED,
+          runtimeNodes,
+          lookup,
+          offset
+        )
+      }
+    }
 
   }
 

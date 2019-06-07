@@ -11,7 +11,4 @@ export default interface Keypath extends Node {
   // 默认为 0，节省序列化的字符长度
   offset: number
 
-  // static keypath
-  keypath?: string
-
 }

@@ -2,7 +2,6 @@ import toJSON from '../../yox-common/src/function/toJSON'
 
 import * as env from '../../yox-common/src/util/env'
 import * as array from '../../yox-common/src/util/array'
-import * as keypathUtil from '../../yox-common/src/util/keypath'
 import * as stringifier from '../../yox-common/src/util/stringify'
 
 import * as nodeType from './nodeType'
@@ -102,77 +101,47 @@ export function stringify(
     case nodeType.MEMBER:
       isSpecialNode = env.TRUE
 
-      const { props, lookup, offset } = node as Member,
+      const { lead, keypath, nodes, lookup, offset } = node as Member,
 
-      // 第一个节点先弹出来，放在最后处理
-      firstNode = props.shift() as Node
+      stringifyNodes: string[] = nodes ? nodes.map(stringifyChildNode) : []
 
-      // 处理剩下的 props
-      // 这里要做两手准备：
-      // 1. 如果全是 literal 节点，则编译时 join
-      // 2. 如果不全是 literal 节点，则运行时 join
-
-      let isLiteral = env.TRUE, staticNodes: string[] = [], runtimeNodes: string[] = []
-      array.each(
-        props,
-        function (node) {
-          if (node.type === nodeType.LITERAL) {
-            array.push(
-              staticNodes,
-              (node as Literal).value
-            )
-          }
-          else {
-            isLiteral = env.FALSE
-          }
-          array.push(
-            runtimeNodes,
-            stringifyChildNode(node)
-          )
-        }
-      )
-
-      // 处理第一个节点
-      if (firstNode.type === nodeType.IDENTIFIER) {
-        const name = (firstNode as Identifier).name
-        // a.b.c
-        if (isLiteral) {
-          array.unshift(staticNodes, name)
-          value = stringifier.toCall(
-            renderIdentifier,
-            [
-              toJSON(array.join(staticNodes, keypathUtil.separator)),
-              depIgnore ? stringifier.TRUE : env.UNDEFINED,
-              lookup ? stringifier.TRUE : env.UNDEFINED,
-              offset > 0 ? toJSON(offset) : env.UNDEFINED
-            ]
-          )
-        }
-        // a[b]
-        else {
-          value = stringifier.toCall(
-            renderMemberIdentifier,
-            [
-              toJSON(name),
-              stringifier.toArray(runtimeNodes),
-              depIgnore ? stringifier.TRUE : env.UNDEFINED,
-              lookup ? stringifier.TRUE : env.UNDEFINED,
-              offset > 0 ? toJSON(offset) : env.UNDEFINED
-            ]
-          )
-        }
-      }
-      else {
-        // "xxx".length
+      if (lead.type === nodeType.IDENTIFIER) {
+        // 只能是 a[b] 的形式，因为 a.b 已经在解析时转换成 Identifier 了
         value = stringifier.toCall(
-          renderMemberLiteral,
+          renderMemberIdentifier,
           [
-            stringifyChildNode(firstNode),
-            isLiteral ? toJSON(array.join(staticNodes, keypathUtil.separator)) : env.UNDEFINED,
-            isLiteral ? env.UNDEFINED : stringifier.toArray(runtimeNodes),
+            toJSON((lead as Identifier).name),
+            stringifier.toArray(stringifyNodes),
+            depIgnore ? stringifier.TRUE : env.UNDEFINED,
+            lookup ? stringifier.TRUE : env.UNDEFINED,
+            offset > 0 ? toJSON(offset) : env.UNDEFINED
           ]
         )
       }
+      else if (nodes) {
+        // "xx"[length]
+        // format()[a][b]
+        value = stringifier.toCall(
+          renderMemberLiteral,
+          [
+            stringifyChildNode(lead),
+            env.UNDEFINED,
+            stringifier.toArray(stringifyNodes)
+          ]
+        )
+      }
+      else {
+        // "xx".length
+        // format().a.b
+        value = stringifier.toCall(
+          renderMemberLiteral,
+          [
+            stringifyChildNode(lead),
+            toJSON(keypath)
+          ]
+        )
+      }
+
       break
 
     default:
