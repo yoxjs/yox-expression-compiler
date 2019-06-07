@@ -46,25 +46,25 @@ export function createCall(name: Node, args: Node[], raw: string): Call {
   }
 }
 
-function createIdentifierInner(raw: string, name: string, lookup: boolean, offset: number, sk: string | void): Identifier {
+function createIdentifierInner(raw: string, name: string, lookup: boolean, offset: number, keypath: string | void): Identifier {
   return {
     type: nodeType.IDENTIFIER,
     raw,
     name,
     lookup,
     offset,
-    sk: isDef(sk) ? sk as string : name,
+    keypath: isDef(keypath) ? keypath as string : name,
   }
 }
 
-function createMemberInner(raw: string, props: Node[], lookup: boolean, offset: number, sk: string | void) {
+function createMemberInner(raw: string, props: Node[], lookup: boolean, offset: number, keypath: string | void) {
   return {
     type: nodeType.MEMBER,
     raw,
     props,
     lookup,
     offset,
-    sk,
+    keypath,
   }
 }
 
@@ -146,17 +146,19 @@ function getLiteralNode(nodes: Node[], index: number): Literal | void {
  * @param raw
  * @param nodes
  */
-export function createMemberIfNeeded(raw: string, nodes: (Node | Identifier | Literal)[]): Node | Identifier | Member {
+export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identifier | Member {
 
   let { length } = nodes,
+
+  firstNode = nodes[0],
+
+  name = env.EMPTY_STRING,
 
   lookup = env.TRUE,
 
   offset = 0,
 
-  staticKeypath: string | void,
-
-  name = env.EMPTY_STRING,
+  keypath: string | void,
 
   list: (Node | Identifier | Literal)[] = [],
 
@@ -168,26 +170,25 @@ export function createMemberIfNeeded(raw: string, nodes: (Node | Identifier | Li
 
     // lookup 要求第一位元素是 Identifier，且它的 lookup 是 true 才为 true
     // 其他情况都为 false，如 "11".length 第一位元素是 Literal，不存在向上寻找的需求
-    if (nodes[0].type === nodeType.IDENTIFIER) {
+    if (firstNode.type === nodeType.IDENTIFIER) {
 
-      identifier = nodes[0] as Identifier
+      identifier = firstNode as Identifier
 
       name = identifier.name
       lookup = identifier.lookup
-      offset += identifier.offset
-      staticKeypath = identifier.sk
+      offset = identifier.offset
+      keypath = identifier.keypath
 
 
       if (name) {
         array.push(list, identifier)
       }
 
-      // 优化 1：计算 staticKeypath
+      // 优化 1：计算 keypath
       //
-      // 计算 staticKeypath 的唯一方式是，第一位元素是 Identifier，后面都是 Literal
+      // 计算 keypath 的唯一方式是，第一位元素是 Identifier，后面都是 Literal
       // 否则就表示中间包含动态元素，这会导致无法计算静态路径
       // 如 a.b.c 可以算出 staticKeypath，而 a[b].c 则不行，因为 b 是动态的
-      // 下面这段属于性能优化，避免在运行时反复计算 Member 的 keypath
 
       // 优化 2：计算 offset 并智能转成 Identifier
       //
@@ -200,14 +201,14 @@ export function createMemberIfNeeded(raw: string, nodes: (Node | Identifier | Li
             offset += 1
             continue
           }
-          if (isDef(staticKeypath)
+          if (isDef(keypath)
             && literal.raw !== env.KEYPATH_CURRENT
           ) {
-            staticKeypath = keypathUtil.join(staticKeypath as string, toString(literal.value))
+            keypath = keypathUtil.join(keypath as string, toString(literal.value))
           }
         }
         else {
-          staticKeypath = env.UNDEFINED
+          keypath = env.UNDEFINED
         }
         array.push(list, nodes[i])
       }
@@ -219,7 +220,7 @@ export function createMemberIfNeeded(raw: string, nodes: (Node | Identifier | Li
         literal = getLiteralNode(nodes, 0)
         if (literal) {
           name = literal.value
-          nodes[0] = createIdentifierInner(literal.raw, name, lookup, offset)
+          firstNode = createIdentifierInner(literal.raw, name, lookup, offset)
         }
       }
 
@@ -228,11 +229,11 @@ export function createMemberIfNeeded(raw: string, nodes: (Node | Identifier | Li
     // 如果全是路径节点，如 ../../this，nodes 为空数组
     // 如果剩下一个节点，则可转成标识符
     return nodes.length < 2
-      ? createIdentifierInner(raw, name, lookup, offset, staticKeypath)
-      : createMemberInner(raw, nodes, lookup, offset, staticKeypath)
+      ? createIdentifierInner(raw, name, lookup, offset, keypath)
+      : createMemberInner(raw, nodes, lookup, offset, keypath)
 
   }
 
-  return nodes[0]
+  return firstNode
 
 }
