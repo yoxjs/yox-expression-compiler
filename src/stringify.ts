@@ -34,7 +34,16 @@ export function stringify(
   isSpecialNode = env.FALSE,
 
   stringifyChildNode = function (node: Node) {
-    return stringify(node, renderIdentifier, renderMemberIdentifier, renderMemberLiteral, renderCall, holder, depIgnore, env.TRUE)
+    return stringify(
+      node,
+      renderIdentifier,
+      renderMemberIdentifier,
+      renderMemberLiteral,
+      renderCall,
+      holder,
+      depIgnore,
+      env.TRUE
+    )
   }
 
   switch (node.type) {
@@ -164,12 +173,19 @@ export function stringify(
       break
   }
 
-  // 内部的临时值，不需要 value holder
-  if (inner || !holder) {
+  // 不需要 value holder
+  if (!holder) {
     return value
   }
 
-  // 最外层的值，且需要 value holder
+  // 内部的临时值，且 holder 为 true
+  if (inner) {
+    return isSpecialNode
+      ? value + '.value'
+      : value
+  }
+
+  // 最外层的值，且 holder 为 true
   return isSpecialNode
     ? value
     : stringifier.toObject([`value:${value}`])
