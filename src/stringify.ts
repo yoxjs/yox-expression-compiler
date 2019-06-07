@@ -45,13 +45,13 @@ export function stringify(
       break
 
     case nodeType.UNARY:
-      value = (node as Unary).op + stringifyChildNode((node as Unary).a)
+      value = (node as Unary).operator + stringifyChildNode((node as Unary).node)
       break
 
     case nodeType.BINARY:
-      value = stringifyChildNode((node as Binary).a)
-        + (node as Binary).op
-        + stringifyChildNode((node as Binary).b)
+      value = stringifyChildNode((node as Binary).left)
+        + (node as Binary).operator
+        + stringifyChildNode((node as Binary).right)
       break
 
     case nodeType.TERNARY:
@@ -85,13 +85,16 @@ export function stringify(
 
     case nodeType.IDENTIFIER:
       isSpecialNode = env.TRUE
+
+      const identifier = node as Identifier
+
       value = stringifier.toCall(
         renderIdentifier,
         [
-          toJSON((node as Identifier).name),
+          toJSON(identifier.name),
           depIgnore ? stringifier.TRUE : env.UNDEFINED,
-          (node as Identifier).lookup ? stringifier.TRUE : env.UNDEFINED,
-          toJSON((node as Identifier).offset)
+          identifier.lookup ? stringifier.TRUE : env.UNDEFINED,
+          identifier.offset > 0 ? toJSON(identifier.offset) : env.UNDEFINED
         ]
       )
       break
@@ -141,7 +144,7 @@ export function stringify(
               toJSON(array.join(staticNodes, keypathUtil.separator)),
               depIgnore ? stringifier.TRUE : env.UNDEFINED,
               lookup ? stringifier.TRUE : env.UNDEFINED,
-              toJSON(offset)
+              offset > 0 ? toJSON(offset) : env.UNDEFINED
             ]
           )
         }
@@ -153,8 +156,8 @@ export function stringify(
               toJSON(name),
               stringifier.toArray(runtimeNodes),
               depIgnore ? stringifier.TRUE : env.UNDEFINED,
-              toJSON(lookup),
-              toJSON(offset)
+              lookup ? stringifier.TRUE : env.UNDEFINED,
+              offset > 0 ? toJSON(offset) : env.UNDEFINED
             ]
           )
         }

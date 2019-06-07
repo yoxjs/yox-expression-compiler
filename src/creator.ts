@@ -27,13 +27,13 @@ export function createArray(nodes: Node[], raw: string): ArrayNode {
   }
 }
 
-export function createBinary(a: Node, op: string, b: Node, raw: string): Binary {
+export function createBinary(left: Node, operator: string, right: Node, raw: string): Binary {
   return {
     type: nodeType.BINARY,
     raw,
-    a,
-    op,
-    b,
+    left,
+    operator,
+    right,
   }
 }
 
@@ -46,31 +46,31 @@ export function createCall(name: Node, args: Node[], raw: string): Call {
   }
 }
 
-function createIdentifierInner(raw: string, name: string, lookup: boolean | void, offset: number | void, sk: string | void): Identifier {
+function createIdentifierInner(raw: string, name: string, lookup: boolean, offset: number, sk: string | void): Identifier {
   return {
     type: nodeType.IDENTIFIER,
     raw,
     name,
-    lookup: lookup === env.FALSE ? lookup : env.UNDEFINED,
-    offset: offset > 0 ? offset : env.UNDEFINED,
+    lookup,
+    offset,
     sk: isDef(sk) ? sk as string : name,
   }
 }
 
-function createMemberInner(raw: string, props: Node[], lookup: boolean | void, offset: number, sk: string | void) {
+function createMemberInner(raw: string, props: Node[], lookup: boolean, offset: number, sk: string | void) {
   return {
     type: nodeType.MEMBER,
     raw,
     props,
-    lookup: lookup === env.FALSE ? lookup : env.UNDEFINED,
-    offset: offset > 0 ? offset : env.UNDEFINED,
+    lookup,
+    offset,
     sk,
   }
 }
 
 export function createIdentifier(raw: string, name: string, isProp?: boolean): Identifier | Literal {
 
-  let lookup: boolean | void, offset: number | void
+  let lookup = env.TRUE, offset = 0
 
   if (name === env.KEYPATH_CURRENT
     || name === env.KEYPATH_PARENT
@@ -119,12 +119,12 @@ export function createTernary(test: Node, yes: Node, no: Node, raw: string): Ter
   }
 }
 
-export function createUnary(op: string, a: Node, raw: string): Unary {
+export function createUnary(operator: string, node: Node, raw: string): Unary {
   return {
     type: nodeType.UNARY,
     raw,
-    op,
-    a,
+    operator,
+    node,
   }
 }
 
@@ -150,7 +150,7 @@ export function createMemberIfNeeded(raw: string, nodes: (Node | Identifier | Li
 
   let { length } = nodes,
 
-  lookup: boolean | void,
+  lookup = env.TRUE,
 
   offset = 0,
 
@@ -174,11 +174,9 @@ export function createMemberIfNeeded(raw: string, nodes: (Node | Identifier | Li
 
       name = identifier.name
       lookup = identifier.lookup
+      offset += identifier.offset
       staticKeypath = identifier.sk
 
-      if (identifier.offset > 0) {
-        offset += identifier.offset as number
-      }
 
       if (name) {
         array.push(list, identifier)
