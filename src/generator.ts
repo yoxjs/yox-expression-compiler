@@ -1,8 +1,6 @@
-import toJSON from '../../yox-common/src/function/toJSON'
-
 import * as env from '../../yox-common/src/util/env'
 import * as array from '../../yox-common/src/util/array'
-import * as stringifier from '../../yox-common/src/util/stringify'
+import * as generator from '../../yox-common/src/util/generator'
 
 import * as nodeType from './nodeType'
 
@@ -18,7 +16,7 @@ import Unary from './node/Unary'
 import ArrayNode from './node/Array'
 import ObjectNode from './node/Object'
 
-export function stringify(
+export function generate(
   node: Node,
   renderIdentifier: string,
   renderMemberKeypath: string,
@@ -34,8 +32,8 @@ export function stringify(
 
   isSpecialNode = env.FALSE,
 
-  stringifyChildNode = function (node: Node) {
-    return stringify(
+  generateChildNode = function (node: Node) {
+    return generate(
       node,
       renderIdentifier,
       renderMemberKeypath,
@@ -51,30 +49,30 @@ export function stringify(
   switch (node.type) {
 
     case nodeType.LITERAL:
-      value = toJSON((node as Literal).value)
+      value = generator.toString((node as Literal).value)
       break
 
     case nodeType.UNARY:
-      value = (node as Unary).operator + stringifyChildNode((node as Unary).node)
+      value = (node as Unary).operator + generateChildNode((node as Unary).node)
       break
 
     case nodeType.BINARY:
-      value = stringifyChildNode((node as Binary).left)
+      value = generateChildNode((node as Binary).left)
         + (node as Binary).operator
-        + stringifyChildNode((node as Binary).right)
+        + generateChildNode((node as Binary).right)
       break
 
     case nodeType.TERNARY:
-      value = stringifyChildNode((node as Ternary).test)
-        + '?'
-        + stringifyChildNode((node as Ternary).yes)
-        + ':'
-        + stringifyChildNode((node as Ternary).no)
+      value = generateChildNode((node as Ternary).test)
+        + generator.QUESTION
+        + generateChildNode((node as Ternary).yes)
+        + generator.COLON
+        + generateChildNode((node as Ternary).no)
       break
 
     case nodeType.ARRAY:
-      const items = (node as ArrayNode).nodes.map(stringifyChildNode)
-      value = stringifier.toArray(items)
+      const items = (node as ArrayNode).nodes.map(generateChildNode)
+      value = generator.toArray(items)
       break
 
     case nodeType.OBJECT:
@@ -84,13 +82,13 @@ export function stringify(
         function (key: string, index: number) {
           array.push(
             fields,
-            toJSON(key)
-            + ':'
-            + stringifyChildNode((node as ObjectNode).values[index])
+            generator.toString(key)
+            + generator.COLON
+            + generateChildNode((node as ObjectNode).values[index])
           )
         }
       )
-      value = stringifier.toObject(fields)
+      value = generator.toObject(fields)
       break
 
     case nodeType.IDENTIFIER:
@@ -98,14 +96,14 @@ export function stringify(
 
       const identifier = node as Identifier
 
-      value = stringifier.toCall(
+      value = generator.toCall(
         renderIdentifier,
         [
-          toJSON(identifier.name),
-          identifier.lookup ? stringifier.TRUE : env.UNDEFINED,
-          identifier.offset > 0 ? toJSON(identifier.offset) : env.UNDEFINED,
-          holder ? stringifier.TRUE : env.UNDEFINED,
-          depIgnore ? stringifier.TRUE : env.UNDEFINED,
+          generator.toString(identifier.name),
+          identifier.lookup ? generator.TRUE : env.UNDEFINED,
+          identifier.offset > 0 ? generator.toString(identifier.offset) : env.UNDEFINED,
+          holder ? generator.TRUE : env.UNDEFINED,
+          depIgnore ? generator.TRUE : env.UNDEFINED,
           stack ? stack : env.UNDEFINED
         ]
       )
@@ -116,24 +114,24 @@ export function stringify(
 
       const { lead, keypath, nodes, lookup, offset } = node as Member,
 
-      stringifyNodes: string[] = nodes ? nodes.map(stringifyChildNode) : []
+      stringifyNodes: string[] = nodes ? nodes.map(generateChildNode) : []
 
       if (lead.type === nodeType.IDENTIFIER) {
         // 只能是 a[b] 的形式，因为 a.b 已经在解析时转换成 Identifier 了
-        value = stringifier.toCall(
+        value = generator.toCall(
           renderIdentifier,
           [
-            stringifier.toCall(
+            generator.toCall(
               renderMemberKeypath,
               [
-                toJSON((lead as Identifier).name),
-                stringifier.toArray(stringifyNodes)
+                generator.toString((lead as Identifier).name),
+                generator.toArray(stringifyNodes)
               ]
             ),
-            lookup ? stringifier.TRUE : env.UNDEFINED,
-            offset > 0 ? toJSON(offset) : env.UNDEFINED,
-            holder ? stringifier.TRUE : env.UNDEFINED,
-            depIgnore ? stringifier.TRUE : env.UNDEFINED,
+            lookup ? generator.TRUE : env.UNDEFINED,
+            offset > 0 ? generator.toString(offset) : env.UNDEFINED,
+            holder ? generator.TRUE : env.UNDEFINED,
+            depIgnore ? generator.TRUE : env.UNDEFINED,
             stack ? stack : env.UNDEFINED
           ]
         )
@@ -141,26 +139,26 @@ export function stringify(
       else if (nodes) {
         // "xx"[length]
         // format()[a][b]
-        value = stringifier.toCall(
+        value = generator.toCall(
           renderMemberLiteral,
           [
-            stringifyChildNode(lead),
+            generateChildNode(lead),
             env.UNDEFINED,
-            stringifier.toArray(stringifyNodes),
-            holder ? stringifier.TRUE : env.UNDEFINED
+            generator.toArray(stringifyNodes),
+            holder ? generator.TRUE : env.UNDEFINED
           ]
         )
       }
       else {
         // "xx".length
         // format().a.b
-        value = stringifier.toCall(
+        value = generator.toCall(
           renderMemberLiteral,
           [
-            stringifyChildNode(lead),
-            toJSON(keypath),
+            generateChildNode(lead),
+            generator.toString(keypath),
             env.UNDEFINED,
-            holder ? stringifier.TRUE : env.UNDEFINED,
+            holder ? generator.TRUE : env.UNDEFINED,
           ]
         )
       }
@@ -170,14 +168,14 @@ export function stringify(
     default:
       isSpecialNode = env.TRUE
       const { args } = node as Call
-      value = stringifier.toCall(
+      value = generator.toCall(
         renderCall,
         [
-          stringifyChildNode((node as Call).name),
+          generateChildNode((node as Call).name),
           args.length
-            ? stringifier.toArray(args.map(stringifyChildNode))
+            ? generator.toArray(args.map(generateChildNode))
             : env.UNDEFINED,
-          holder ? stringifier.TRUE : env.UNDEFINED
+          holder ? generator.TRUE : env.UNDEFINED
         ]
       )
       break
@@ -198,6 +196,6 @@ export function stringify(
   // 最外层的值，且 holder 为 true
   return isSpecialNode
     ? value
-    : stringifier.toObject([env.RAW_VALUE + ':' + value])
+    : generator.toObject([env.RAW_VALUE + generator.COLON + value])
 
 }
