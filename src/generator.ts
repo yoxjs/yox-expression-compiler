@@ -1,6 +1,6 @@
-import * as env from '../../yox-common/src/util/env'
-import * as array from '../../yox-common/src/util/array'
-import * as generator from '../../yox-common/src/util/generator'
+import * as env from 'yox-common/src/util/env'
+import * as array from 'yox-common/src/util/array'
+import * as generator from 'yox-common/src/util/generator'
 
 import * as nodeType from './nodeType'
 

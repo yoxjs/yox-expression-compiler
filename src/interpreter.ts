@@ -1,4 +1,4 @@
-import * as env from '../../yox-common/src/util/env'
+import * as env from 'yox-common/src/util/env'
 
 export const unary = {
   '+': env.TRUE,

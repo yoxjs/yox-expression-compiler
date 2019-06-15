@@ -1,8 +1,8 @@
-import toString from '../../yox-common/src/function/toString'
+import toString from 'yox-common/src/function/toString'
 
-import * as env from '../../yox-common/src/util/env'
-import * as array from '../../yox-common/src/util/array'
-import * as keypathUtil from '../../yox-common/src/util/keypath'
+import * as env from 'yox-common/src/util/env'
+import * as array from 'yox-common/src/util/array'
+import * as keypathUtil from 'yox-common/src/util/keypath'
 
 import * as nodeType from './nodeType'
 
@@ -199,7 +199,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
 
     // 优化 2：计算 offset 并智能转成 Identifier
     //
-    // 比如 ../../xx 这样的表达式，应优化成 offset = 2，并转成 Identifier
+    // 比如 xx 这样的表达式，应优化成 offset = 2，并转成 Identifier
 
     // 处理第一个节点
     if (firstNode.type === nodeType.IDENTIFIER) {
