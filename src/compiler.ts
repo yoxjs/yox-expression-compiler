@@ -4,7 +4,6 @@ import * as is from '../../yox-common/src/util/is'
 import * as env from '../../yox-common/src/util/env'
 import * as array from '../../yox-common/src/util/array'
 import * as string from '../../yox-common/src/util/string'
-import * as object from '../../yox-common/src/util/object'
 import * as logger from '../../yox-common/src/util/logger'
 
 import * as creator from './creator'
@@ -14,8 +13,6 @@ import * as interpreter from './interpreter'
 import Node from './node/Node'
 import Identifier from './node/Identifier'
 import Literal from './node/Literal'
-
-import { ValueHolder } from '../../yox-type/src/class'
 
 export function compile(content: string): Node | void {
   if (!cache[content]) {
@@ -592,8 +589,8 @@ export class Parser {
 
     const raw = instance.pick(startIndex)
 
-    return !isProp && object.has(keywordLiterals, raw)
-      ? creator.createLiteral(keywordLiterals[raw].value, raw)
+    return !isProp && raw in keywordLiterals
+      ? creator.createLiteral(keywordLiterals[raw], raw)
       : creator.createIdentifier(raw, raw, isProp)
 
   }
@@ -946,13 +943,12 @@ CODE_GREAT = 62,     // >
  * 举个例子：a === true
  * 从解析器的角度来说，a 和 true 是一样的 token
  */
-keywordLiterals: Record<string, ValueHolder> = {}
+keywordLiterals: Record<string, any> = {}
 
-// object.has 无法判断出 undefined，因此这里改成 ValueHolder 结构
-keywordLiterals[env.RAW_TRUE] = { value: env.TRUE }
-keywordLiterals[env.RAW_FALSE] = { value: env.FALSE }
-keywordLiterals[env.RAW_NULL] = { value: env.NULL }
-keywordLiterals[env.RAW_UNDEFINED] = { value: env.UNDEFINED }
+keywordLiterals[env.RAW_TRUE] = env.TRUE
+keywordLiterals[env.RAW_FALSE] = env.FALSE
+keywordLiterals[env.RAW_NULL] = env.NULL
+keywordLiterals[env.RAW_UNDEFINED] = env.UNDEFINED
 
 /**
  * 是否是空白符，用下面的代码在浏览器测试一下
