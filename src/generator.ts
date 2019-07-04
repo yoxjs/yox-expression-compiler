@@ -189,7 +189,7 @@ export function generate(
   // 内部的临时值，且 holder 为 true
   if (inner) {
     return isSpecialNode
-      ? value + '.' + env.RAW_VALUE
+      ? value + env.RAW_DOT + env.RAW_VALUE
       : value
   }
 
