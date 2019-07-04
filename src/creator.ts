@@ -2,7 +2,6 @@ import toString from '../../yox-common/src/function/toString'
 
 import * as env from '../../yox-common/src/util/env'
 import * as array from '../../yox-common/src/util/array'
-import * as keypathUtil from '../../yox-common/src/util/keypath'
 
 import * as nodeType from './nodeType'
 
@@ -219,7 +218,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
       // a.b.c
       if (isLiteral) {
         // 转成 Identifier
-        name = array.join(staticNodes, keypathUtil.separator)
+        name = array.join(staticNodes, env.RAW_DOT)
         firstNode = createIdentifierInner(name, name, lookup, offset)
       }
       // a[b]
@@ -234,7 +233,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
         firstNode = createMemberInner(
           raw,
           firstNode,
-          array.join(staticNodes, keypathUtil.separator),
+          array.join(staticNodes, env.RAW_DOT),
           env.UNDEFINED,
           lookup,
           offset
