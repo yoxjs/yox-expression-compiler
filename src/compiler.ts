@@ -111,8 +111,6 @@ export class Parser {
 
   /**
    * 截取一段字符串
-   *
-   * @param startIndex
    */
   pick(startIndex: number, endIndex?: number): string {
     return string.slice(this.content, startIndex, isDef(endIndex) ? endIndex : this.index)
@@ -875,7 +873,8 @@ export class Parser {
         )
       }
       else if (process.env.NODE_ENV === 'development') {
-        instance.fatal(index, `三元表达式写法错误`)
+        // 三元表达式语法错误
+        instance.fatal(index, `ternary expression syntax error`)
       }
     }
 
