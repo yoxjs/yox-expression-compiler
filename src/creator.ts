@@ -44,28 +44,6 @@ export function createCall(name: Node, args: Node[], raw: string): Call {
   }
 }
 
-function createIdentifierInner(raw: string, name: string, lookup: boolean, offset: number): Identifier {
-  return {
-    type: nodeType.IDENTIFIER,
-    raw,
-    name,
-    lookup,
-    offset,
-  }
-}
-
-function createMemberInner(raw: string, lead: Node, keypath: string | void, nodes: Node[] | void, lookup: boolean, offset: number): Member {
-  return {
-    type: nodeType.MEMBER,
-    raw,
-    lead,
-    keypath,
-    nodes,
-    lookup,
-    offset,
-  }
-}
-
 export function createIdentifier(raw: string, name: string, isProp?: boolean): Identifier | Literal {
 
   let lookup = env.TRUE, offset = 0
@@ -129,49 +107,50 @@ export function createUnary(operator: string, node: Node, raw: string): Unary {
 /**
  * 通过判断 nodes 来决定是否需要创建 Member
  *
- * 创建 Member 至少需要 nodes 有两个元素
- *
- * nodes 元素类型没有限制，可以是 Identifier、Literal、Call，或是别的完整表达式
- *
- * @param raw
- * @param nodes
+ * 创建 Member 至少需要 nodes 有两个节点
  */
 export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identifier | Member {
 
+  // 第一个节点要特殊处理
   let firstNode = nodes.shift() as Node,
 
-  { length } = nodes,
-
+  // 是否向上查找
   lookup = env.TRUE,
 
+  // 偏移量，默认从当前 context 开始查找
   offset = 0
 
-  // member 要求至少两个节点
-  if (length > 0) {
+  // 表示传入的 nodes 至少有两个节点（弹出了一个）
+  if (nodes.length > 0) {
 
     // 处理剩下的 nodes
     // 这里要做两手准备：
     // 1. 如果全是 literal 节点，则编译时 join
     // 2. 如果不全是 literal 节点，则运行时 join
 
-    let isLiteral = env.TRUE, staticNodes: string[] = [], runtimeNodes: Node[] = []
+    // 是否全是 Literal 节点
+    let isLiteral = env.TRUE,
+
+    // 静态节点
+    staticNodes: string[] = [],
+
+    // 动态节点
+    dynamicNodes: Node[] = []
 
     array.each(
       nodes,
       function (node) {
         if (node.type === nodeType.LITERAL) {
 
-          const literal = node as Literal
-
-          if (literal.raw === env.KEYPATH_PARENT) {
+          if ((node as Literal).raw === env.KEYPATH_PARENT) {
             offset += 1
             return
           }
 
-          if (literal.raw !== env.KEYPATH_CURRENT) {
+          if ((node as Literal).raw !== env.KEYPATH_CURRENT) {
             array.push(
               staticNodes,
-              toString(literal.value)
+              toString((node as Literal).value)
             )
           }
 
@@ -181,7 +160,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
         }
 
         array.push(
-          runtimeNodes,
+          dynamicNodes,
           node
         )
       }
@@ -194,7 +173,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
     //
     // 计算 keypath 的唯一方式是，第一位元素是 Identifier，后面都是 Literal
     // 否则就表示中间包含动态元素，这会导致无法计算静态路径
-    // 如 a.b.c 可以算出 staticKeypath，而 a[b].c 则不行，因为 b 是动态的
+    // 如 a.b.c 可以算出 static keypath，而 a[b].c 则不行，因为 b 是动态的
 
     // 优化 2：计算 offset 并智能转成 Identifier
     //
@@ -203,12 +182,10 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
     // 处理第一个节点
     if (firstNode.type === nodeType.IDENTIFIER) {
 
-      const identifier = firstNode as Identifier
+      lookup = (firstNode as Identifier).lookup
+      offset += (firstNode as Identifier).offset
 
-      lookup = identifier.lookup
-      offset += identifier.offset
-
-      let name = identifier.name
+      let name = (firstNode as Identifier).name
 
       // 不是 KEYPATH_THIS 或 KEYPATH_PARENT
       if (name) {
@@ -223,10 +200,11 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
       }
       // a[b]
       else {
-        firstNode = createMemberInner(raw, firstNode, env.UNDEFINED, runtimeNodes, lookup, offset)
+        firstNode = createMemberInner(raw, firstNode, env.UNDEFINED, dynamicNodes, lookup, offset)
       }
     }
     else {
+      // 例子：
       // "xxx".length
       // format().a.b
       if (isLiteral) {
@@ -239,6 +217,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
           offset
         )
       }
+      // 例子：
       // "xxx"[length]
       // format()[a]
       else {
@@ -246,7 +225,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
           raw,
           firstNode,
           env.UNDEFINED,
-          runtimeNodes,
+          dynamicNodes,
           lookup,
           offset
         )
@@ -257,4 +236,26 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
 
   return firstNode
 
+}
+
+function createIdentifierInner(raw: string, name: string, lookup: boolean, offset: number): Identifier {
+  return {
+    type: nodeType.IDENTIFIER,
+    raw,
+    name,
+    lookup,
+    offset,
+  }
+}
+
+function createMemberInner(raw: string, lead: Node, keypath: string | void, nodes: Node[] | void, lookup: boolean, offset: number): Member {
+  return {
+    type: nodeType.MEMBER,
+    raw,
+    lead,
+    keypath,
+    nodes,
+    lookup,
+    offset,
+  }
 }
