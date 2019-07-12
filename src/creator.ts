@@ -196,7 +196,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
       if (isLiteral) {
         // 转成 Identifier
         name = array.join(staticNodes, env.RAW_DOT)
-        firstNode = createIdentifierInner(name, name, lookup, offset)
+        firstNode = createIdentifierInner(raw, name, lookup, offset)
       }
       // a[b]
       else {

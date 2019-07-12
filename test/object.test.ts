@@ -17,7 +17,8 @@ function testLiteral(node: Node | void, value: any, raw: string) {
 
 test('object', () => {
 
-  let ast = compile(' { name : "musicode", "age" : 100 }')
+  // 支持尾逗号
+  let ast = compile(' { name : "musicode", "age" : 100, }')
 
   expect(ast != null).toBe(true)
   if (ast) {
@@ -31,7 +32,7 @@ test('object', () => {
     expect((ast as Object).keys[1]).toBe('age')
     testLiteral((ast as Object).values[1], 100, '100')
 
-    expect(ast.raw).toBe('{ name : "musicode", "age" : 100 }')
+    expect(ast.raw).toBe('{ name : "musicode", "age" : 100, }')
   }
 
 })
