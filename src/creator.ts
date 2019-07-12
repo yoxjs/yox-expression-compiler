@@ -140,29 +140,31 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
     array.each(
       nodes,
       function (node) {
-        if (node.type === nodeType.LITERAL) {
-
-          if ((node as Literal).raw === env.KEYPATH_PARENT) {
-            offset += 1
-            return
+        if (isLiteral) {
+          if (node.type === nodeType.LITERAL) {
+            if ((node as Literal).raw === env.KEYPATH_PARENT) {
+              offset += 1
+              return
+            }
+            if ((node as Literal).raw !== env.KEYPATH_CURRENT) {
+              const value = toString((node as Literal).value)
+              array.push(
+                staticNodes,
+                value
+              )
+            }
           }
-
-          if ((node as Literal).raw !== env.KEYPATH_CURRENT) {
-            array.push(
-              staticNodes,
-              toString((node as Literal).value)
-            )
+          else {
+            isLiteral = env.FALSE
           }
-
-        }
-        else {
-          isLiteral = env.FALSE
         }
 
-        array.push(
-          dynamicNodes,
-          node
-        )
+        if (!isLiteral) {
+          array.push(
+            dynamicNodes,
+            node
+          )
+        }
       }
     )
 
@@ -192,15 +194,24 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
         array.unshift(staticNodes, name)
       }
 
+      // 转成 Identifier
+      name = array.join(staticNodes, env.RAW_DOT)
+
       // a.b.c
       if (isLiteral) {
-        // 转成 Identifier
-        name = array.join(staticNodes, env.RAW_DOT)
         firstNode = createIdentifierInner(raw, name, lookup, offset)
       }
       // a[b]
+      // this.a[b]
       else {
-        firstNode = createMemberInner(raw, firstNode, env.UNDEFINED, dynamicNodes, lookup, offset)
+        firstNode = createMemberInner(
+          raw,
+          createIdentifierInner(name, name, lookup, offset),
+          env.UNDEFINED,
+          dynamicNodes,
+          lookup,
+          offset
+        )
       }
     }
     else {
