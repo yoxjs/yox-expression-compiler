@@ -2,6 +2,7 @@ import toString from '../../yox-common/src/function/toString'
 
 import * as env from '../../yox-common/src/util/env'
 import * as array from '../../yox-common/src/util/array'
+import * as string from '../../yox-common/src/util/string'
 
 import * as nodeType from './nodeType'
 
@@ -134,6 +135,11 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
     // 静态节点
     staticNodes: string[] = [],
 
+    // 对于 this.a.b[c] 这样的
+    // 要还原静态部分 this.a.b 的 raw
+    // 虽然 raw 没什么大用吧，谁让我是洁癖呢
+    staticRaw = env.EMPTY_STRING,
+
     // 动态节点
     dynamicNodes: Node[] = []
 
@@ -144,6 +150,9 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
           if (node.type === nodeType.LITERAL) {
             if ((node as Literal).raw === env.KEYPATH_PARENT) {
               offset += 1
+              staticRaw = staticRaw
+                ? staticRaw + env.RAW_SLASH + env.KEYPATH_PARENT
+                : env.KEYPATH_PARENT
               return
             }
             if ((node as Literal).raw !== env.KEYPATH_CURRENT) {
@@ -152,6 +161,12 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
                 staticNodes,
                 value
               )
+              if (staticRaw) {
+                staticRaw += string.endsWith(staticRaw, env.KEYPATH_PARENT)
+                  ? env.RAW_SLASH
+                  : env.RAW_DOT
+              }
+              staticRaw += value
             }
           }
           else {
@@ -187,26 +202,37 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
       lookup = (firstNode as Identifier).lookup
       offset += (firstNode as Identifier).offset
 
-      let name = (firstNode as Identifier).name
+      let firstName = (firstNode as Identifier).name
 
       // 不是 KEYPATH_THIS 或 KEYPATH_PARENT
-      if (name) {
-        array.unshift(staticNodes, name)
+      if (firstName) {
+        array.unshift(staticNodes, firstName)
       }
 
       // 转成 Identifier
-      name = array.join(staticNodes, env.RAW_DOT)
+      firstName = array.join(staticNodes, env.RAW_DOT)
+
+      // 当 isLiteral 为 false 时
+      // 需要为 lead 节点创建合适的 raw
+      let firstRaw = (firstNode as Identifier).raw
+      if (staticRaw) {
+        firstRaw += (
+          firstRaw === env.KEYPATH_PARENT
+          ? env.RAW_SLASH
+          : env.RAW_DOT
+        ) + staticRaw
+      }
 
       // a.b.c
       if (isLiteral) {
-        firstNode = createIdentifierInner(raw, name, lookup, offset)
+        firstNode = createIdentifierInner(raw, firstName, lookup, offset)
       }
       // a[b]
       // this.a[b]
       else {
         firstNode = createMemberInner(
           raw,
-          createIdentifierInner(name, name, lookup, offset),
+          createIdentifierInner(firstRaw, firstName, lookup, offset),
           env.UNDEFINED,
           dynamicNodes,
           lookup,
