@@ -108,4 +108,15 @@ test('identifier', () => {
     expect(ast.raw).toBe('a["1"][2]["3"]')
   }
 
+
+  ast = compile('    ../../../this.a    ')
+  expect(ast != null).toBe(true)
+  if (ast) {
+    expect(ast.type).toBe(nodeType.IDENTIFIER)
+    expect((ast as Identifier).name).toBe('a')
+    expect((ast as Identifier).lookup).toBe(false)
+    expect((ast as Identifier).offset).toBe(3)
+    expect(ast.raw).toBe('../../../this.a')
+  }
+
 })

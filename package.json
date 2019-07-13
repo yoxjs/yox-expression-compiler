@@ -7,7 +7,7 @@
     "test": "test"
   },
   "scripts": {
-    "test": "jest"
+    "test": "export NODE_ENV=development && jest"
   },
   "repository": {
     "type": "git",

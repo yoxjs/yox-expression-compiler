@@ -636,7 +636,7 @@ export class Parser {
         if (process.env.NODE_ENV === 'development') {
           // ++
           if (instance.is(CODE_PLUS)) {
-            instance.fatal(startIndex, '++ is not supported.')
+            instance.fatal(startIndex, 'The operator "++" is not supported.')
           }
         }
         break
@@ -647,7 +647,7 @@ export class Parser {
         if (process.env.NODE_ENV === 'development') {
           // --
           if (instance.is(CODE_MINUS)) {
-            instance.fatal(startIndex, '-- is not supported.')
+            instance.fatal(startIndex, 'The operator "--" is not supported.')
           }
         }
         break
