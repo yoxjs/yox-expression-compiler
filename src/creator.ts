@@ -1,6 +1,7 @@
+import * as constant from 'yox-type/src/constant'
+
 import toString from 'yox-common/src/function/toString'
 
-import * as env from 'yox-common/src/util/env'
 import * as array from 'yox-common/src/util/array'
 import * as string from 'yox-common/src/util/string'
 
@@ -47,16 +48,16 @@ export function createCall(name: Node, args: Node[], raw: string): Call {
 
 export function createIdentifier(raw: string, name: string, isProp?: boolean): Identifier | Literal {
 
-  let lookup = env.TRUE, offset = 0
+  let lookup = constant.TRUE, offset = 0
 
-  if (name === env.KEYPATH_CURRENT
-    || name === env.KEYPATH_PARENT
+  if (name === constant.KEYPATH_CURRENT
+    || name === constant.KEYPATH_PARENT
   ) {
-    lookup = env.FALSE
-    if (name === env.KEYPATH_PARENT) {
+    lookup = constant.FALSE
+    if (name === constant.KEYPATH_PARENT) {
       offset = 1
     }
-    name = env.EMPTY_STRING
+    name = constant.EMPTY_STRING
   }
 
   // 对象属性需要区分 a.b 和 a[b]
@@ -116,7 +117,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
   let firstNode = nodes.shift() as Node,
 
   // 是否向上查找
-  lookup = env.TRUE,
+  lookup = constant.TRUE,
 
   // 偏移量，默认从当前 context 开始查找
   offset = 0
@@ -130,7 +131,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
     // 2. 如果不全是 literal 节点，则运行时 join
 
     // 是否全是 Literal 节点
-    let isLiteral = env.TRUE,
+    let isLiteral = constant.TRUE,
 
     // 静态节点
     staticNodes: string[] = [],
@@ -138,7 +139,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
     // 对于 this.a.b[c] 这样的
     // 要还原静态部分 this.a.b 的 raw
     // 虽然 raw 没什么大用吧，谁让我是洁癖呢
-    staticRaw = env.EMPTY_STRING,
+    staticRaw = constant.EMPTY_STRING,
 
     // 动态节点
     dynamicNodes: Node[] = []
@@ -148,29 +149,29 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
       function (node) {
         if (isLiteral) {
           if (node.type === nodeType.LITERAL) {
-            if ((node as Literal).raw === env.KEYPATH_PARENT) {
+            if ((node as Literal).raw === constant.KEYPATH_PARENT) {
               offset += 1
               staticRaw = staticRaw
-                ? staticRaw + env.RAW_SLASH + env.KEYPATH_PARENT
-                : env.KEYPATH_PARENT
+                ? staticRaw + constant.RAW_SLASH + constant.KEYPATH_PARENT
+                : constant.KEYPATH_PARENT
               return
             }
-            if ((node as Literal).raw !== env.KEYPATH_CURRENT) {
+            if ((node as Literal).raw !== constant.KEYPATH_CURRENT) {
               const value = toString((node as Literal).value)
               array.push(
                 staticNodes,
                 value
               )
               if (staticRaw) {
-                staticRaw += string.endsWith(staticRaw, env.KEYPATH_PARENT)
-                  ? env.RAW_SLASH
-                  : env.RAW_DOT
+                staticRaw += string.endsWith(staticRaw, constant.KEYPATH_PARENT)
+                  ? constant.RAW_SLASH
+                  : constant.RAW_DOT
               }
               staticRaw += value
             }
           }
           else {
-            isLiteral = env.FALSE
+            isLiteral = constant.FALSE
           }
         }
 
@@ -210,16 +211,16 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
       }
 
       // 转成 Identifier
-      firstName = array.join(staticNodes, env.RAW_DOT)
+      firstName = array.join(staticNodes, constant.RAW_DOT)
 
       // 当 isLiteral 为 false 时
       // 需要为 lead 节点创建合适的 raw
       let firstRaw = (firstNode as Identifier).raw
       if (staticRaw) {
         firstRaw += (
-          firstRaw === env.KEYPATH_PARENT
-          ? env.RAW_SLASH
-          : env.RAW_DOT
+          firstRaw === constant.KEYPATH_PARENT
+          ? constant.RAW_SLASH
+          : constant.RAW_DOT
         ) + staticRaw
       }
 
@@ -233,7 +234,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
         firstNode = createMemberInner(
           raw,
           createIdentifierInner(firstRaw, firstName, lookup, offset),
-          env.UNDEFINED,
+          constant.UNDEFINED,
           dynamicNodes,
           lookup,
           offset
@@ -248,8 +249,8 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
         firstNode = createMemberInner(
           raw,
           firstNode,
-          array.join(staticNodes, env.RAW_DOT),
-          env.UNDEFINED,
+          array.join(staticNodes, constant.RAW_DOT),
+          constant.UNDEFINED,
           lookup,
           offset
         )
@@ -261,7 +262,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
         firstNode = createMemberInner(
           raw,
           firstNode,
-          env.UNDEFINED,
+          constant.UNDEFINED,
           dynamicNodes,
           lookup,
           offset

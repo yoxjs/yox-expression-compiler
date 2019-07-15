@@ -1,7 +1,8 @@
+import * as constant from 'yox-type/src/constant'
+
 import isDef from 'yox-common/src/function/isDef'
 
 import * as is from 'yox-common/src/util/is'
-import * as env from 'yox-common/src/util/env'
 import * as array from 'yox-common/src/util/array'
 import * as string from 'yox-common/src/util/string'
 import * as logger from 'yox-common/src/util/logger'
@@ -34,7 +35,7 @@ export class Parser {
 
   constructor(content: string) {
     const instance = this, { length } = content
-    instance.index = env.MINUS_ONE
+    instance.index = constant.MINUS_ONE
     instance.end = length
     instance.code = CODE_EOF
     instance.content = content
@@ -56,7 +57,7 @@ export class Parser {
     }
     else {
       instance.code = CODE_EOF
-      instance.index = index < 0 ? env.MINUS_ONE : end
+      instance.index = index < 0 ? constant.MINUS_ONE : end
     }
 
   }
@@ -88,7 +89,7 @@ export class Parser {
 
     // 如果是正向的，停在第一个非空白符左侧
     // 如果是逆向的，停在第一个非空白符右侧
-    while (env.TRUE) {
+    while (constant.TRUE) {
       if (isWhitespace(instance.code)) {
         instance.go(step)
       }
@@ -189,7 +190,7 @@ export class Parser {
           const value = (node as Literal).value
           if (is.number(value)) {
             // 类似 ' -1 ' 这样的右侧有空格，需要撤回来
-            instance.skip(env.MINUS_ONE)
+            instance.skip(constant.MINUS_ONE)
             return creator.createLiteral(
               - value,
               instance.pick(index)
@@ -197,7 +198,7 @@ export class Parser {
           }
         }
         // 类似 ' -a ' 这样的右侧有空格，需要撤回来
-        instance.skip(env.MINUS_ONE)
+        instance.skip(constant.MINUS_ONE)
         return creator.createUnary(
           operator,
           node,
@@ -253,7 +254,7 @@ export class Parser {
 
     const instance = this
 
-    loop: while (env.TRUE) {
+    loop: while (constant.TRUE) {
 
       // 这句有两个作用：
       // 1. 跳过开始的引号
@@ -298,12 +299,12 @@ export class Parser {
    */
   scanObject(startIndex: number): Node {
 
-    let instance = this, keys: string[] = [], values: Node[] = [], isKey = env.TRUE, node: Node | void
+    let instance = this, keys: string[] = [], values: Node[] = [], isKey = constant.TRUE, node: Node | void
 
     // 跳过 {
     instance.go()
 
-    loop: while (env.TRUE) {
+    loop: while (constant.TRUE) {
 
       switch (instance.code) {
 
@@ -327,13 +328,13 @@ export class Parser {
         // :
         case CODE_COLON:
           instance.go()
-          isKey = env.FALSE
+          isKey = constant.FALSE
           break
 
         // ,
         case CODE_COMMA:
           instance.go()
-          isKey = env.TRUE
+          isKey = constant.TRUE
           break
 
         default:
@@ -392,7 +393,7 @@ export class Parser {
     // 跳过开始字符，如 [ 和 (
     instance.go()
 
-    loop: while (env.TRUE) {
+    loop: while (constant.TRUE) {
       switch (instance.code) {
 
         case endCode:
@@ -444,15 +445,15 @@ export class Parser {
     // 进入此函数时，已确定前一个 code 是 CODE_DOT
     // 此时只需判断接下来是 ./ 还是 / 就行了
 
-    while (env.TRUE) {
+    while (constant.TRUE) {
 
       // 要么是 current 要么是 parent
-      name = env.KEYPATH_CURRENT
+      name = constant.KEYPATH_CURRENT
 
       // ../
       if (instance.is(CODE_DOT)) {
         instance.go()
-        name = env.KEYPATH_PARENT
+        name = constant.KEYPATH_PARENT
       }
 
       array.push(
@@ -468,7 +469,7 @@ export class Parser {
         if (isIdentifierPart(instance.code)) {
           array.push(
             nodes,
-            instance.scanIdentifier(instance.index, env.TRUE)
+            instance.scanIdentifier(instance.index, constant.TRUE)
           )
           return instance.scanTail(startIndex, nodes)
         }
@@ -516,7 +517,7 @@ export class Parser {
      * [].length
      */
 
-    loop: while (env.TRUE) {
+    loop: while (constant.TRUE) {
 
       switch (instance.code) {
 
@@ -540,7 +541,7 @@ export class Parser {
             // 无需识别关键字
             array.push(
               nodes,
-              instance.scanIdentifier(instance.index, env.TRUE)
+              instance.scanIdentifier(instance.index, constant.TRUE)
             )
             break
           }
@@ -752,7 +753,7 @@ export class Parser {
 
     lastOperatorPrecedence: number | void
 
-    while (env.TRUE) {
+    while (constant.TRUE) {
 
       instance.skip()
 
@@ -800,7 +801,7 @@ export class Parser {
 
         }
         else {
-          operator = env.UNDEFINED
+          operator = constant.UNDEFINED
         }
 
       }
@@ -818,7 +819,7 @@ export class Parser {
 
     // 类似 a + b * c 这种走到这会有 11 个
     // 此时需要从后往前遍历，因为确定后面的优先级肯定大于前面的
-    while (env.TRUE) {
+    while (constant.TRUE) {
       // 最少的情况是 a + b，它有 7 个元素
       if (output.length >= 7) {
         index = output.length - 4
@@ -879,7 +880,7 @@ export class Parser {
 
       if (test && yes && no) {
         // 类似 ' a ? 1 : 0 ' 这样的右侧有空格，需要撤回来
-        instance.skip(env.MINUS_ONE)
+        instance.skip(constant.MINUS_ONE)
         test = creator.createTernary(
           test, yes, no,
           instance.pick(index)
@@ -957,10 +958,10 @@ CODE_GREAT = 62,     // >
  */
 keywordLiterals: Record<string, any> = {}
 
-keywordLiterals[env.RAW_TRUE] = env.TRUE
-keywordLiterals[env.RAW_FALSE] = env.FALSE
-keywordLiterals[env.RAW_NULL] = env.NULL
-keywordLiterals[env.RAW_UNDEFINED] = env.UNDEFINED
+keywordLiterals[constant.RAW_TRUE] = constant.TRUE
+keywordLiterals[constant.RAW_FALSE] = constant.FALSE
+keywordLiterals[constant.RAW_NULL] = constant.NULL
+keywordLiterals[constant.RAW_UNDEFINED] = constant.UNDEFINED
 
 /**
  * 是否是空白符，用下面的代码在浏览器测试一下

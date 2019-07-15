@@ -1,4 +1,5 @@
-import * as env from 'yox-common/src/util/env'
+import * as constant from 'yox-type/src/constant'
+
 import * as array from 'yox-common/src/util/array'
 import * as generator from 'yox-common/src/util/generator'
 
@@ -30,7 +31,7 @@ export function generate(
 
   let value: string,
 
-  isSpecialNode = env.FALSE,
+  isSpecialNode = constant.FALSE,
 
   generateChildNode = function (node: Node) {
     return generate(
@@ -42,7 +43,7 @@ export function generate(
       holder,
       depIgnore,
       stack,
-      env.TRUE
+      constant.TRUE
     )
   }
 
@@ -92,7 +93,7 @@ export function generate(
       break
 
     case nodeType.IDENTIFIER:
-      isSpecialNode = env.TRUE
+      isSpecialNode = constant.TRUE
 
       const identifier = node as Identifier
 
@@ -100,17 +101,17 @@ export function generate(
         renderIdentifier,
         [
           generator.toString(identifier.name),
-          identifier.lookup ? generator.TRUE : env.UNDEFINED,
-          identifier.offset > 0 ? generator.toString(identifier.offset) : env.UNDEFINED,
-          holder ? generator.TRUE : env.UNDEFINED,
-          depIgnore ? generator.TRUE : env.UNDEFINED,
-          stack ? stack : env.UNDEFINED
+          identifier.lookup ? generator.TRUE : constant.UNDEFINED,
+          identifier.offset > 0 ? generator.toString(identifier.offset) : constant.UNDEFINED,
+          holder ? generator.TRUE : constant.UNDEFINED,
+          depIgnore ? generator.TRUE : constant.UNDEFINED,
+          stack ? stack : constant.UNDEFINED
         ]
       )
       break
 
     case nodeType.MEMBER:
-      isSpecialNode = env.TRUE
+      isSpecialNode = constant.TRUE
 
       const { lead, keypath, nodes, lookup, offset } = node as Member,
 
@@ -128,11 +129,11 @@ export function generate(
                 generator.toArray(stringifyNodes)
               ]
             ),
-            lookup ? generator.TRUE : env.UNDEFINED,
-            offset > 0 ? generator.toString(offset) : env.UNDEFINED,
-            holder ? generator.TRUE : env.UNDEFINED,
-            depIgnore ? generator.TRUE : env.UNDEFINED,
-            stack ? stack : env.UNDEFINED
+            lookup ? generator.TRUE : constant.UNDEFINED,
+            offset > 0 ? generator.toString(offset) : constant.UNDEFINED,
+            holder ? generator.TRUE : constant.UNDEFINED,
+            depIgnore ? generator.TRUE : constant.UNDEFINED,
+            stack ? stack : constant.UNDEFINED
           ]
         )
       }
@@ -143,9 +144,9 @@ export function generate(
           renderMemberLiteral,
           [
             generateChildNode(lead),
-            env.UNDEFINED,
+            constant.UNDEFINED,
             generator.toArray(stringifyNodes),
-            holder ? generator.TRUE : env.UNDEFINED
+            holder ? generator.TRUE : constant.UNDEFINED
           ]
         )
       }
@@ -157,8 +158,8 @@ export function generate(
           [
             generateChildNode(lead),
             generator.toString(keypath),
-            env.UNDEFINED,
-            holder ? generator.TRUE : env.UNDEFINED,
+            constant.UNDEFINED,
+            holder ? generator.TRUE : constant.UNDEFINED,
           ]
         )
       }
@@ -166,7 +167,7 @@ export function generate(
       break
 
     default:
-      isSpecialNode = env.TRUE
+      isSpecialNode = constant.TRUE
       const { args } = node as Call
       value = generator.toCall(
         renderCall,
@@ -174,8 +175,8 @@ export function generate(
           generateChildNode((node as Call).name),
           args.length
             ? generator.toArray(args.map(generateChildNode))
-            : env.UNDEFINED,
-          holder ? generator.TRUE : env.UNDEFINED
+            : constant.UNDEFINED,
+          holder ? generator.TRUE : constant.UNDEFINED
         ]
       )
       break
@@ -189,13 +190,13 @@ export function generate(
   // 内部的临时值，且 holder 为 true
   if (inner) {
     return isSpecialNode
-      ? value + env.RAW_DOT + env.RAW_VALUE
+      ? value + constant.RAW_DOT + constant.RAW_VALUE
       : value
   }
 
   // 最外层的值，且 holder 为 true
   return isSpecialNode
     ? value
-    : generator.toObject([env.RAW_VALUE + generator.COLON + value])
+    : generator.toObject([constant.RAW_VALUE + generator.COLON + value])
 
 }

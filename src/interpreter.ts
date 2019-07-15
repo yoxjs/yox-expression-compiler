@@ -1,11 +1,11 @@
-import * as env from 'yox-common/src/util/env'
+import * as constant from 'yox-type/src/constant'
 
 export const unary = {
-  '+': env.TRUE,
-  '-': env.TRUE,
-  '~': env.TRUE,
-  '!': env.TRUE,
-  '!!': env.TRUE,
+  '+': constant.TRUE,
+  '-': constant.TRUE,
+  '~': constant.TRUE,
+  '!': constant.TRUE,
+  '!!': constant.TRUE,
 }
 
 // 参考 https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Operator_Precedence
