@@ -1,8 +1,8 @@
-import toString from '../../yox-common/src/function/toString'
+import toString from 'yox-common/src/function/toString'
 
-import * as env from '../../yox-common/src/util/env'
-import * as array from '../../yox-common/src/util/array'
-import * as string from '../../yox-common/src/util/string'
+import * as env from 'yox-common/src/util/env'
+import * as array from 'yox-common/src/util/array'
+import * as string from 'yox-common/src/util/string'
 
 import * as nodeType from './nodeType'
 

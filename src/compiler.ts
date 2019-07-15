@@ -1,10 +1,10 @@
-import isDef from '../../yox-common/src/function/isDef'
+import isDef from 'yox-common/src/function/isDef'
 
-import * as is from '../../yox-common/src/util/is'
-import * as env from '../../yox-common/src/util/env'
-import * as array from '../../yox-common/src/util/array'
-import * as string from '../../yox-common/src/util/string'
-import * as logger from '../../yox-common/src/util/logger'
+import * as is from 'yox-common/src/util/is'
+import * as env from 'yox-common/src/util/env'
+import * as array from 'yox-common/src/util/array'
+import * as string from 'yox-common/src/util/string'
+import * as logger from 'yox-common/src/util/logger'
 
 import * as creator from './creator'
 import * as nodeType from './nodeType'
