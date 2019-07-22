@@ -1,10 +1,10 @@
-import { compile } from '../src/compiler'
+import { compile } from 'yox-expression-compiler/src/compiler'
 
-import * as nodeType from '../src/nodeType'
+import * as nodeType from 'yox-expression-compiler/src/nodeType'
 
-import Node from '../src/node/Node'
-import Object from '../src/node/Object'
-import Literal from '../src/node/Literal'
+import Node from 'yox-expression-compiler/src/node/Node'
+import Object from 'yox-expression-compiler/src/node/Object'
+import Literal from 'yox-expression-compiler/src/node/Literal'
 
 function testLiteral(node: Node | void, value: any, raw: string) {
   expect(node != null).toBe(true)

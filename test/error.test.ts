@@ -1,5 +1,5 @@
 // 不支持的表达式
-import { compile } from '../src/compiler'
+import { compile } from 'yox-expression-compiler/src/compiler'
 
 test('报错', () => {
   let hasError = false

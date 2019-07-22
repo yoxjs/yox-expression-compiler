@@ -213,17 +213,6 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
       // 转成 Identifier
       firstName = array.join(staticNodes, constant.RAW_DOT)
 
-      // 当 isLiteral 为 false 时
-      // 需要为 lead 节点创建合适的 raw
-      let firstRaw = (firstNode as Identifier).raw
-      if (staticRaw) {
-        firstRaw += (
-          firstRaw === constant.KEYPATH_PARENT
-          ? constant.RAW_SLASH
-          : constant.RAW_DOT
-        ) + staticRaw
-      }
-
       // a.b.c
       if (isLiteral) {
         firstNode = createIdentifierInner(raw, firstName, lookup, offset)
@@ -231,6 +220,18 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
       // a[b]
       // this.a[b]
       else {
+
+        // 当 isLiteral 为 false 时
+        // 需要为 lead 节点创建合适的 raw
+        let firstRaw = (firstNode as Identifier).raw
+        if (staticRaw) {
+          firstRaw += (
+            firstRaw === constant.KEYPATH_PARENT
+              ? constant.RAW_SLASH
+              : constant.RAW_DOT
+          ) + staticRaw
+        }
+
         firstNode = createMemberInner(
           raw,
           createIdentifierInner(firstRaw, firstName, lookup, offset),

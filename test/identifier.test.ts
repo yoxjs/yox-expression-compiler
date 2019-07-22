@@ -1,8 +1,8 @@
-import { compile } from '../src/compiler'
+import { compile } from 'yox-expression-compiler/src/compiler'
 
-import * as nodeType from '../src/nodeType'
+import * as nodeType from 'yox-expression-compiler/src/nodeType'
 
-import Identifier from '../src/node/Identifier'
+import Identifier from 'yox-expression-compiler/src/node/Identifier'
 
 test('identifier', () => {
 

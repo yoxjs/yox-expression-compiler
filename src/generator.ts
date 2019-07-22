@@ -101,7 +101,7 @@ export function generate(
         renderIdentifier,
         [
           generator.toString(identifier.name),
-          identifier.lookup ? generator.TRUE : constant.UNDEFINED,
+          generator.toString(identifier.lookup),
           identifier.offset > 0 ? generator.toString(identifier.offset) : constant.UNDEFINED,
           holder ? generator.TRUE : constant.UNDEFINED,
           depIgnore ? generator.TRUE : constant.UNDEFINED,
@@ -129,7 +129,7 @@ export function generate(
                 generator.toArray(stringifyNodes)
               ]
             ),
-            lookup ? generator.TRUE : constant.UNDEFINED,
+            generator.toString(lookup),
             offset > 0 ? generator.toString(offset) : constant.UNDEFINED,
             holder ? generator.TRUE : constant.UNDEFINED,
             depIgnore ? generator.TRUE : constant.UNDEFINED,
@@ -197,6 +197,8 @@ export function generate(
   // 最外层的值，且 holder 为 true
   return isSpecialNode
     ? value
-    : generator.toObject([constant.RAW_VALUE + generator.COLON + value])
+    : generator.toObject([
+        constant.RAW_VALUE + generator.COLON + value
+      ])
 
 }

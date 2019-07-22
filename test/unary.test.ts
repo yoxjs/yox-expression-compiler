@@ -1,11 +1,11 @@
-import { compile } from '../src/compiler'
+import { compile } from 'yox-expression-compiler/src/compiler'
 
-import * as nodeType from '../src/nodeType'
+import * as nodeType from 'yox-expression-compiler/src/nodeType'
 
-// import Node from '../src/node/Node'
-import Unary from '../src/node/Unary'
-import Literal from '../src/node/Literal'
-import Identifier from '../src/node/Identifier'
+// import Node from 'yox-expression-compiler/src/node/Node'
+import Unary from 'yox-expression-compiler/src/node/Unary'
+import Literal from 'yox-expression-compiler/src/node/Literal'
+import Identifier from 'yox-expression-compiler/src/node/Identifier'
 
 
 test('unary', () => {

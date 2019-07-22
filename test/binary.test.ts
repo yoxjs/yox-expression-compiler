@@ -1,9 +1,9 @@
-import { compile } from '../src/compiler'
+import { compile } from 'yox-expression-compiler/src/compiler'
 
-import * as nodeType from '../src/nodeType'
+import * as nodeType from 'yox-expression-compiler/src/nodeType'
 
-import Binary from '../src/node/Binary'
-import Identifier from '../src/node/Identifier'
+import Binary from 'yox-expression-compiler/src/node/Binary'
+import Identifier from 'yox-expression-compiler/src/node/Identifier'
 
 test('binary', () => {
 

@@ -1,12 +1,12 @@
-import { compile } from '../src/compiler'
+import { compile } from 'yox-expression-compiler/src/compiler'
 
-import * as nodeType from '../src/nodeType'
+import * as nodeType from 'yox-expression-compiler/src/nodeType'
 
-import Array from '../src/node/Array'
-import Literal from '../src/node/Literal'
-import Member from '../src/node/Member'
-import Call from '../src/node/Call'
-import Identifier from '../src/node/Identifier'
+import Array from 'yox-expression-compiler/src/node/Array'
+import Literal from 'yox-expression-compiler/src/node/Literal'
+import Member from 'yox-expression-compiler/src/node/Member'
+import Call from 'yox-expression-compiler/src/node/Call'
+import Identifier from 'yox-expression-compiler/src/node/Identifier'
 
 test('member', () => {
 

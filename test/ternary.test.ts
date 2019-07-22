@@ -1,10 +1,10 @@
-import { compile } from '../src/compiler'
+import { compile } from 'yox-expression-compiler/src/compiler'
 
-import * as nodeType from '../src/nodeType'
+import * as nodeType from 'yox-expression-compiler/src/nodeType'
 
-import Ternary from '../src/node/Ternary'
-import Literal from '../src/node/Literal'
-import Identifier from '../src/node/Identifier'
+import Ternary from 'yox-expression-compiler/src/node/Ternary'
+import Literal from 'yox-expression-compiler/src/node/Literal'
+import Identifier from 'yox-expression-compiler/src/node/Identifier'
 
 test('ternary', () => {
 
