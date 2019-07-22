@@ -45,6 +45,9 @@ test('identifier', () => {
 
   expect(generateValue('../../../a')).toBe(`${renderIdentifier}("a",${generator.FALSE},3)`)
 
+
+  expect(generateValue('a', true)).toBe(`${renderIdentifier}("a",${generator.TRUE},${generator.UNDEFINED},${generator.TRUE})`)
+
 })
 
 test('array', () => {
@@ -104,6 +107,8 @@ test('ternary', () => {
 
   expect(generateValue('a ? b : c')).toBe(`${renderIdentifier}("a",${generator.TRUE})?${renderIdentifier}("b",${generator.TRUE}):${renderIdentifier}("c",${generator.TRUE})`)
 
+  expect(generateValue('a ? b : c', true)).toBe(`{value:${renderIdentifier}("a",${generator.TRUE})?${renderIdentifier}("b",${generator.TRUE}):${renderIdentifier}("c",${generator.TRUE})}`)
+
 })
 
 test('unary', () => {
@@ -114,6 +119,6 @@ test('unary', () => {
   expect(generateValue('~a')).toBe(`~${renderIdentifier}("a",${generator.TRUE})`)
   expect(generateValue('!a')).toBe(`!${renderIdentifier}("a",${generator.TRUE})`)
 
-  expect(generateValue('!a', true)).toBe(`{value:!${renderIdentifier}("a",${generator.TRUE},${generator.UNDEFINED},${generator.TRUE}).value}`)
+  expect(generateValue('!a', true)).toBe(`{value:!${renderIdentifier}("a",${generator.TRUE})}`)
 
 })

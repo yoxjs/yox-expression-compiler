@@ -33,6 +33,9 @@ export function generate(
 
   isSpecialNode = constant.FALSE,
 
+  // 如果是内部临时值，不需要 holder
+  needHolder = holder && !inner,
+
   generateChildNode = function (node: Node) {
     return generate(
       node,
@@ -103,7 +106,7 @@ export function generate(
           generator.toString(identifier.name),
           generator.toString(identifier.lookup),
           identifier.offset > 0 ? generator.toString(identifier.offset) : constant.UNDEFINED,
-          holder ? generator.TRUE : constant.UNDEFINED,
+          needHolder ? generator.TRUE : constant.UNDEFINED,
           depIgnore ? generator.TRUE : constant.UNDEFINED,
           stack ? stack : constant.UNDEFINED
         ]
@@ -131,7 +134,7 @@ export function generate(
             ),
             generator.toString(lookup),
             offset > 0 ? generator.toString(offset) : constant.UNDEFINED,
-            holder ? generator.TRUE : constant.UNDEFINED,
+            needHolder ? generator.TRUE : constant.UNDEFINED,
             depIgnore ? generator.TRUE : constant.UNDEFINED,
             stack ? stack : constant.UNDEFINED
           ]
@@ -146,7 +149,7 @@ export function generate(
             generateChildNode(lead),
             constant.UNDEFINED,
             generator.toArray(stringifyNodes),
-            holder ? generator.TRUE : constant.UNDEFINED
+            needHolder ? generator.TRUE : constant.UNDEFINED
           ]
         )
       }
@@ -159,7 +162,7 @@ export function generate(
             generateChildNode(lead),
             generator.toString(keypath),
             constant.UNDEFINED,
-            holder ? generator.TRUE : constant.UNDEFINED,
+            needHolder ? generator.TRUE : constant.UNDEFINED,
           ]
         )
       }
@@ -176,22 +179,14 @@ export function generate(
           args.length
             ? generator.toArray(args.map(generateChildNode))
             : constant.UNDEFINED,
-          holder ? generator.TRUE : constant.UNDEFINED
+          needHolder ? generator.TRUE : constant.UNDEFINED
         ]
       )
       break
   }
 
-  // 不需要 value holder
-  if (!holder) {
+  if (!needHolder) {
     return value
-  }
-
-  // 内部的临时值，且 holder 为 true
-  if (inner) {
-    return isSpecialNode
-      ? value + constant.RAW_DOT + constant.RAW_VALUE
-      : value
   }
 
   // 最外层的值，且 holder 为 true
