@@ -1,11 +1,10 @@
-import * as constant from 'yox-type/src/constant'
-
 import isDef from 'yox-common/src/function/isDef'
 
 import * as is from 'yox-common/src/util/is'
 import * as array from 'yox-common/src/util/array'
 import * as string from 'yox-common/src/util/string'
 import * as logger from 'yox-common/src/util/logger'
+import * as constant from 'yox-common/src/util/constant'
 
 import * as creator from './creator'
 import * as nodeType from './nodeType'

@@ -1,4 +1,4 @@
-import * as constant from 'yox-type/src/constant'
+import * as constant from 'yox-common/src/util/constant'
 
 export const unary = {
   '+': constant.TRUE,

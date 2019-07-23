@@ -1,6 +1,5 @@
-import * as constant from 'yox-type/src/constant'
-
 import * as array from 'yox-common/src/util/array'
+import * as constant from 'yox-common/src/util/constant'
 import * as generator from 'yox-common/src/util/generator'
 
 import * as nodeType from './nodeType'

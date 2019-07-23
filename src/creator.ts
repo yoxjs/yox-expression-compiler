@@ -1,9 +1,8 @@
-import * as constant from 'yox-type/src/constant'
-
 import toString from 'yox-common/src/function/toString'
 
 import * as array from 'yox-common/src/util/array'
 import * as string from 'yox-common/src/util/string'
+import * as constant from 'yox-common/src/util/constant'
 
 import * as nodeType from './nodeType'
 
