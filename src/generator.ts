@@ -60,12 +60,13 @@ export function generate(
       break
 
     case nodeType.BINARY:
-      value = generateChildNode((node as Binary).left)
+      value = generator.toGroup(generateChildNode((node as Binary).left))
         + (node as Binary).operator
-        + generateChildNode((node as Binary).right)
+        + generator.toGroup(generateChildNode((node as Binary).right))
       break
 
     case nodeType.TERNARY:
+      // 三元表达式优先级最低，不用调 generator.toGroup
       value = generateChildNode((node as Ternary).test)
         + generator.QUESTION
         + generateChildNode((node as Ternary).yes)
