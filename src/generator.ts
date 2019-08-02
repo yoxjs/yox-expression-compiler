@@ -66,12 +66,12 @@ export function generate(
       break
 
     case nodeType.TERNARY:
-      // 三元表达式优先级最低，不用调 generator.toGroup
-      value = generateChildNode((node as Ternary).test)
+      // 虽然三元表达式优先级最低，但无法保证表达式内部没有 ,
+      value = generator.toGroup(generateChildNode((node as Ternary).test))
         + generator.QUESTION
-        + generateChildNode((node as Ternary).yes)
+        + generator.toGroup(generateChildNode((node as Ternary).yes))
         + generator.COLON
-        + generateChildNode((node as Ternary).no)
+        + generator.toGroup(generateChildNode((node as Ternary).no))
       break
 
     case nodeType.ARRAY:
