@@ -869,12 +869,12 @@ export class Parser {
     if (instance.is(CODE_QUESTION)) {
       // 跳过 ?
       instance.go()
-      yes = instance.scanBinary(index)
+      yes = instance.scanTernary()
 
       if (instance.is(CODE_COLON)) {
         // 跳过 :
         instance.go()
-        no = instance.scanBinary(index)
+        no = instance.scanTernary()
       }
 
       if (test && yes && no) {
