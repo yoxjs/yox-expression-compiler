@@ -7,6 +7,7 @@
     "test": "test"
   },
   "scripts": {
+    "tsc": "tsc",
     "test": "export NODE_ENV=development && jest"
   },
   "repository": {
@@ -20,10 +21,7 @@
     "url": "https://github.com/yoxjs/yox-expression-compiler/issues"
   },
   "homepage": "https://github.com/yoxjs/yox-expression-compiler#readme",
-  "peerDependencies": {
+  "dependencies": {
     "yox-common": "^0.20.0"
-  },
-  "devDependencies": {
-    "@types/node": "^14.11.8"
   }
 }
