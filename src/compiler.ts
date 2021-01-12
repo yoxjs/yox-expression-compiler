@@ -1,6 +1,7 @@
 import isDef from 'yox-common/src/function/isDef'
 
 import * as is from 'yox-common/src/util/is'
+import * as cache from 'yox-common/src/util/cache'
 import * as array from 'yox-common/src/util/array'
 import * as string from 'yox-common/src/util/string'
 import * as logger from 'yox-common/src/util/logger'
@@ -14,13 +15,12 @@ import Node from './node/Node'
 import Identifier from './node/Identifier'
 import Literal from './node/Literal'
 
-export function compile(content: string): Node | void {
-  if (!cache[content]) {
+export const compile = cache.createOneKeyCache(
+  function (content: string) {
     const parser = new Parser(content)
-    cache[content] = parser.scanTernary(CODE_EOF)
+    return parser.scanTernary(CODE_EOF)
   }
-  return cache[content]
-}
+)
 
 export class Parser {
 
@@ -33,9 +33,9 @@ export class Parser {
   content: string
 
   constructor(content: string) {
-    const instance = this, { length } = content
+    const instance = this
     instance.index = constant.MINUS_ONE
-    instance.end = length
+    instance.end = content.length
     instance.code = CODE_EOF
     instance.content = content
     instance.go()
@@ -312,7 +312,7 @@ export class Parser {
           if (process.env.NODE_ENV === 'development') {
             // 对象的 keys 和 values 的长度不一致
             if (keys.length !== values.length) {
-              instance.fatal(startIndex, 'The number of keys and values must be equal.')
+              instance.fatal(startIndex, 'The length of keys and values must be equal.')
             }
           }
           break loop
@@ -918,9 +918,7 @@ export class Parser {
 
 }
 
-const cache = {},
-
-CODE_EOF = 0,        //
+const CODE_EOF = 0,  //
 CODE_DOT = 46,       // .
 CODE_COMMA = 44,     // ,
 CODE_SLASH = 47,     // /
@@ -976,28 +974,28 @@ keywordLiterals[constant.RAW_UNDEFINED] = constant.UNDEFINED
  * 160 表示 non-breaking space
  * http://www.adamkoch.com/2009/07/25/white-space-and-character-160/
  */
-function isWhitespace(code: number): boolean {
+function isWhitespace(code: number) {
   return (code > 0 && code < 33) || code === 160
 }
 
 /**
  * 是否是数字
  */
-function isDigit(code: number): boolean {
+function isDigit(code: number) {
   return code > 47 && code < 58 // 0...9
 }
 
 /**
  * 是否是数字
  */
-function isNumber(code: number): boolean {
+function isNumber(code: number) {
   return isDigit(code) || code === CODE_DOT
 }
 
 /**
  * 变量开始字符必须是 字母、下划线、$
  */
-function isIdentifierStart(code: number): boolean {
+function isIdentifierStart(code: number) {
   return code === 36 // $
     || code === 95   // _
     || (code > 96 && code < 123) // a...z
@@ -1007,6 +1005,6 @@ function isIdentifierStart(code: number): boolean {
 /**
  * 变量剩余的字符必须是 字母、下划线、$、数字
  */
-function isIdentifierPart(code: number): boolean {
+function isIdentifierPart(code: number) {
   return isIdentifierStart(code) || isDigit(code)
 }
