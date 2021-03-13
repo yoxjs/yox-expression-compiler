@@ -148,15 +148,16 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
       function (node) {
         if (isLiteral) {
           if (node.type === nodeType.LITERAL) {
-            if ((node as Literal).raw === constant.KEYPATH_PARENT) {
+            const literalNode = node as Literal
+            if (literalNode.raw === constant.KEYPATH_PARENT) {
               offset += 1
               staticRaw = staticRaw
                 ? staticRaw + constant.RAW_SLASH + constant.KEYPATH_PARENT
                 : constant.KEYPATH_PARENT
               return
             }
-            if ((node as Literal).raw !== constant.KEYPATH_CURRENT) {
-              const value = toString((node as Literal).value)
+            if (literalNode.raw !== constant.KEYPATH_CURRENT) {
+              const value = toString(literalNode.value)
               array.push(
                 staticNodes,
                 value
@@ -199,10 +200,12 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
     // 处理第一个节点
     if (firstNode.type === nodeType.IDENTIFIER) {
 
-      lookup = (firstNode as Identifier).lookup
-      offset += (firstNode as Identifier).offset
+      const identifierNode = firstNode as Identifier
 
-      let firstName = (firstNode as Identifier).name
+      lookup = identifierNode.lookup
+      offset += identifierNode.offset
+
+      let firstName = identifierNode.name
 
       // 不是 KEYPATH_THIS 或 KEYPATH_PARENT
       if (firstName) {
@@ -222,7 +225,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
 
         // 当 isLiteral 为 false 时
         // 需要为 lead 节点创建合适的 raw
-        let firstRaw = (firstNode as Identifier).raw
+        let firstRaw = identifierNode.raw
         if (staticRaw) {
           firstRaw += (
             firstRaw === constant.KEYPATH_PARENT

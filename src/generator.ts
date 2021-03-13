@@ -1,8 +1,9 @@
-import * as array from 'yox-common/src/util/array'
 import * as constant from 'yox-common/src/util/constant'
 import * as generator from 'yox-common/src/util/generator'
+import * as array from 'yox-common/src/util/array'
 
 import * as nodeType from './nodeType'
+import * as interpreter from './interpreter'
 
 import Node from './node/Node'
 import Call from './node/Call'
@@ -16,6 +17,24 @@ import Unary from './node/Unary'
 import ArrayNode from './node/Array'
 import ObjectNode from './node/Object'
 
+/**
+ * 比较操作符优先级
+ *
+ * @param node
+ * @param operator
+ */
+function compareOperatorPrecedence(node: Node, operator: string): number {
+  // 三元表达式优先级最低
+  if (node.type === nodeType.TERNARY) {
+    return -1
+  }
+  // 二元运算要比较优先级
+  if (node.type === nodeType.BINARY) {
+    return interpreter.binary[(node as Binary).operator] - interpreter.binary[operator]
+  }
+  return 0
+}
+
 export function generate(
   node: Node,
   renderIdentifier: string,
@@ -23,19 +42,18 @@ export function generate(
   renderMemberLiteral: string,
   renderCall: string,
   holder?: boolean,
-  depIgnore?: boolean,
   stack?: string,
   inner?: boolean
 ) {
 
-  let value: string,
+  let value: generator.GBase,
 
   isSpecialNode = constant.FALSE,
 
   // 如果是内部临时值，不需要 holder
   needHolder = holder && !inner,
 
-  generateChildNode = function (node: Node) {
+  generateNode = function (node: Node) {
     return generate(
       node,
       renderIdentifier,
@@ -43,72 +61,110 @@ export function generate(
       renderMemberLiteral,
       renderCall,
       holder,
-      depIgnore,
       stack,
       constant.TRUE
+    )
+  },
+
+  generateNodes = function (nodes: Node[]) {
+    return new generator.GArray(
+      nodes.map(generateNode)
     )
   }
 
   switch (node.type) {
 
     case nodeType.LITERAL:
-      value = generator.toString((node as Literal).value)
+
+      const literalNode = node as Literal
+
+      value = new generator.GPrimitive(
+        literalNode.value
+      )
       break
 
     case nodeType.UNARY:
-      value = (node as Unary).operator + generateChildNode((node as Unary).node)
+
+      const unaryNode = node as Unary
+
+      value = new generator.GUnary(
+        unaryNode.operator,
+        generateNode(unaryNode.node)
+      )
       break
 
     case nodeType.BINARY:
-      value = generator.toGroup(generateChildNode((node as Binary).left))
-        + (node as Binary).operator
-        + generator.toGroup(generateChildNode((node as Binary).right))
+
+      const binaryNode = node as Binary,
+      left = generateNode(binaryNode.left),
+      right = generateNode(binaryNode.right),
+      newBinary = new generator.GBinary(
+        left,
+        binaryNode.operator,
+        right
+      )
+
+      if (compareOperatorPrecedence(binaryNode.left, binaryNode.operator) < 0) {
+        newBinary.leftGroup = constant.TRUE
+      }
+      if (compareOperatorPrecedence(binaryNode.right, binaryNode.operator) < 0) {
+        newBinary.rightGroup = constant.TRUE
+      }
+
+      value = newBinary
       break
 
     case nodeType.TERNARY:
-      // 虽然三元表达式优先级最低，但无法保证表达式内部没有 ,
-      value = generator.toGroup(generateChildNode((node as Ternary).test))
-        + generator.QUESTION
-        + generator.toGroup(generateChildNode((node as Ternary).yes))
-        + generator.COLON
-        + generator.toGroup(generateChildNode((node as Ternary).no))
+
+      const ternaryNode = node as Ternary,
+      test = generateNode(ternaryNode.test),
+      yes = generateNode(ternaryNode.yes),
+      no = generateNode(ternaryNode.no)
+
+      value = new generator.GTernary(test, yes, no)
       break
 
     case nodeType.ARRAY:
-      const items = (node as ArrayNode).nodes.map(generateChildNode)
-      value = generator.toArray(items)
+
+      const arrayNode = node as ArrayNode
+
+      value = generateNodes(arrayNode.nodes)
       break
 
     case nodeType.OBJECT:
-      const fields: string[] = []
+
+      const objectNode = node as ObjectNode, newObject = new generator.GObject()
+
       array.each(
-        (node as ObjectNode).keys,
-        function (key: string, index: number) {
-          array.push(
-            fields,
-            generator.toString(key)
-            + generator.COLON
-            + generateChildNode((node as ObjectNode).values[index])
-          )
+        objectNode.keys,
+        function (key, index) {
+          const value = objectNode.values[index]
+          newObject.set(key, generateNode(value))
         }
       )
-      value = generator.toObject(fields)
+
+      value = newObject
       break
 
     case nodeType.IDENTIFIER:
       isSpecialNode = constant.TRUE
 
-      const identifier = node as Identifier
+      const identifierNode = node as Identifier
 
-      value = generator.toCall(
+      value = new generator.GCall(
         renderIdentifier,
         [
-          generator.toString(identifier.name),
-          generator.toString(identifier.lookup),
-          identifier.offset > 0 ? generator.toString(identifier.offset) : constant.UNDEFINED,
-          needHolder ? generator.TRUE : constant.UNDEFINED,
-          depIgnore ? generator.TRUE : constant.UNDEFINED,
-          stack ? stack : constant.UNDEFINED
+          new generator.GPrimitive(identifierNode.name),
+          new generator.GPrimitive(identifierNode.lookup),
+          identifierNode.offset > 0
+            ? new generator.GPrimitive(identifierNode.offset)
+            : generator.GRAW_UNDEFINED,
+          needHolder
+            ? generator.GRAW_TRUE
+            : generator.GRAW_UNDEFINED,
+          stack
+            ? new generator.GRaw(stack)
+            : generator.GRAW_UNDEFINED
         ]
       )
       break
@@ -116,53 +172,62 @@ export function generate(
     case nodeType.MEMBER:
       isSpecialNode = constant.TRUE
 
-      const { lead, keypath, nodes, lookup, offset } = node as Member,
+      const memberNode = node as Member,
 
-      stringifyNodes: string[] = nodes ? nodes.map(generateChildNode) : []
+      stringifyNodes = generateNodes(memberNode.nodes || [])
 
-      if (lead.type === nodeType.IDENTIFIER) {
+      if (memberNode.lead.type === nodeType.IDENTIFIER) {
         // 只能是 a[b] 的形式，因为 a.b 已经在解析时转换成 Identifier 了
-        value = generator.toCall(
+        value = new generator.GCall(
           renderIdentifier,
           [
-            generator.toCall(
+            new generator.GCall(
               renderMemberKeypath,
               [
-                generator.toString((lead as Identifier).name),
-                generator.toArray(stringifyNodes)
+                new generator.GPrimitive((memberNode.lead as Identifier).name),
+                stringifyNodes
               ]
             ),
-            generator.toString(lookup),
-            offset > 0 ? generator.toString(offset) : constant.UNDEFINED,
-            needHolder ? generator.TRUE : constant.UNDEFINED,
-            depIgnore ? generator.TRUE : constant.UNDEFINED,
-            stack ? stack : constant.UNDEFINED
+            new generator.GPrimitive(memberNode.lookup),
+            memberNode.offset > 0
+              ? new generator.GPrimitive(memberNode.offset)
+              : generator.GRAW_UNDEFINED,
+            needHolder
+              ? generator.GRAW_TRUE
+              : generator.GRAW_UNDEFINED,
+            stack
+              ? new generator.GRaw(stack)
+              : generator.GRAW_UNDEFINED
           ]
         )
       }
-      else if (nodes) {
+      else if (memberNode.nodes) {
         // "xx"[length]
         // format()[a][b]
-        value = generator.toCall(
+        value = new generator.GCall(
           renderMemberLiteral,
           [
-            generateChildNode(lead),
-            constant.UNDEFINED,
-            generator.toArray(stringifyNodes),
-            needHolder ? generator.TRUE : constant.UNDEFINED
+            generateNode(memberNode.lead),
+            generator.GRAW_UNDEFINED,
+            stringifyNodes,
+            needHolder
+              ? generator.GRAW_TRUE
+              : generator.GRAW_UNDEFINED
           ]
         )
       }
       else {
         // "xx".length
         // format().a.b
-        value = generator.toCall(
+        value = new generator.GCall(
           renderMemberLiteral,
           [
-            generateChildNode(lead),
-            generator.toString(keypath),
-            constant.UNDEFINED,
-            needHolder ? generator.TRUE : constant.UNDEFINED,
+            generateNode(memberNode.lead),
+            new generator.GPrimitive(memberNode.keypath),
+            generator.GRAW_UNDEFINED,
+            needHolder
+              ? generator.GRAW_TRUE
+              : generator.GRAW_UNDEFINED
           ]
         )
       }
@@ -171,15 +236,19 @@ export function generate(
 
     default:
       isSpecialNode = constant.TRUE
-      const { args } = node as Call
-      value = generator.toCall(
+
+      const callNode = node as Call
+
+      value = new generator.GCall(
         renderCall,
         [
-          generateChildNode((node as Call).name),
-          args.length
-            ? generator.toArray(args.map(generateChildNode))
-            : constant.UNDEFINED,
-          needHolder ? generator.TRUE : constant.UNDEFINED
+          generateNode(callNode.name),
+          callNode.args.length
+            ? generateNodes(callNode.args)
+            : generator.GRAW_UNDEFINED,
+          needHolder
+            ? generator.GRAW_TRUE
+            : generator.GRAW_UNDEFINED
         ]
       )
       break
@@ -190,10 +259,13 @@ export function generate(
   }
 
   // 最外层的值，且 holder 为 true
-  return isSpecialNode
-    ? value
-    : generator.toObject([
-        constant.RAW_VALUE + generator.COLON + value
-      ])
+  if (isSpecialNode) {
+    return value
+  }
+
+  const newObject = new generator.GObject()
+  newObject.set(constant.RAW_VALUE, value)
+
+  return newObject
 
 }
