@@ -67,7 +67,7 @@ export function generate(
   },
 
   generateNodes = function (nodes: Node[]) {
-    return new generator.GArray(
+    return generator.toArray(
       nodes.map(generateNode)
     )
   }
@@ -78,7 +78,7 @@ export function generate(
 
       const literalNode = node as Literal
 
-      value = new generator.GPrimitive(
+      value = generator.toPrimitive(
         literalNode.value
       )
       break
@@ -87,7 +87,7 @@ export function generate(
 
       const unaryNode = node as Unary
 
-      value = new generator.GUnary(
+      value = generator.toUnary(
         unaryNode.operator,
         generateNode(unaryNode.node)
       )
@@ -98,7 +98,7 @@ export function generate(
       const binaryNode = node as Binary,
       left = generateNode(binaryNode.left),
       right = generateNode(binaryNode.right),
-      newBinary = new generator.GBinary(
+      newBinary = generator.toBinary(
         left,
         binaryNode.operator,
         right
@@ -121,7 +121,7 @@ export function generate(
       yes = generateNode(ternaryNode.yes),
       no = generateNode(ternaryNode.no)
 
-      value = new generator.GTernary(test, yes, no)
+      value = generator.toTernary(test, yes, no)
       break
 
     case nodeType.ARRAY:
@@ -133,7 +133,7 @@ export function generate(
 
     case nodeType.OBJECT:
 
-      const objectNode = node as ObjectNode, newObject = new generator.GObject()
+      const objectNode = node as ObjectNode, newObject = generator.toObject()
 
       array.each(
         objectNode.keys,
@@ -151,20 +151,20 @@ export function generate(
 
       const identifierNode = node as Identifier
 
-      value = new generator.GCall(
+      value = generator.toCall(
         renderIdentifier,
         [
-          new generator.GPrimitive(identifierNode.name),
-          new generator.GPrimitive(identifierNode.lookup),
+          generator.toPrimitive(identifierNode.name),
+          generator.toPrimitive(identifierNode.lookup),
           identifierNode.offset > 0
-            ? new generator.GPrimitive(identifierNode.offset)
-            : generator.GRAW_UNDEFINED,
+            ? generator.toPrimitive(identifierNode.offset)
+            : generator.toPrimitive(constant.UNDEFINED),
           needHolder
-            ? generator.GRAW_TRUE
-            : generator.GRAW_UNDEFINED,
+            ? generator.toPrimitive(constant.TRUE)
+            : generator.toPrimitive(constant.UNDEFINED),
           stack
-            ? new generator.GRaw(stack)
-            : generator.GRAW_UNDEFINED
+            ? generator.toRaw(stack)
+            : generator.toPrimitive(constant.UNDEFINED)
         ]
       )
       break
@@ -178,56 +178,56 @@ export function generate(
 
       if (memberNode.lead.type === nodeType.IDENTIFIER) {
         // 只能是 a[b] 的形式，因为 a.b 已经在解析时转换成 Identifier 了
-        value = new generator.GCall(
+        value = generator.toCall(
           renderIdentifier,
           [
-            new generator.GCall(
+            generator.toCall(
               renderMemberKeypath,
               [
-                new generator.GPrimitive((memberNode.lead as Identifier).name),
+                generator.toPrimitive((memberNode.lead as Identifier).name),
                 stringifyNodes
               ]
             ),
-            new generator.GPrimitive(memberNode.lookup),
+            generator.toPrimitive(memberNode.lookup),
             memberNode.offset > 0
-              ? new generator.GPrimitive(memberNode.offset)
-              : generator.GRAW_UNDEFINED,
+              ? generator.toPrimitive(memberNode.offset)
+              : generator.toPrimitive(constant.UNDEFINED),
             needHolder
-              ? generator.GRAW_TRUE
-              : generator.GRAW_UNDEFINED,
+              ? generator.toPrimitive(constant.TRUE)
+              : generator.toPrimitive(constant.UNDEFINED),
             stack
-              ? new generator.GRaw(stack)
-              : generator.GRAW_UNDEFINED
+              ? generator.toRaw(stack)
+              : generator.toPrimitive(constant.UNDEFINED)
           ]
         )
       }
       else if (memberNode.nodes) {
         // "xx"[length]
         // format()[a][b]
-        value = new generator.GCall(
+        value = generator.toCall(
           renderMemberLiteral,
           [
             generateNode(memberNode.lead),
-            generator.GRAW_UNDEFINED,
+            generator.toPrimitive(constant.UNDEFINED),
             stringifyNodes,
             needHolder
-              ? generator.GRAW_TRUE
-              : generator.GRAW_UNDEFINED
+              ? generator.toPrimitive(constant.TRUE)
+              : generator.toPrimitive(constant.UNDEFINED)
           ]
         )
       }
       else {
         // "xx".length
         // format().a.b
-        value = new generator.GCall(
+        value = generator.toCall(
           renderMemberLiteral,
           [
             generateNode(memberNode.lead),
-            new generator.GPrimitive(memberNode.keypath),
-            generator.GRAW_UNDEFINED,
+            generator.toPrimitive(memberNode.keypath),
+            generator.toPrimitive(constant.UNDEFINED),
             needHolder
-              ? generator.GRAW_TRUE
-              : generator.GRAW_UNDEFINED
+              ? generator.toPrimitive(constant.TRUE)
+              : generator.toPrimitive(constant.UNDEFINED)
           ]
         )
       }
@@ -239,16 +239,16 @@ export function generate(
 
       const callNode = node as Call
 
-      value = new generator.GCall(
+      value = generator.toCall(
         renderCall,
         [
           generateNode(callNode.name),
           callNode.args.length
             ? generateNodes(callNode.args)
-            : generator.GRAW_UNDEFINED,
+            : generator.toPrimitive(constant.UNDEFINED),
           needHolder
-            ? generator.GRAW_TRUE
-            : generator.GRAW_UNDEFINED
+            ? generator.toPrimitive(constant.TRUE)
+            : generator.toPrimitive(constant.UNDEFINED)
         ]
       )
       break
@@ -263,7 +263,7 @@ export function generate(
     return value
   }
 
-  const newObject = new generator.GObject()
+  const newObject = generator.toObject()
   newObject.set(constant.RAW_VALUE, value)
 
   return newObject
