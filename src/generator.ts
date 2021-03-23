@@ -10,6 +10,7 @@ import Call from './node/Call'
 import Member from './node/Member'
 import Literal from './node/Literal'
 import Identifier from './node/Identifier'
+import Keypath from './node/Keypath'
 import Ternary from './node/Ternary'
 import Binary from './node/Binary'
 import Unary from './node/Unary'
@@ -37,39 +38,80 @@ function compareOperatorPrecedence(node: Node, operator: string): number {
 
 export function generate(
   node: Node,
-  transformIdentifier: (string) => generator.GBase | void,
+  transformIdentifier: (Identifier) => generator.GBase | void,
   renderIdentifier: string,
   renderMemberLiteral: string,
   renderCall: string,
   holder?: boolean,
   stack?: string,
-  inner?: boolean
+  parentNode?: Node
 ) {
 
   let value: generator.GBase,
 
   isSpecialNode = constant.FALSE,
 
-  // 如果是内部临时值，不需要 holder
-  needHolder = holder && !inner,
-
-  generateNode = function (node: Node) {
+  generateNode = function (node: Node, parentNode?: Node) {
     return generate(
       node,
       transformIdentifier,
       renderIdentifier,
       renderMemberLiteral,
       renderCall,
-      holder,
+      constant.FALSE, // 如果是内部临时值，不需要 holder
       stack,
-      constant.TRUE
+      parentNode
     )
   },
 
-  generateNodes = function (nodes: Node[]) {
+  generateNodes = function (nodes: Node[], parentNode?: Node) {
     return generator.toArray(
-      nodes.map(generateNode)
+      nodes.map(
+        function (node) {
+          return generateNode(node, parentNode)
+        }
+      )
     )
+  },
+
+  generateKeypathOptions = function (keypathNode: Keypath) {
+
+    const options = generator.toObject()
+    if (parentNode && parentNode.type === nodeType.CALL) {
+      options.set(
+        'call',
+        generator.toPrimitive(constant.TRUE)
+      )
+    }
+    if (keypathNode.lookup === constant.FALSE) {
+      options.set(
+        'lookup',
+        generator.toPrimitive(keypathNode.lookup)
+      )
+    }
+    if (keypathNode.offset > 0) {
+      options.set(
+        'offset',
+        generator.toPrimitive(keypathNode.offset)
+      )
+    }
+    if (holder) {
+      options.set(
+        'holder',
+        generator.toPrimitive(constant.TRUE)
+      )
+    }
+    if (stack) {
+      options.set(
+        'stack',
+        generator.toRaw(stack)
+      )
+    }
+
+    return options.isNotEmpty()
+      ? options
+      : generator.toPrimitive(constant.UNDEFINED)
+
   }
 
   switch (node.type) {
@@ -161,16 +203,7 @@ export function generate(
           renderIdentifier,
           [
             generator.toPrimitive(identifierNode.name),
-            generator.toPrimitive(identifierNode.lookup),
-            identifierNode.offset > 0
-              ? generator.toPrimitive(identifierNode.offset)
-              : generator.toPrimitive(constant.UNDEFINED),
-            needHolder
-              ? generator.toPrimitive(constant.TRUE)
-              : generator.toPrimitive(constant.UNDEFINED),
-            stack
-              ? generator.toRaw(stack)
-              : generator.toPrimitive(constant.UNDEFINED)
+            generateKeypathOptions(identifierNode)
           ]
         )
       }
@@ -194,7 +227,7 @@ export function generate(
             [
               leadValue,
               stringifyNodes,
-              needHolder
+              holder
                 ? generator.toPrimitive(constant.TRUE)
                 : generator.toPrimitive(constant.UNDEFINED)
             ]
@@ -215,16 +248,7 @@ export function generate(
             renderIdentifier,
             [
               stringifyNodes,
-              generator.toPrimitive(memberNode.lookup),
-              memberNode.offset > 0
-                ? generator.toPrimitive(memberNode.offset)
-                : generator.toPrimitive(constant.UNDEFINED),
-              needHolder
-                ? generator.toPrimitive(constant.TRUE)
-                : generator.toPrimitive(constant.UNDEFINED),
-              stack
-                ? generator.toRaw(stack)
-                : generator.toPrimitive(constant.UNDEFINED)
+              generateKeypathOptions(memberNode)
             ]
           )
         }
@@ -239,7 +263,7 @@ export function generate(
           [
             generateNode(memberNode.lead),
             stringifyNodes,
-            needHolder
+            holder
               ? generator.toPrimitive(constant.TRUE)
               : generator.toPrimitive(constant.UNDEFINED)
           ]
@@ -253,7 +277,7 @@ export function generate(
           [
             generateNode(memberNode.lead),
             generator.toPrimitive(memberNode.keypath),
-            needHolder
+            holder
               ? generator.toPrimitive(constant.TRUE)
               : generator.toPrimitive(constant.UNDEFINED)
           ]
@@ -270,11 +294,11 @@ export function generate(
       value = generator.toCall(
         renderCall,
         [
-          generateNode(callNode.name),
+          generateNode(callNode.name, callNode),
           callNode.args.length
             ? generateNodes(callNode.args)
             : generator.toPrimitive(constant.UNDEFINED),
-          needHolder
+          holder
             ? generator.toPrimitive(constant.TRUE)
             : generator.toPrimitive(constant.UNDEFINED)
         ]
@@ -282,7 +306,7 @@ export function generate(
       break
   }
 
-  if (!needHolder) {
+  if (!holder) {
     return value
   }
 
