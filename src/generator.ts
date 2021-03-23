@@ -39,7 +39,6 @@ export function generate(
   node: Node,
   transformIdentifier: (string) => generator.GBase | void,
   renderIdentifier: string,
-  renderMemberKeypath: string,
   renderMemberLiteral: string,
   renderCall: string,
   holder?: boolean,
@@ -59,7 +58,6 @@ export function generate(
       node,
       transformIdentifier,
       renderIdentifier,
-      renderMemberKeypath,
       renderMemberLiteral,
       renderCall,
       holder,
@@ -190,7 +188,7 @@ export function generate(
 
         const leadValue = transformIdentifier(memberNode.lead as Identifier)
         if (leadValue) {
-          stringifyNodes.join = generator.DOT
+          stringifyNodes.join = generator.JOIN_DOT
           value = generator.toCall(
             renderMemberLiteral,
             [
@@ -203,16 +201,20 @@ export function generate(
           )
         }
         else {
+          stringifyNodes.join = generator.JOIN_DOT
+
+          // 避免 this[a]，this 会被解析成空字符串，此时不应加入 stringifyNodes
+          const leadName = (memberNode.lead as Identifier).name
+          if (leadName) {
+            stringifyNodes.unshift(
+              generator.toPrimitive(leadName)
+            )
+          }
+
           value = generator.toCall(
             renderIdentifier,
             [
-              generator.toCall(
-                renderMemberKeypath,
-                [
-                  generator.toPrimitive((memberNode.lead as Identifier).name),
-                  stringifyNodes
-                ]
-              ),
+              stringifyNodes,
               generator.toPrimitive(memberNode.lookup),
               memberNode.offset > 0
                 ? generator.toPrimitive(memberNode.offset)
@@ -231,7 +233,7 @@ export function generate(
       else if (memberNode.nodes) {
         // "xx"[length]
         // format()[a][b]
-        stringifyNodes.join = generator.DOT
+        stringifyNodes.join = generator.JOIN_DOT
         value = generator.toCall(
           renderMemberLiteral,
           [
