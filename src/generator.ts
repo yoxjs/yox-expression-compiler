@@ -37,6 +37,7 @@ function compareOperatorPrecedence(node: Node, operator: string): number {
 
 export function generate(
   node: Node,
+  transformIdentifier: (string) => generator.GBase | void,
   renderIdentifier: string,
   renderMemberKeypath: string,
   renderMemberLiteral: string,
@@ -56,6 +57,7 @@ export function generate(
   generateNode = function (node: Node) {
     return generate(
       node,
+      transformIdentifier,
       renderIdentifier,
       renderMemberKeypath,
       renderMemberLiteral,
@@ -149,24 +151,31 @@ export function generate(
     case nodeType.IDENTIFIER:
       isSpecialNode = constant.TRUE
 
-      const identifierNode = node as Identifier
+      const identifierNode = node as Identifier,
 
-      value = generator.toCall(
-        renderIdentifier,
-        [
-          generator.toPrimitive(identifierNode.name),
-          generator.toPrimitive(identifierNode.lookup),
-          identifierNode.offset > 0
-            ? generator.toPrimitive(identifierNode.offset)
-            : generator.toPrimitive(constant.UNDEFINED),
-          needHolder
-            ? generator.toPrimitive(constant.TRUE)
-            : generator.toPrimitive(constant.UNDEFINED),
-          stack
-            ? generator.toRaw(stack)
-            : generator.toPrimitive(constant.UNDEFINED)
-        ]
-      )
+      identifierValue = transformIdentifier(identifierNode)
+
+      if (identifierValue) {
+        value = identifierValue
+      }
+      else {
+        value = generator.toCall(
+          renderIdentifier,
+          [
+            generator.toPrimitive(identifierNode.name),
+            generator.toPrimitive(identifierNode.lookup),
+            identifierNode.offset > 0
+              ? generator.toPrimitive(identifierNode.offset)
+              : generator.toPrimitive(constant.UNDEFINED),
+            needHolder
+              ? generator.toPrimitive(constant.TRUE)
+              : generator.toPrimitive(constant.UNDEFINED),
+            stack
+              ? generator.toRaw(stack)
+              : generator.toPrimitive(constant.UNDEFINED)
+          ]
+        )
+      }
       break
 
     case nodeType.MEMBER:
@@ -178,37 +187,55 @@ export function generate(
 
       if (memberNode.lead.type === nodeType.IDENTIFIER) {
         // 只能是 a[b] 的形式，因为 a.b 已经在解析时转换成 Identifier 了
-        value = generator.toCall(
-          renderIdentifier,
-          [
-            generator.toCall(
-              renderMemberKeypath,
-              [
-                generator.toPrimitive((memberNode.lead as Identifier).name),
-                stringifyNodes
-              ]
-            ),
-            generator.toPrimitive(memberNode.lookup),
-            memberNode.offset > 0
-              ? generator.toPrimitive(memberNode.offset)
-              : generator.toPrimitive(constant.UNDEFINED),
-            needHolder
-              ? generator.toPrimitive(constant.TRUE)
-              : generator.toPrimitive(constant.UNDEFINED),
-            stack
-              ? generator.toRaw(stack)
-              : generator.toPrimitive(constant.UNDEFINED)
-          ]
-        )
+
+        const leadValue = transformIdentifier(memberNode.lead as Identifier)
+        if (leadValue) {
+          stringifyNodes.join = generator.DOT
+          value = generator.toCall(
+            renderMemberLiteral,
+            [
+              leadValue,
+              stringifyNodes,
+              needHolder
+                ? generator.toPrimitive(constant.TRUE)
+                : generator.toPrimitive(constant.UNDEFINED)
+            ]
+          )
+        }
+        else {
+          value = generator.toCall(
+            renderIdentifier,
+            [
+              generator.toCall(
+                renderMemberKeypath,
+                [
+                  generator.toPrimitive((memberNode.lead as Identifier).name),
+                  stringifyNodes
+                ]
+              ),
+              generator.toPrimitive(memberNode.lookup),
+              memberNode.offset > 0
+                ? generator.toPrimitive(memberNode.offset)
+                : generator.toPrimitive(constant.UNDEFINED),
+              needHolder
+                ? generator.toPrimitive(constant.TRUE)
+                : generator.toPrimitive(constant.UNDEFINED),
+              stack
+                ? generator.toRaw(stack)
+                : generator.toPrimitive(constant.UNDEFINED)
+            ]
+          )
+        }
+
       }
       else if (memberNode.nodes) {
         // "xx"[length]
         // format()[a][b]
+        stringifyNodes.join = generator.DOT
         value = generator.toCall(
           renderMemberLiteral,
           [
             generateNode(memberNode.lead),
-            generator.toPrimitive(constant.UNDEFINED),
             stringifyNodes,
             needHolder
               ? generator.toPrimitive(constant.TRUE)
@@ -224,7 +251,6 @@ export function generate(
           [
             generateNode(memberNode.lead),
             generator.toPrimitive(memberNode.keypath),
-            generator.toPrimitive(constant.UNDEFINED),
             needHolder
               ? generator.toPrimitive(constant.TRUE)
               : generator.toPrimitive(constant.UNDEFINED)
