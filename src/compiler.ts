@@ -157,6 +157,10 @@ export class Parser {
           ? instance.scanNumber(index)
           : instance.scanPath(index)
 
+      // /a
+      case CODE_SLASH:
+        return instance.scanPath(index)
+
       // (xx)
       case CODE_OPAREN:
         instance.go()
@@ -430,7 +434,7 @@ export class Parser {
   }
 
   /**
-   * 扫描路径，如 `./` 和 `../`
+   * 扫描路径，如 `./` 和 `../` 和 `/a`
    *
    * 路径必须位于开头，如 ./../ 或 ，不存在 a/../b/../c 这样的情况，因为路径是用来切换或指定 context 的
    *
@@ -446,13 +450,16 @@ export class Parser {
 
     while (constant.TRUE) {
 
-      // 要么是 current 要么是 parent
       name = constant.KEYPATH_CURRENT
 
       // ../
       if (instance.is(CODE_DOT)) {
         instance.go()
         name = constant.KEYPATH_PARENT
+      }
+      // /a
+      else if (instance.is(CODE_SLASH)) {
+        name = constant.KEYPATH_ROOT
       }
 
       array.push(

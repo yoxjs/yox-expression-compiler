@@ -47,16 +47,21 @@ export function createCall(name: Node, args: Node[], raw: string): Call {
 
 export function createIdentifier(raw: string, name: string, isProp?: boolean): Identifier | Literal {
 
-  let lookup = constant.TRUE, offset = 0
+  let root = constant.FALSE, lookup = constant.TRUE, offset = 0
 
-  if (name === constant.KEYPATH_CURRENT
-    || name === constant.KEYPATH_PARENT
-  ) {
-    lookup = constant.FALSE
-    if (name === constant.KEYPATH_PARENT) {
-      offset = 1
-    }
+  if (name === constant.KEYPATH_CURRENT) {
     name = constant.EMPTY_STRING
+    lookup = constant.FALSE
+  }
+  else if (name === constant.KEYPATH_PARENT) {
+    name = constant.EMPTY_STRING
+    lookup = constant.FALSE
+    offset = 1
+  }
+  else if (name === constant.KEYPATH_ROOT) {
+    name = constant.EMPTY_STRING
+    root = constant.TRUE
+    lookup = constant.FALSE
   }
 
   // 对象属性需要区分 a.b 和 a[b]
@@ -65,7 +70,7 @@ export function createIdentifier(raw: string, name: string, isProp?: boolean): I
 
   return isProp
     ? createLiteral(name, raw)
-    : createIdentifierInner(raw, name, lookup, offset)
+    : createIdentifierInner(raw, name, root, lookup, offset)
 
 }
 
@@ -114,6 +119,9 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
 
   // 第一个节点要特殊处理
   let firstNode = nodes.shift() as Node,
+
+  // 是否直接从顶层查找
+  root = constant.FALSE,
 
   // 是否向上查找
   lookup = constant.TRUE,
@@ -202,12 +210,13 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
 
       const identifierNode = firstNode as Identifier
 
+      root = identifierNode.root
       lookup = identifierNode.lookup
       offset += identifierNode.offset
 
       let firstName = identifierNode.name
 
-      // 不是 KEYPATH_THIS 或 KEYPATH_PARENT
+      // 不是 KEYPATH_THIS 或 KEYPATH_PARENT 或 KEYPATH_ROOT
       if (firstName) {
         array.unshift(staticNodes, firstName)
       }
@@ -217,7 +226,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
 
       // a.b.c
       if (isLiteral) {
-        firstNode = createIdentifierInner(raw, firstName, lookup, offset)
+        firstNode = createIdentifierInner(raw, firstName, root, lookup, offset)
       }
       // a[b]
       // this.a[b]
@@ -226,19 +235,27 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
         // 当 isLiteral 为 false 时
         // 需要为 lead 节点创建合适的 raw
         let firstRaw = identifierNode.raw
+
         if (staticRaw) {
-          firstRaw += (
-            firstRaw === constant.KEYPATH_PARENT
-              ? constant.RAW_SLASH
-              : constant.RAW_DOT
-          ) + staticRaw
+          // 确定 firstNode 和后续静态节点的连接字符
+          let separator = constant.RAW_DOT
+
+          if (firstRaw === constant.KEYPATH_ROOT) {
+            separator = constant.EMPTY_STRING
+          }
+          else if (firstRaw === constant.KEYPATH_PARENT) {
+            separator = constant.RAW_SLASH
+          }
+
+          firstRaw += separator + staticRaw
         }
 
         firstNode = createMemberInner(
           raw,
-          createIdentifierInner(firstRaw, firstName, lookup, offset),
+          createIdentifierInner(firstRaw, firstName, root, lookup, offset),
           constant.UNDEFINED,
           dynamicNodes,
+          root,
           lookup,
           offset
         )
@@ -254,6 +271,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
           firstNode,
           array.join(staticNodes, constant.RAW_DOT),
           constant.UNDEFINED,
+          root,
           lookup,
           offset
         )
@@ -267,6 +285,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
           firstNode,
           constant.UNDEFINED,
           dynamicNodes,
+          root,
           lookup,
           offset
         )
@@ -279,23 +298,25 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
 
 }
 
-function createIdentifierInner(raw: string, name: string, lookup: boolean, offset: number): Identifier {
+function createIdentifierInner(raw: string, name: string, root: boolean, lookup: boolean, offset: number): Identifier {
   return {
     type: nodeType.IDENTIFIER,
     raw,
     name,
+    root,
     lookup,
     offset,
   }
 }
 
-function createMemberInner(raw: string, lead: Node, keypath: string | void, nodes: Node[] | void, lookup: boolean, offset: number): Member {
+function createMemberInner(raw: string, lead: Node, keypath: string | void, nodes: Node[] | void, root: boolean, lookup: boolean, offset: number): Member {
   return {
     type: nodeType.MEMBER,
     raw,
     lead,
     keypath,
     nodes,
+    root,
     lookup,
     offset,
   }

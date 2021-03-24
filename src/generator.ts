@@ -74,43 +74,53 @@ export function generate(
     )
   },
 
-  generateKeypathOptions = function (keypathNode: Keypath) {
+  generateKeypathParams = function (keypath: generator.GBase, keypathNode: Keypath) {
 
-    const options = generator.toObject()
+    const params = generator.toObject()
+
+    params.set(
+      'keypath',
+       keypath
+    )
+
     if (parentNode && parentNode.type === nodeType.CALL) {
-      options.set(
+      params.set(
         'call',
         generator.toPrimitive(constant.TRUE)
       )
     }
-    if (keypathNode.lookup === constant.FALSE) {
-      options.set(
+    if (keypathNode.root === constant.TRUE) {
+      params.set(
+        'root',
+        generator.toPrimitive(constant.TRUE)
+      )
+    }
+    if (keypathNode.lookup === constant.TRUE) {
+      params.set(
         'lookup',
-        generator.toPrimitive(keypathNode.lookup)
+        generator.toPrimitive(constant.TRUE)
       )
     }
     if (keypathNode.offset > 0) {
-      options.set(
+      params.set(
         'offset',
         generator.toPrimitive(keypathNode.offset)
       )
     }
     if (holder) {
-      options.set(
+      params.set(
         'holder',
         generator.toPrimitive(constant.TRUE)
       )
     }
     if (stack) {
-      options.set(
+      params.set(
         'stack',
         generator.toRaw(stack)
       )
     }
 
-    return options.isNotEmpty()
-      ? options
-      : generator.toPrimitive(constant.UNDEFINED)
+    return params
 
   }
 
@@ -202,8 +212,10 @@ export function generate(
         value = generator.toCall(
           renderIdentifier,
           [
-            generator.toPrimitive(identifierNode.name),
-            generateKeypathOptions(identifierNode)
+            generateKeypathParams(
+              generator.toPrimitive(identifierNode.name),
+              identifierNode
+            )
           ]
         )
       }
@@ -222,6 +234,7 @@ export function generate(
         const leadValue = transformIdentifier(memberNode.lead as Identifier)
         if (leadValue) {
           stringifyNodes.join = generator.JOIN_DOT
+
           value = generator.toCall(
             renderMemberLiteral,
             [
@@ -247,8 +260,7 @@ export function generate(
           value = generator.toCall(
             renderIdentifier,
             [
-              stringifyNodes,
-              generateKeypathOptions(memberNode)
+              generateKeypathParams(stringifyNodes, memberNode)
             ]
           )
         }
