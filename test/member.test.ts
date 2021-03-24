@@ -206,7 +206,7 @@ test('member', () => {
   }
 
 
-  ast = compile('  /a[name]   ')
+  ast = compile('  ~/a[name]   ')
   expect(ast != null).toBe(true)
   if (ast) {
     expect(ast.type).toBe(nodeType.MEMBER)
@@ -216,7 +216,7 @@ test('member', () => {
     expect(((ast as Member).lead as Identifier).root).toBe(true)
     expect(((ast as Member).lead as Identifier).lookup).toBe(false)
     expect(((ast as Member).lead as Identifier).offset).toBe(0)
-    expect((ast as Member).lead.raw).toBe('/a')
+    expect((ast as Member).lead.raw).toBe('~/a')
 
     expect((ast as Member).keypath).toBe(undefined)
 
@@ -232,7 +232,7 @@ test('member', () => {
     expect((ast as Member).lookup).toBe(false)
     expect((ast as Member).offset).toBe(0)
 
-    expect(ast.raw).toBe('/a[name]')
+    expect(ast.raw).toBe('~/a[name]')
   }
 
 

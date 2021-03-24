@@ -51,7 +51,7 @@ test('identifier', () => {
     expect(ast.raw).toBe('../../name')
   }
 
-  ast = compile('    /name    ')
+  ast = compile('    ~/name    ')
   expect(ast != null).toBe(true)
   if (ast) {
     expect(ast.type).toBe(nodeType.IDENTIFIER)
@@ -59,7 +59,7 @@ test('identifier', () => {
     expect((ast as Identifier).root).toBe(true)
     expect((ast as Identifier).lookup).toBe(false)
     expect((ast as Identifier).offset).toBe(0)
-    expect(ast.raw).toBe('/name')
+    expect(ast.raw).toBe('~/name')
   }
 
   ast = compile('    a.b.c    ')
@@ -95,7 +95,7 @@ test('identifier', () => {
     expect(ast.raw).toBe('../a.b.c')
   }
 
-  ast = compile('    /a.b.c    ')
+  ast = compile('    ~/a.b.c    ')
   expect(ast != null).toBe(true)
   if (ast) {
     expect(ast.type).toBe(nodeType.IDENTIFIER)
@@ -103,7 +103,7 @@ test('identifier', () => {
     expect((ast as Identifier).root).toBe(true)
     expect((ast as Identifier).lookup).toBe(false)
     expect((ast as Identifier).offset).toBe(0)
-    expect(ast.raw).toBe('/a.b.c')
+    expect(ast.raw).toBe('~/a.b.c')
   }
 
 

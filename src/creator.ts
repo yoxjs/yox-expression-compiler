@@ -240,10 +240,9 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
           // 确定 firstNode 和后续静态节点的连接字符
           let separator = constant.RAW_DOT
 
-          if (firstRaw === constant.KEYPATH_ROOT) {
-            separator = constant.EMPTY_STRING
-          }
-          else if (firstRaw === constant.KEYPATH_PARENT) {
+          if (firstRaw === constant.KEYPATH_ROOT
+            || firstRaw === constant.KEYPATH_PARENT
+          ) {
             separator = constant.RAW_SLASH
           }
 

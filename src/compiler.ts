@@ -51,7 +51,7 @@ export class Parser {
     index += step || 1
 
     if (index >= 0 && index < end) {
-      instance.code = string.codeAt(instance.content, index)
+      instance.code = instance.codeAt(index)
       instance.index = index
     }
     else {
@@ -102,18 +102,29 @@ export class Parser {
 
   }
 
+
+
   /**
    * 判断当前字符
    */
-  is(code: number): boolean {
+  is(code: number) {
     return this.code === code
   }
 
   /**
    * 截取一段字符串
    */
-  pick(startIndex: number, endIndex?: number): string {
+  pick(startIndex: number, endIndex?: number) {
     return string.slice(this.content, startIndex, isDef(endIndex) ? endIndex : this.index)
+  }
+
+  /**
+   * 读取 index 位置的 char code
+   *
+   * @param index
+   */
+  codeAt(index: number) {
+    return string.codeAt(this.content, index)
   }
 
   /**
@@ -157,9 +168,13 @@ export class Parser {
           ? instance.scanNumber(index)
           : instance.scanPath(index)
 
-      // /a
-      case CODE_SLASH:
-        return instance.scanPath(index)
+      // ~/a
+      case CODE_WAVE:
+        // 因为 ~ 可以是一元运算符，因此必须判断后面紧跟 / 才是路径
+        if (instance.codeAt(index + 1) === CODE_SLASH) {
+          return instance.scanPath(index)
+        }
+        break
 
       // (xx)
       case CODE_OPAREN:
@@ -457,8 +472,9 @@ export class Parser {
         instance.go()
         name = constant.KEYPATH_PARENT
       }
-      // /a
-      else if (instance.is(CODE_SLASH)) {
+      // ~/a
+      else if (instance.is(CODE_WAVE)) {
+        instance.go()
         name = constant.KEYPATH_ROOT
       }
 
