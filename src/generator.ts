@@ -79,7 +79,7 @@ export function generate(
     const params = generator.toObject()
 
     params.set(
-      'keypath',
+      'name',
        keypath
     )
 
@@ -328,7 +328,7 @@ export function generate(
   }
 
   const newObject = generator.toObject()
-  newObject.set(constant.RAW_VALUE, value)
+  newObject.set('value', value)
 
   return newObject
 
