@@ -38,7 +38,7 @@ function compareOperatorPrecedence(node: Node, operator: string): number {
 
 export function generate(
   node: Node,
-  transformIdentifier: (Identifier) => generator.GBase | void,
+  transformIdentifier: (node: Identifier) => generator.Base | void,
   renderIdentifier: string,
   renderMemberLiteral: string,
   renderCall: string,
@@ -47,7 +47,7 @@ export function generate(
   parentNode?: Node
 ) {
 
-  let value: generator.GBase,
+  let value: generator.Base,
 
   isSpecialNode = constant.FALSE,
 
@@ -65,7 +65,7 @@ export function generate(
   },
 
   generateNodes = function (nodes: Node[], parentNode?: Node) {
-    return generator.toArray(
+    return generator.toList(
       nodes.map(
         function (node) {
           return generateNode(node, parentNode)
@@ -74,9 +74,9 @@ export function generate(
     )
   },
 
-  generateKeypathParams = function (keypath: generator.GBase, keypathNode: Keypath) {
+  generateKeypathParams = function (keypath: generator.Base, keypathNode: Keypath) {
 
-    const params = generator.toObject()
+    const params = generator.toMap()
 
     params.set(
       'name',
@@ -185,7 +185,7 @@ export function generate(
 
     case nodeType.OBJECT:
 
-      const objectNode = node as ObjectNode, newObject = generator.toObject()
+      const objectNode = node as ObjectNode, newObject = generator.toMap()
 
       array.each(
         objectNode.keys,
@@ -327,7 +327,7 @@ export function generate(
     return value
   }
 
-  const newObject = generator.toObject()
+  const newObject = generator.toMap()
   newObject.set('value', value)
 
   return newObject
