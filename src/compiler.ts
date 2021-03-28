@@ -15,14 +15,7 @@ import Node from './node/Node'
 import Identifier from './node/Identifier'
 import Literal from './node/Literal'
 
-export const compile = cache.createOneKeyCache(
-  function (content: string) {
-    const parser = new Parser(content)
-    return parser.scanTernary(CODE_EOF)
-  }
-)
-
-export class Parser {
+class Parser {
 
   end: number
 
@@ -1031,3 +1024,10 @@ function isIdentifierStart(code: number) {
 function isIdentifierPart(code: number) {
   return isIdentifierStart(code) || isDigit(code)
 }
+
+export const compile = cache.createOneKeyCache(
+  function (content: string) {
+    const parser = new Parser(content)
+    return parser.scanTernary(CODE_EOF)
+  }
+)
