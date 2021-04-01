@@ -40,7 +40,7 @@ export function generate(
   node: Node,
   transformIdentifier: (node: Identifier) => generator.Base | void,
   renderIdentifier: string,
-  renderMemberLiteral: string,
+  renderValue: string,
   renderCall: string,
   holder?: boolean,
   stack?: string,
@@ -56,7 +56,7 @@ export function generate(
       node,
       transformIdentifier,
       renderIdentifier,
-      renderMemberLiteral,
+      renderValue,
       renderCall,
       constant.FALSE, // 如果是内部临时值，不需要 holder
       stack,
@@ -74,53 +74,29 @@ export function generate(
     )
   },
 
-  generateKeypathParams = function (keypath: generator.Base, keypathNode: Keypath) {
+  generateKeypathArgs = function (keypath: generator.Base, keypathNode: Keypath) {
 
-    const params = generator.toMap()
-
-    params.set(
-      'name',
-       keypath
-    )
-
-    if (parentNode && parentNode.type === nodeType.CALL) {
-      params.set(
-        'call',
-        generator.toPrimitive(constant.TRUE)
-      )
-    }
-    if (keypathNode.root === constant.TRUE) {
-      params.set(
-        'root',
-        generator.toPrimitive(constant.TRUE)
-      )
-    }
-    if (keypathNode.lookup === constant.TRUE) {
-      params.set(
-        'lookup',
-        generator.toPrimitive(constant.TRUE)
-      )
-    }
-    if (keypathNode.offset > 0) {
-      params.set(
-        'offset',
-        generator.toPrimitive(keypathNode.offset)
-      )
-    }
-    if (holder) {
-      params.set(
-        'holder',
-        generator.toPrimitive(constant.TRUE)
-      )
-    }
-    if (stack) {
-      params.set(
-        'stack',
-        generator.toRaw(stack)
-      )
-    }
-
-    return params
+    return [
+      keypath,
+      keypathNode.lookup === constant.TRUE
+        ? generator.toPrimitive(constant.TRUE)
+        : generator.toPrimitive(constant.UNDEFINED),
+      keypathNode.root === constant.TRUE
+        ? generator.toPrimitive(constant.TRUE)
+        : generator.toPrimitive(constant.UNDEFINED),
+      keypathNode.offset > 0
+        ? generator.toPrimitive(keypathNode.offset)
+        : generator.toPrimitive(constant.UNDEFINED),
+      holder
+        ? generator.toPrimitive(constant.TRUE)
+        : generator.toPrimitive(constant.UNDEFINED),
+      stack
+        ? generator.toRaw(stack)
+        : generator.toPrimitive(constant.UNDEFINED),
+      parentNode && parentNode.type === nodeType.CALL
+        ? generator.toPrimitive(constant.TRUE)
+        : generator.toPrimitive(constant.UNDEFINED)
+    ]
 
   }
 
@@ -211,12 +187,10 @@ export function generate(
       else {
         value = generator.toCall(
           renderIdentifier,
-          [
-            generateKeypathParams(
-              generator.toPrimitive(identifierNode.name),
-              identifierNode
-            )
-          ]
+          generateKeypathArgs(
+            generator.toPrimitive(identifierNode.name),
+            identifierNode
+          )
         )
       }
       break
@@ -233,10 +207,8 @@ export function generate(
 
         const leadValue = transformIdentifier(memberNode.lead as Identifier)
         if (leadValue) {
-          stringifyNodes.join = generator.JOIN_DOT
-
           value = generator.toCall(
-            renderMemberLiteral,
+            renderValue,
             [
               leadValue,
               stringifyNodes,
@@ -259,9 +231,10 @@ export function generate(
 
           value = generator.toCall(
             renderIdentifier,
-            [
-              generateKeypathParams(stringifyNodes, memberNode)
-            ]
+            generateKeypathArgs(
+              stringifyNodes,
+              memberNode
+            )
           )
         }
 
@@ -269,9 +242,8 @@ export function generate(
       else if (memberNode.nodes) {
         // "xx"[length]
         // format()[a][b]
-        stringifyNodes.join = generator.JOIN_DOT
         value = generator.toCall(
-          renderMemberLiteral,
+          renderValue,
           [
             generateNode(memberNode.lead),
             stringifyNodes,
@@ -285,17 +257,20 @@ export function generate(
         // "xx".length
         // format().a.b
         value = generator.toCall(
-          renderMemberLiteral,
+          renderValue,
           [
             generateNode(memberNode.lead),
-            generator.toPrimitive(memberNode.keypath),
+            generator.toList(
+              (memberNode.keypath as string).split(constant.RAW_DOT).map(
+                generator.toPrimitive
+              )
+            ),
             holder
               ? generator.toPrimitive(constant.TRUE)
               : generator.toPrimitive(constant.UNDEFINED)
           ]
         )
       }
-
       break
 
     default:
