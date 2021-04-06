@@ -9,8 +9,8 @@ import Node from './node/Node'
 import Call from './node/Call'
 import Member from './node/Member'
 import Literal from './node/Literal'
-import Identifier from './node/Identifier'
 import Keypath from './node/Keypath'
+import Identifier from './node/Identifier'
 import Ternary from './node/Ternary'
 import Binary from './node/Binary'
 import Unary from './node/Unary'
@@ -39,25 +39,25 @@ function compareOperatorPrecedence(node: Node, operator: string): number {
 export function generate(
   node: Node,
   transformIdentifier: (node: Identifier) => generator.Base | void,
-  renderIdentifier: string,
-  renderValue: string,
-  renderCall: string,
+  generateIdentifier: (node: Keypath, nodes?: generator.Base[], holder?: boolean, stack?: boolean, parentNode?: Node) => generator.Base,
+  generateValue: (value: generator.Base, keys: generator.Base[], holder?: boolean) => generator.Base,
+  generateCall: (name: generator.Base, args?: generator.Base[], holder?: boolean) => generator.Base,
   holder?: boolean,
-  stack?: string,
+  stack?: boolean,
   parentNode?: Node
 ) {
 
   let value: generator.Base,
 
-  isSpecialNode = constant.FALSE,
+  hasHolder = constant.FALSE,
 
   generateNode = function (node: Node, parentNode?: Node) {
     return generate(
       node,
       transformIdentifier,
-      renderIdentifier,
-      renderValue,
-      renderCall,
+      generateIdentifier,
+      generateValue,
+      generateCall,
       constant.FALSE, // 如果是内部临时值，不需要 holder
       stack,
       parentNode
@@ -65,39 +65,11 @@ export function generate(
   },
 
   generateNodes = function (nodes: Node[], parentNode?: Node) {
-    return generator.toList(
-      nodes.map(
-        function (node) {
-          return generateNode(node, parentNode)
-        }
-      )
+    return nodes.map(
+      function (node) {
+        return generateNode(node, parentNode)
+      }
     )
-  },
-
-  generateKeypathArgs = function (keypath: generator.Base, keypathNode: Keypath) {
-
-    return [
-      keypath,
-      keypathNode.lookup === constant.TRUE
-        ? generator.toPrimitive(constant.TRUE)
-        : generator.toPrimitive(constant.UNDEFINED),
-      keypathNode.root === constant.TRUE
-        ? generator.toPrimitive(constant.TRUE)
-        : generator.toPrimitive(constant.UNDEFINED),
-      keypathNode.offset > 0
-        ? generator.toPrimitive(keypathNode.offset)
-        : generator.toPrimitive(constant.UNDEFINED),
-      holder
-        ? generator.toPrimitive(constant.TRUE)
-        : generator.toPrimitive(constant.UNDEFINED),
-      stack
-        ? generator.toRaw(stack)
-        : generator.toPrimitive(constant.UNDEFINED),
-      parentNode && parentNode.type === nodeType.CALL
-        ? generator.toPrimitive(constant.TRUE)
-        : generator.toPrimitive(constant.UNDEFINED)
-    ]
-
   }
 
   switch (node.type) {
@@ -156,7 +128,9 @@ export function generate(
 
       const arrayNode = node as ArrayNode
 
-      value = generateNodes(arrayNode.nodes)
+      value = generator.toList(
+        generateNodes(arrayNode.nodes, parentNode)
+      )
       break
 
     case nodeType.OBJECT:
@@ -175,130 +149,95 @@ export function generate(
       break
 
     case nodeType.IDENTIFIER:
-      isSpecialNode = constant.TRUE
+      hasHolder = constant.TRUE
 
-      const identifierNode = node as Identifier,
+      const identifierNode = node as Identifier
 
-      identifierValue = transformIdentifier(identifierNode)
-
-      if (identifierValue) {
-        value = identifierValue
-      }
-      else {
-        value = generator.toCall(
-          renderIdentifier,
-          generateKeypathArgs(
-            generator.toPrimitive(identifierNode.name),
-            identifierNode
+      value = transformIdentifier(identifierNode)
+        || generateIdentifier(
+            identifierNode,
+            identifierNode.name ? generator.parse(identifierNode.name) : constant.UNDEFINED,
+            holder,
+            stack,
+            parentNode
           )
-        )
-      }
+
       break
 
     case nodeType.MEMBER:
-      isSpecialNode = constant.TRUE
+      hasHolder = constant.TRUE
 
-      const memberNode = node as Member,
-
-      stringifyNodes = generateNodes(memberNode.nodes || [])
+      const memberNode = node as Member
 
       if (memberNode.lead.type === nodeType.IDENTIFIER) {
         // 只能是 a[b] 的形式，因为 a.b 已经在解析时转换成 Identifier 了
+        const leadNode = memberNode.lead as Identifier,
+        leadValue = transformIdentifier(leadNode),
+        memberNodes = generateNodes(memberNode.nodes || [])
 
-        const leadValue = transformIdentifier(memberNode.lead as Identifier)
         if (leadValue) {
-          value = generator.toCall(
-            renderValue,
-            [
-              leadValue,
-              stringifyNodes,
-              holder
-                ? generator.toPrimitive(constant.TRUE)
-                : generator.toPrimitive(constant.UNDEFINED)
-            ]
+          value = generateValue(
+            leadValue,
+            memberNodes,
+            holder
           )
         }
         else {
-          stringifyNodes.join = generator.JOIN_DOT
-
-          // 避免 this[a]，this 会被解析成空字符串，此时不应加入 stringifyNodes
-          const leadName = (memberNode.lead as Identifier).name
-          if (leadName) {
-            stringifyNodes.unshift(
-              generator.toPrimitive(leadName)
+          if (leadNode.name) {
+            // a.b.c[d] 这里要把 a.b.c 拆开
+            array.each(
+              generator.parse(leadNode.name),
+              function (node) {
+                memberNodes.unshift(node)
+              },
+              constant.TRUE
             )
           }
-
-          value = generator.toCall(
-            renderIdentifier,
-            generateKeypathArgs(
-              stringifyNodes,
-              memberNode
-            )
+          value = generateIdentifier(
+            memberNode,
+            memberNodes,
+            holder,
+            stack,
+            parentNode
           )
         }
-
       }
       else if (memberNode.nodes) {
         // "xx"[length]
         // format()[a][b]
-        value = generator.toCall(
-          renderValue,
-          [
-            generateNode(memberNode.lead),
-            stringifyNodes,
-            holder
-              ? generator.toPrimitive(constant.TRUE)
-              : generator.toPrimitive(constant.UNDEFINED)
-          ]
+        value = generateValue(
+          generateNode(memberNode.lead),
+          generateNodes(memberNode.nodes || []),
+          holder
         )
       }
       else {
         // "xx".length
         // format().a.b
-        value = generator.toCall(
-          renderValue,
-          [
-            generateNode(memberNode.lead),
-            generator.toList(
-              (memberNode.keypath as string).split(constant.RAW_DOT).map(
-                generator.toPrimitive
-              )
-            ),
-            holder
-              ? generator.toPrimitive(constant.TRUE)
-              : generator.toPrimitive(constant.UNDEFINED)
-          ]
+        value = generateValue(
+          generateNode(memberNode.lead),
+          generator.parse(memberNode.keypath as string),
+          holder
         )
       }
       break
 
     default:
-      isSpecialNode = constant.TRUE
+      hasHolder = constant.TRUE
 
       const callNode = node as Call
 
-      value = generator.toCall(
-        renderCall,
-        [
-          generateNode(callNode.name, callNode),
-          callNode.args.length
-            ? generateNodes(callNode.args)
-            : generator.toPrimitive(constant.UNDEFINED),
-          holder
-            ? generator.toPrimitive(constant.TRUE)
-            : generator.toPrimitive(constant.UNDEFINED)
-        ]
+      value = generateCall(
+        generateNode(callNode.name, callNode),
+        callNode.args.length
+          ? generateNodes(callNode.args)
+          : constant.UNDEFINED,
+        holder
       )
       break
   }
 
-  if (!holder) {
-    return value
-  }
-
-  // 最外层的值，且 holder 为 true
-  if (isSpecialNode) {
+  if (!holder || hasHolder) {
     return value
   }
 
