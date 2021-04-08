@@ -241,9 +241,8 @@ export function generate(
     return value
   }
 
-  const newObject = generator.toMap()
-  newObject.set('value', value)
-
-  return newObject
+  return generator.toMap({
+    value,
+  })
 
 }
