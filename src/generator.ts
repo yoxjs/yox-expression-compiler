@@ -39,8 +39,8 @@ function compareOperatorPrecedence(node: Node, operator: string): number {
 export function generate(
   node: Node,
   transformIdentifier: (node: Identifier) => generator.Base | void,
-  generateIdentifier: (node: Keypath, keypath?: string, nodes?: generator.Base[], holder?: boolean, stack?: boolean, parentNode?: Node) => generator.Base,
-  generateValue: (value: generator.Base, keys: generator.Base[], holder?: boolean) => generator.Base,
+  generateIdentifier: (node: Keypath, nodes: generator.Base[], keypath?: string, holder?: boolean, stack?: boolean, parentNode?: Node) => generator.Base,
+  generateValue: (value: generator.Base, keys: generator.Base[], keypath?: string, holder?: boolean) => generator.Base,
   generateCall: (name: generator.Base, args?: generator.Base[], holder?: boolean) => generator.Base,
   holder?: boolean,
   stack?: boolean,
@@ -156,8 +156,8 @@ export function generate(
       value = transformIdentifier(identifierNode)
         || generateIdentifier(
             identifierNode,
-            identifierNode.name || constant.UNDEFINED,
-            identifierNode.name ? generator.parse(identifierNode.name) : constant.UNDEFINED,
+            identifierNode.name ? generator.parse(identifierNode.name) : [],
+            identifierNode.name,
             holder,
             stack,
             parentNode
@@ -180,6 +180,7 @@ export function generate(
           value = generateValue(
             leadValue,
             memberNodes,
+            constant.UNDEFINED,
             holder
           )
         }
@@ -196,8 +197,8 @@ export function generate(
           }
           value = generateIdentifier(
             memberNode,
-            constant.UNDEFINED,
             memberNodes,
+            constant.UNDEFINED,
             holder,
             stack,
             parentNode
@@ -210,6 +211,7 @@ export function generate(
         value = generateValue(
           generateNode(memberNode.lead),
           generateNodes(memberNode.nodes || []),
+          constant.UNDEFINED,
           holder
         )
       }
@@ -219,6 +221,7 @@ export function generate(
         value = generateValue(
           generateNode(memberNode.lead),
           generator.parse(memberNode.keypath as string),
+          memberNode.keypath as string,
           holder
         )
       }
