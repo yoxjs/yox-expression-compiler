@@ -95,23 +95,22 @@ export function generate(
 
     case nodeType.BINARY:
 
-      const binaryNode = node as Binary,
+      let binaryNode = node as Binary,
       left = generateNode(binaryNode.left),
-      right = generateNode(binaryNode.right),
-      newBinary = generator.toBinary(
+      right = generateNode(binaryNode.right)
+
+      if (compareOperatorPrecedence(binaryNode.left, binaryNode.operator) < 0) {
+        left = generator.toPrecedence(left)
+      }
+      if (compareOperatorPrecedence(binaryNode.right, binaryNode.operator) < 0) {
+        right = generator.toPrecedence(right)
+      }
+
+      value = generator.toBinary(
         left,
         binaryNode.operator,
         right
       )
-
-      if (compareOperatorPrecedence(binaryNode.left, binaryNode.operator) < 0) {
-        newBinary.leftGroup = constant.TRUE
-      }
-      if (compareOperatorPrecedence(binaryNode.right, binaryNode.operator) < 0) {
-        newBinary.rightGroup = constant.TRUE
-      }
-
-      value = newBinary
       break
 
     case nodeType.TERNARY:
