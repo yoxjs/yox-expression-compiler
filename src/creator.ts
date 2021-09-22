@@ -226,7 +226,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
 
       // a.b.c
       if (isLiteral) {
-        firstNode = createIdentifierInner(raw, firstName, root, lookup, offset)
+        firstNode = createIdentifierInner(raw, firstName, root, lookup, offset, staticNodes)
       }
       // a[b]
       // this.a[b]
@@ -251,7 +251,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
 
         firstNode = createMemberInner(
           raw,
-          createIdentifierInner(firstRaw, firstName, root, lookup, offset),
+          createIdentifierInner(firstRaw, firstName, root, lookup, offset, staticNodes),
           constant.UNDEFINED,
           dynamicNodes,
           root,
@@ -297,7 +297,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
 
 }
 
-function createIdentifierInner(raw: string, name: string, root: boolean, lookup: boolean, offset: number): Identifier {
+function createIdentifierInner(raw: string, name: string, root: boolean, lookup: boolean, offset: number, literals?: string[]): Identifier {
   return {
     type: nodeType.IDENTIFIER,
     raw,
@@ -305,6 +305,7 @@ function createIdentifierInner(raw: string, name: string, root: boolean, lookup:
     root,
     lookup,
     offset,
+    literals: literals && literals.length > 1 ? literals : constant.UNDEFINED,
   }
 }
 

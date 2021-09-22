@@ -14,6 +14,7 @@ test('identifier', () => {
     expect((ast as Identifier).root).toBe(false)
     expect((ast as Identifier).lookup).toBe(true)
     expect((ast as Identifier).offset).toBe(0)
+    expect((ast as Identifier).literals).toBe(undefined)
     expect(ast.raw).toBe('name')
   }
 
@@ -26,6 +27,7 @@ test('identifier', () => {
     expect((ast as Identifier).root).toBe(false)
     expect((ast as Identifier).lookup).toBe(false)
     expect((ast as Identifier).offset).toBe(0)
+    expect((ast as Identifier).literals).toBe(undefined)
     expect(ast.raw).toBe('this.name')
   }
 
@@ -37,6 +39,7 @@ test('identifier', () => {
     expect((ast as Identifier).root).toBe(false)
     expect((ast as Identifier).lookup).toBe(false)
     expect((ast as Identifier).offset).toBe(1)
+    expect((ast as Identifier).literals).toBe(undefined)
     expect(ast.raw).toBe('../name')
   }
 
@@ -48,6 +51,7 @@ test('identifier', () => {
     expect((ast as Identifier).root).toBe(false)
     expect((ast as Identifier).lookup).toBe(false)
     expect((ast as Identifier).offset).toBe(2)
+    expect((ast as Identifier).literals).toBe(undefined)
     expect(ast.raw).toBe('../../name')
   }
 
@@ -59,6 +63,7 @@ test('identifier', () => {
     expect((ast as Identifier).root).toBe(true)
     expect((ast as Identifier).lookup).toBe(false)
     expect((ast as Identifier).offset).toBe(0)
+    expect((ast as Identifier).literals).toBe(undefined)
     expect(ast.raw).toBe('~/name')
   }
 
@@ -71,6 +76,15 @@ test('identifier', () => {
     expect((ast as Identifier).lookup).toBe(true)
     expect((ast as Identifier).offset).toBe(0)
     expect(ast.raw).toBe('a.b.c')
+
+    const literals = (ast as Identifier).literals
+    expect(Array.isArray(literals)).toBe(true)
+    if (literals) {
+      expect(literals[0]).toBe('a')
+      expect(literals[1]).toBe('b')
+      expect(literals[2]).toBe('c')
+      expect(literals.length).toBe(3)
+    }
   }
 
   ast = compile('    this.a.b.c    ')
@@ -82,6 +96,15 @@ test('identifier', () => {
     expect((ast as Identifier).lookup).toBe(false)
     expect((ast as Identifier).offset).toBe(0)
     expect(ast.raw).toBe('this.a.b.c')
+
+    const literals = (ast as Identifier).literals
+    expect(Array.isArray(literals)).toBe(true)
+    if (literals) {
+      expect(literals[0]).toBe('a')
+      expect(literals[1]).toBe('b')
+      expect(literals[2]).toBe('c')
+      expect(literals.length).toBe(3)
+    }
   }
 
   ast = compile('    ../a.b.c    ')
