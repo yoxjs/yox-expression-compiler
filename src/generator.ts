@@ -39,11 +39,10 @@ function compareOperatorPrecedence(node: Node, operator: string): number {
 export function generate(
   node: Node,
   transformIdentifier: (node: Identifier) => generator.Base | void,
-  generateIdentifier: (node: Keypath, nodes: generator.Base[], keypath?: string, holder?: boolean, stack?: boolean, parentNode?: Node) => generator.Base,
+  generateIdentifier: (node: Keypath, nodes: generator.Base[], keypath?: string, holder?: boolean, parentNode?: Node) => generator.Base,
   generateValue: (value: generator.Base, keys: generator.Base[], keypath?: string, holder?: boolean) => generator.Base,
   generateCall: (name: generator.Base, args?: generator.Base[], holder?: boolean) => generator.Base,
   holder?: boolean,
-  stack?: boolean,
   parentNode?: Node
 ) {
 
@@ -59,7 +58,6 @@ export function generate(
       generateValue,
       generateCall,
       constant.FALSE, // 如果是内部临时值，不需要 holder
-      stack,
       parentNode
     )
   },
@@ -158,7 +156,6 @@ export function generate(
             identifierNode.name ? generator.parse(identifierNode.name) : [],
             identifierNode.name,
             holder,
-            stack,
             parentNode
           )
 
@@ -199,7 +196,6 @@ export function generate(
             memberNodes,
             constant.UNDEFINED,
             holder,
-            stack,
             parentNode
           )
         }
