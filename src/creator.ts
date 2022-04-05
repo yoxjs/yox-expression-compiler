@@ -1,9 +1,12 @@
+import { SLOT_DATA_PREFIX } from 'yox-config/src/config'
+
 import toString from 'yox-common/src/function/toString'
 
 import * as array from 'yox-common/src/util/array'
 import * as string from 'yox-common/src/util/string'
 import * as constant from 'yox-common/src/util/constant'
 
+import * as helper from './helper'
 import * as nodeType from './nodeType'
 
 import Node from './node/Node'
@@ -62,6 +65,9 @@ export function createIdentifier(raw: string, name: string, isProp?: boolean): I
     name = constant.EMPTY_STRING
     root = constant.TRUE
     lookup = constant.FALSE
+  }
+  else {
+    name = replaceSlotIdentifierIfNeeded(name)
   }
 
   // 对象属性需要区分 a.b 和 a[b]
@@ -218,6 +224,7 @@ export function createMemberIfNeeded(raw: string, nodes: Node[]): Node | Identif
 
       // 不是 KEYPATH_THIS 或 KEYPATH_PARENT 或 KEYPATH_ROOT
       if (firstName) {
+        firstName = replaceSlotIdentifierIfNeeded(firstName, identifierNode)
         array.unshift(staticNodes, firstName)
       }
 
@@ -320,4 +327,15 @@ function createMemberInner(raw: string, lead: Node, keypath: string | void, node
     lookup,
     offset,
   }
+}
+
+function replaceSlotIdentifierIfNeeded(name: string, identifierNode?: Identifier): string {
+  // 如果是插槽变量，则进行替换
+  if (helper.isSlotIdentifierStart(string.codeAt(name, 0))) {
+    name = SLOT_DATA_PREFIX + string.slice(name, 1)
+    if (identifierNode) {
+      identifierNode.name = name
+    }
+  }
+  return name
 }
