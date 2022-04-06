@@ -139,7 +139,7 @@ class Parser {
       return instance.scanTail(
         index,
         [
-          instance.scanIdentifier(index, code)
+          instance.scanIdentifier(index, isSlotIdentifier)
         ]
       )
     }
@@ -504,7 +504,7 @@ class Parser {
         if (helper.isIdentifierStart(instance.code)) {
           array.push(
             nodes,
-            instance.scanIdentifier(index, code, constant.TRUE)
+            instance.scanIdentifier(index, isSlotIdentifier, constant.TRUE)
           )
           return instance.scanTail(startIndex, nodes)
         }
@@ -584,7 +584,7 @@ class Parser {
             // 无需识别关键字
             array.push(
               nodes,
-              instance.scanIdentifier(instance.index, instance.code, constant.TRUE)
+              instance.scanIdentifier(instance.index, constant.FALSE, constant.TRUE)
             )
             break
           }
@@ -634,7 +634,7 @@ class Parser {
    * @param isProp 是否是对象的属性
    * @return
    */
-  scanIdentifier(startIndex: number, startCode: number, isProp?: boolean): Identifier | Literal {
+  scanIdentifier(startIndex: number, isSlotIdentifier: boolean, isProp?: boolean): Identifier | Literal {
 
     const instance = this
 
@@ -648,9 +648,7 @@ class Parser {
     const raw = instance.pick(startIndex)
 
     // 插槽变量，@ 后面必须有其他字符
-    if (raw.length === 1
-      && helper.isSlotIdentifierStart(startCode)
-    ) {
+    if (isSlotIdentifier && raw.length === 1) {
       instance.fatal(startIndex, 'A slot identifier must be followed by its name.')
     }
 
