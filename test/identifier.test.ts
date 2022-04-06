@@ -196,6 +196,15 @@ test('identifier', () => {
   }
   expect(hasError).toBe(true)
 
+  hasError = false
+  try {
+    compile('@1')
+  }
+  catch (e) {
+    hasError = true
+  }
+  expect(hasError).toBe(true)
+
 
   ast = compile('@icon')
   expect(ast != null).toBe(true)

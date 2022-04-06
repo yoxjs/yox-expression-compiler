@@ -128,13 +128,24 @@ class Parser {
 
     const instance = this, { code, index } = instance
 
-    if (helper.isIdentifierStart(code) || helper.isSlotIdentifierStart(code)) {
+    let isSlotIdentifier = constant.FALSE
+    if (helper.isSlotIdentifierStart(code)) {
+      isSlotIdentifier = constant.TRUE
+      instance.go()
+    }
+
+    // 因为上面可能前进了一步，因此这里用 instance.code
+    if (helper.isIdentifierStart(instance.code)) {
       return instance.scanTail(
         index,
         [
           instance.scanIdentifier(index, code)
         ]
       )
+    }
+    // @后面是个标识符才行，否则回退
+    else if (isSlotIdentifier) {
+      instance.go(-1)
     }
     if (helper.isDigit(code)) {
       return instance.scanNumber(index)
@@ -482,27 +493,43 @@ class Parser {
         instance.go()
 
         const { index, code } = instance
-        if (helper.isIdentifierStart(code) || helper.isSlotIdentifierStart(code)) {
+
+        let isSlotIdentifier = constant.FALSE
+        if (helper.isSlotIdentifierStart(code)) {
+          isSlotIdentifier = constant.TRUE
+          instance.go()
+        }
+
+        // 因为上面可能前进了一步，因此这里用 instance.code
+        if (helper.isIdentifierStart(instance.code)) {
           array.push(
             nodes,
             instance.scanIdentifier(index, code, constant.TRUE)
           )
           return instance.scanTail(startIndex, nodes)
         }
-        else if (instance.is(helper.CODE_DOT)) {
-          // 先跳过第一个 .
-          instance.go()
-          // 继续循环
-        }
         else {
-          // 类似 ./ 或 ../ 这样后面不跟标识符是想干嘛？报错可好？
-          if (process.env.NODE_ENV === 'development') {
-            instance.fatal(
-              startIndex,
-              `${(array.last(nodes) as Node).raw}/ must be followed by an identifier.`
-            )
+
+          // @后面是个标识符才行，否则回退
+          if (isSlotIdentifier) {
+            instance.go(-1)
           }
-          break
+
+          if (instance.is(helper.CODE_DOT)) {
+            // 先跳过第一个 .
+            instance.go()
+            // 继续循环
+          }
+          else {
+            // 类似 ./ 或 ../ 这样后面不跟标识符是想干嘛？报错可好？
+            if (process.env.NODE_ENV === 'development') {
+              instance.fatal(
+                startIndex,
+                `${(array.last(nodes) as Node).raw}/ must be followed by an identifier.`
+              )
+            }
+            break
+          }
         }
 
       }
