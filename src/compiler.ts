@@ -825,25 +825,30 @@ class Parser {
         // 必须是二元运算符，一元不行
         if (operator && (operatorPrecedence = interpreter.binary[operator])) {
 
-          // 比较前一个运算符
-          index = output.length - 4
+          while (constant.TRUE) {
+            // 比较前一个运算符
+            index = output.length - 4
 
-          // 如果前一个运算符的优先级 >= 现在这个，则新建 Binary
-          // 如 a + b * c / d，当从左到右读取到 / 时，发现和前一个 * 优先级相同，则把 b * c 取出用于创建 Binary
-          if ((lastOperator = output[index])
-            && (lastOperatorPrecedence = interpreter.binary[lastOperator])
-            && lastOperatorPrecedence >= operatorPrecedence
-          ) {
-            output.splice(
-              index - 2,
-              5,
-              creator.createBinary(
-                output[index - 2],
-                lastOperator,
-                output[index + 2],
-                instance.pick(output[index - 3], output[index + 3])
+            // 如果前一个运算符的优先级 >= 现在这个，则新建 Binary
+            // 如 a + b * c / d，当从左到右读取到 / 时，发现和前一个 * 优先级相同，则把 b * c 取出用于创建 Binary
+            if ((lastOperator = output[index])
+              && (lastOperatorPrecedence = interpreter.binary[lastOperator])
+              && lastOperatorPrecedence >= operatorPrecedence
+            ) {
+              output.splice(
+                index - 2,
+                5,
+                creator.createBinary(
+                  output[index - 2],
+                  lastOperator,
+                  output[index + 2],
+                  instance.pick(output[index - 3], output[index + 3])
+                )
               )
-            )
+            }
+            else {
+              break
+            }
           }
 
           array.push(output, operator)
