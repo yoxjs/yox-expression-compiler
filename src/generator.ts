@@ -3,7 +3,6 @@ import * as generator from 'yox-common/src/util/generator'
 import * as array from 'yox-common/src/util/array'
 
 import * as nodeType from './nodeType'
-import * as interpreter from './interpreter'
 
 import Node from './node/Node'
 import Call from './node/Call'
@@ -19,21 +18,14 @@ import ArrayNode from './node/Array'
 import ObjectNode from './node/Object'
 
 /**
- * 比较操作符优先级
+ * 是否需要给 node 加括号，以提升运算优先级
+ * 这里不去比较运算符的优先级，而是根据节点类型判断
+ * 因为在 compile 环节会根据运算符优先级或括号，创建不同的节点，节点本身已经是优先级的体现了
  *
  * @param node
- * @param operator
  */
-function compareOperatorPrecedence(node: Node, operator: string): number {
-  // 三元表达式优先级最低
-  if (node.type === nodeType.TERNARY) {
-    return -1
-  }
-  // 二元运算要比较优先级
-  if (node.type === nodeType.BINARY) {
-    return interpreter.binary[(node as Binary).operator] - interpreter.binary[operator]
-  }
-  return 0
+function needOperatorPrecedence(node: Node): boolean {
+  return node.type === nodeType.TERNARY || node.type === nodeType.BINARY
 }
 
 export function generate(
@@ -97,17 +89,14 @@ export function generate(
       left = generateNode(binaryNode.left),
       right = generateNode(binaryNode.right)
 
-      if (compareOperatorPrecedence(binaryNode.left, binaryNode.operator) < 0) {
-        left = generator.toPrecedence(left)
-      }
-      if (compareOperatorPrecedence(binaryNode.right, binaryNode.operator) < 0) {
-        right = generator.toPrecedence(right)
-      }
-
       value = generator.toBinary(
-        left,
+        needOperatorPrecedence(binaryNode.left)
+          ? generator.toPrecedence(left)
+          : left,
         binaryNode.operator,
-        right
+        needOperatorPrecedence(binaryNode.right)
+          ? generator.toPrecedence(right)
+          : right
       )
       break
 
