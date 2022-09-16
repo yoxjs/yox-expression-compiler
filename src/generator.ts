@@ -155,7 +155,11 @@ export function generate(
 
       const memberNode = node as Member
 
-      if (memberNode.lead.type === nodeType.IDENTIFIER) {
+      if (memberNode.isStatic) {
+        // 原样输出
+        value = memberNode.raw
+      }
+      else if (memberNode.lead.type === nodeType.IDENTIFIER) {
         // 只能是 a[b] 的形式，因为 a.b 已经在解析时转换成 Identifier 了
         const leadNode = memberNode.lead as Identifier,
         leadValue = transformIdentifier(leadNode),

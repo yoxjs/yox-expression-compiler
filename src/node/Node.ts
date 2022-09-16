@@ -4,4 +4,7 @@ export default interface Node {
 
   raw: string
 
+  // 是否是静态节点
+  isStatic?: boolean
+
 }

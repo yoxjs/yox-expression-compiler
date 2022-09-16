@@ -26,6 +26,7 @@ export function createArray(nodes: Node[], raw: string): ArrayNode {
     type: nodeType.ARRAY,
     raw,
     nodes,
+    isStatic: isStaticNodes(nodes),
   }
 }
 
@@ -36,6 +37,7 @@ export function createBinary(left: Node, operator: string, right: Node, raw: str
     left,
     operator,
     right,
+    isStatic: isStaticNodes([left, right]),
   }
 }
 
@@ -85,6 +87,7 @@ export function createLiteral(value: any, raw: string): Literal {
     type: nodeType.LITERAL,
     raw,
     value,
+    isStatic: constant.TRUE,
   }
 }
 
@@ -94,6 +97,7 @@ export function createObject(keys: string[], values: Node[], raw: string): Objec
     raw,
     keys,
     values,
+    isStatic: isStaticNodes(values),
   }
 }
 
@@ -104,6 +108,7 @@ export function createTernary(test: Node, yes: Node, no: Node, raw: string): Ter
     test,
     yes,
     no,
+    isStatic: isStaticNodes([test, yes, no]),
   }
 }
 
@@ -113,6 +118,7 @@ export function createUnary(operator: string, node: Node, raw: string): Unary {
     raw,
     operator,
     node,
+    isStatic: node.isStatic,
   }
 }
 
@@ -326,6 +332,7 @@ function createMemberInner(raw: string, lead: Node, keypath: string | void, node
     root,
     lookup,
     offset,
+    isStatic: lead.isStatic && (!nodes || isStaticNodes(nodes)),
   }
 }
 
@@ -338,4 +345,17 @@ function replaceSlotIdentifierIfNeeded(name: string, identifierNode?: Identifier
     }
   }
   return name
+}
+
+function isStaticNodes(nodes: Node[]) {
+  let isStatic = constant.TRUE
+  array.each(
+    nodes,
+    function (node) {
+      if (!node.isStatic) {
+        return isStatic = constant.FALSE
+      }
+    }
+  )
+  return isStatic
 }
