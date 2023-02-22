@@ -32,8 +32,8 @@ export function generate(
   node: Node,
   transformIdentifier: (node: Identifier) => generator.Base | void,
   generateIdentifier: (node: Keypath, nodes: generator.Base[], keypath?: string, holder?: boolean, parentNode?: Node) => generator.Base,
-  generateValue: (value: generator.Base, keys: generator.Base[], keypath?: string, holder?: boolean) => generator.Base,
-  generateCall: (name: generator.Base, args?: generator.Base[], holder?: boolean) => generator.Base,
+  generateValue: (value: generator.Base, keys: generator.Base[], holder?: boolean) => generator.Base,
+  generateCall: (node: Call, fn: generator.Base, args?: generator.Base[], holder?: boolean) => generator.Base,
   holder?: boolean,
   parentNode?: Node
 ) {
@@ -169,7 +169,6 @@ export function generate(
           value = generateValue(
             leadValue,
             memberNodes,
-            constant.UNDEFINED,
             holder
           )
         }
@@ -199,7 +198,6 @@ export function generate(
         value = generateValue(
           generateNode(memberNode.lead),
           generateNodes(memberNode.nodes || []),
-          constant.UNDEFINED,
           holder
         )
       }
@@ -209,7 +207,6 @@ export function generate(
         value = generateValue(
           generateNode(memberNode.lead),
           generator.parse(memberNode.keypath as string),
-          memberNode.keypath as string,
           holder
         )
       }
@@ -221,6 +218,7 @@ export function generate(
       const callNode = node as Call
 
       value = generateCall(
+        callNode,
         generateNode(callNode.name, callNode),
         callNode.args.length
           ? generateNodes(callNode.args)
